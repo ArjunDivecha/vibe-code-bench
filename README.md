@@ -70,6 +70,8 @@ python -m vibe_eval run -m claude-sonnet-4.5,llama-3.1-8b -c all
 | Project Control Center | Glassmorphism dashboard UI |
 | Log Analytics Dashboard | Python server with live charts |
 
+📄 **[See CASES.md](CASES.md)** for detailed requirements and scoring rubric.
+
 ## 🎯 Scoring Dimensions
 
 Each case is scored 0-100 across 6 dimensions:
