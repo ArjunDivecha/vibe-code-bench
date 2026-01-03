@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Control Center</title>
+  <style>
+    /* Base Reset & Typography */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e1e5f2;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      --border-radius: 16px;
+      --blur: 24px;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --hover-lift: 0.5rem;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 80px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      transition: width 0.3s ease;
+      z-index: 10;
+    }
+
+    .sidebar:hover {
+      width: 200px;
+    }
+
+    .nav-item {
+      width: 50px;
+      height: 50px;
+      margin: 1rem 0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a7b0c2;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .nav-item span.label {
+      position: absolute;
+      left: 60px;
+      white-space: nowrap;
+      opacity: 0;
+      font-size: 14px;
+    }
+
+    .sidebar:hover .nav-item span.label {
+      opacity: 1;
+      transform: translateX(-8px);
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e1e5f2;
+      transform: translateY(-3px);
+    }
+
+    .nav-item.active {
+      background: rgba(90, 120, 255, 0.3);
+      color: #e1e5f2;
+      border-left: 3px solid #5a78ff;
+    }
+
+    .nav-item i {
+      font-size: 1.4rem;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-item:hover i {
+      transform: scale(1.2);
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      background: linear-gradient(to right, #a7b0c2, #e1e5f2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Dashboard Grid */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .widget {
+      background: var(--card-bg);
+      backdrop-filter: blur(var(--blur));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .widget:hover {
+      transform: translateY(-var(--hover-lift));
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .widget-header h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .widget-header i {
+      color: #a7b0c2;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .widget-header i:hover {
+      color: #e1e5f2;
+    }
+
+    /* Active Projects */
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .project-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .project-name {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, #5a78ff, #8a65ff);
+      border-radius: 3px;
+      width: 0;
+      transition: width 1s ease;
+    }
+
+    /* Recent Activity */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .event {
+      display: flex;
+      gap: 0.8rem;
+      opacity: 0;
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .event::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #5a78ff;
+      margin-top: 4px;
+    }
+
+    .event .time {
+      font-size: 0.8rem;
+      color: #a7b0c2;
+      min-width: 70px;
+    }
+
+    .event .desc {
+      font-size: 0.95rem;
+    }
+
+    /* Quick Links */
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .link-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .link-item:hover {
+      background: rgba(90, 120, 255, 0.2);
+      transform: translateY(-5px);
+    }
+
+    .link-item i {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      color: #a7b0c2;
+    }
+
+    .link-item:hover i {
+      color: #e1e5f2;
+    }
+
+    .link-item span {
+      font-size: 0.85rem;
+      color: #a7b0c2;
+    }
+
+    /* Task List */
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .task-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      color: #5a78ff;
+      font-size: 14px;
+      top: -1px;
+      left: 3px;
+    }
+
+    .task-checkbox:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .task-checkbox:checked {
+      background: #e1e5f2;
+      border-color: #5a78ff;
+    }
+
+    .task-text {
+      font-size: 0.95rem;
+    }
+
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+      color: #8a94a6;
+    }
+
+    /* Add Task */
+    .add-task {
+      display: flex;
+      margin-top: 1rem;
+      gap: 0.5rem;
+    }
+
+    .add-task input {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e1e5f2;
+      font-size: 0.95rem;
+    }
+
+    .add-task input:focus {
+      outline: none;
+      border-color: #5a78ff;
+      box-shadow: 0 0 0 2px rgba(90, 120, 255, 0.3);
+    }
+
+    .add-task button {
+      background: #5a78ff;
+      color: white;
+      border: none;
+      padding: 0 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .add-task button:hover {
+      background: #4a64e0;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      backdrop-filter: blur(var(--blur));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 500px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      color: #e1e5f2;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #a7b0c2;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .modal-close:hover {
+      color: #e1e5f2;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .modal-form input,
+    .modal-form textarea {
+      padding: 0.8rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e1e5f2;
+      font-size: 1rem;
+    }
+
+    .modal-form input:focus,
+    .modal-form textarea:focus {
+      outline: none;
+      border-color: #5a78ff;
+      box-shadow: 0 0 0 2px rgba(90, 120, 255, 0.3);
+    }
+
+    .modal-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .modal-actions button {
+      padding: 0.6rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e1e5f2;
+    }
+
+    .btn-create {
+      background: #5a78ff;
+      color: white;
+    }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-create:hover {
+      background: #4a64e0;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .btn-new-project {
+      background: linear-gradient(to right, #5a78ff, #8a65ff);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(90, 120, 255, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .btn-new-project:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(90, 120, 255, 0.4);
+    }
+
+    /* Icons - Using simple emoji as fallback */
+    .icon {
+      font-style: normal;
+      user-select: none;
+    }
+
+    /* Optional: Use icon fonts (here we use inline SVGs conceptually) */
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="nav-item active" data-view="home">
+      <i class="icon">🏠</i>
+      <span class="label">Home</span>
+    </div>
+    <div class="nav-item" data-view="projects">
+      <i class="icon">📊</i>
+      <span class="label">Projects</span>
+    </div>
+    <div class="nav-item" data-view="tasks">
+      <i class="icon">✅</i>
+      <span class="label">Tasks</span>
+    </div>
+    <div class="nav-item" data-view="settings">
+      <i class="icon">⚙️</i>
+      <span class="label">Settings</span>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="header">
+      <h1>Project Control Center</h1>
+      <button class="btn-new-project" id="newProjectBtn">+ New Project</button>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+      <!-- Active Projects Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <h3>Active Projects</h3>
+          <i class="icon">⋯</i>
+        </div>
+        <div class="project-list" id="projectList">
+          <div class="project-card">
+            <div class="project-name">Dashboard Redesign</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 75%;"></div>
+            </div>
+          </div>
+          <div class="project-card">
+            <div class="project-name">API Integration</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 40%;"></div>
+            </div>
+          </div>
+          <div class="project-card">
+            <div class="project-name">User Onboarding Flow</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 90%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <h3>Recent Activity</h3>
+          <i class="icon">🔄</i>
+        </div>
+        <div class="timeline" id="activityTimeline">
+          <div class="event">
+            <div class="time">10:30 AM</div>
+            <div class="desc">Updated project timeline for Dashboard Redesign</div>
+          </div>
+          <div class="event" style="animation-delay: 0.1s">
+            <div class="time">09:15 AM</div>
+            <div class="desc">Created new task: Finalize UI components</div>
+          </div>
+          <div class="event" style="animation-delay: 0.2s">
+            <div class="time">Yesterday</div>
+            <div class="desc">Connected to backend API successfully</div>
+          </div>
+          <div class="event" style="animation-delay: 0.3s">
+            <div class="time">Oct 10</div>
+            <div class="desc">Launched initial prototype</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Links Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <h3>Quick Links</h3>
+          <i class="icon">📎</i>
+        </div>
+        <div class="quick-links">
+          <div class="link-item">
+            <i class="icon">📄</i>
+            <span>Documents</span>
+          </div>
+          <div class="link-item">
+            <i class="icon">💬</i>
+            <span>Chat</span>
+          </div>
+          <div class="link-item">
+            <i class="icon">📅</i>
+            <span>Calendar</span>
+          </div>
+          <div class="link-item">
+            <i class="icon">📊</i>
+            <span>Analytics</span>
+          </div>
+          <div class="link-item">
+            <i class="icon">🔧</i>
+            <span>Tools</span>
+          </div>
+          <div class="link-item">
+            <i class="icon">📁</i>
+            <span>Repository</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task List Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <h3>Task List</h3>
+          <i class="icon">📋</i>
+        </div>
+        <ul class="task-list" id="taskList">
+          <!-- Tasks will be added here -->
+        </ul>
+        <div class="add-task">
+          <input type="text" id="newTaskInput" placeholder="Add a new task..." />
+          <button id="addTaskBtn">Add</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="projectModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Create New Project</h2>
+        <button class="modal-close" id="closeModal">×</button>
+      </div>
+      <form class="modal-form" id="projectForm">
+        <input type="text" id="projectName" placeholder="Project Name" required />
+        <textarea id="projectDesc" placeholder="Project Description"></textarea>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn-create">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const sidebarItems = document.querySelectorAll('.nav-item');
+    const dashboard = document.getElementById('dashboard');
+    const modal = document.getElementById('projectModal');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelModalBtn = document.getElementById('cancelModal');
+    const projectForm = document.getElementById('projectForm');
+    const taskList = document.getElementById('taskList');
+    const newTaskInput = document.getElementById('newTaskInput');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+
+    // Load tasks from localStorage
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem('pcc-tasks')) || [];
+      tasks.forEach(task => addTaskToDOM(task.text, task.completed, false));
+    }
+
+    // Save tasks to localStorage
+    function saveTasks() {
+      const tasks = [];
+      document.querySelectorAll('.task-item').forEach(item => {
+        const text = item.querySelector('.task-text').textContent;
+        const completed = item.classList.contains('completed');
+        tasks.push({ text, completed });
+      });
+      localStorage.setItem('pcc-tasks', JSON.stringify(tasks));
+    }
+
+    // Add task to DOM
+    function addTaskToDOM(text, completed = false, save = true) {
+      const li = document.createElement('li');
+      li.className = `task-item ${completed ? 'completed' : ''}`;
+
+      li.innerHTML = `
+        <input type="checkbox" class="task-checkbox" ${completed ? 'checked' : ''}>
+        <span class="task-text">${text}</span>
+      `;
+
+      // Toggle completion
+      const checkbox = li.querySelector('.task-checkbox');
+      checkbox.addEventListener('change', function() {
+        li.classList.toggle('completed', this.checked);
+        saveTasks();
+      });
+
+      taskList.appendChild(li);
+
+      if (save) {
+        saveTasks();
+        newTaskInput.value = '';
+      }
+    }
+
+    // Sidebar Navigation
+    sidebarItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // Update active state
+        sidebarItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // For demo, we won't change content yet
+        // In a real app: loadView(item.dataset.view);
+      });
+    });
+
+    // Modal Controls
+    function openModal() {
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    newProjectBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelModalBtn.addEventListener('click', closeModal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Handle form submission
+    projectForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('projectName').value;
+      const desc = document.getElementById('projectDesc').value;
+
+      // Add new project card
+      const projectList = document.getElementById('projectList');
+      const newCard = document.createElement('div');
+      newCard.className = 'project-card';
+      newCard.innerHTML = `
+        <div class="project-name">${name}</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 10%;"></div>
+        </div>
+      `;
+      projectList.appendChild(newCard);
+
+      // Reset and close
+      projectForm.reset();
+      closeModal();
+    });
+
+    // Add new task
+    addTaskBtn.addEventListener('click', () => {
+      const text = newTaskInput.value.trim();
+      if (text) {
+        addTaskToDOM(text);
+      }
+    });
+
+    // Allow Enter key to add task
+    newTaskInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        addTaskBtn.click();
+      }
+    });
+
+    // Initialize
+    loadTasks();
+
+    // Initial animation for progress bars (simulate loading)
+    setTimeout(() => {
+      document.querySelectorAll('.progress-fill').forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    }, 500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Calculator</title>
+  <style>
+    body {
+      background: #1e1e2f;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .calculator {
+      background: #2e2e3e;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      width: 320px;
+    }
+
+    .display {
+      background: #1c1c28;
+      color: #00ffcc;
+      font-size: 2.5rem;
+      text-align: right;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+      min-height: 60px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    button {
+      font-size: 1.5rem;
+      padding: 20px;
+      border: none;
+      border-radius: 10px;
+      background: #44445a;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: #5f5f78;
+    }
+
+    button.operator {
+      background: #ff9500;
+      color: #000;
+    }
+
+    button.operator:hover {
+      background: #e08800;
+    }
+
+    button.equal {
+      background: #00cc99;
+      color: #000;
+    }
+
+    button.equal:hover {
+      background: #00b386;
+    }
+
+    button.clear {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    button.clear:hover {
+      background: #e02e25;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="clear" data-action="clear">C</button>
+      <button data-action="divide" class="operator">÷</button>
+      <button data-action="multiply" class="operator">×</button>
+      <button data-action="subtract" class="operator">−</button>
+
+      <button data-number="7">7</button>
+      <button data-number="8">8</button>
+      <button data-number="9">9</button>
+      <button data-action="add" class="operator">+</button>
+
+      <button data-number="4">4</button>
+      <button data-number="5">5</button>
+      <button data-number="6">6</button>
+      <button class="equal" data-action="equals" rowspan="2">=</button>
+
+      <button data-number="1">1</button>
+      <button data-number="2">2</button>
+      <button data-number="3">3</button>
+
+      <button data-number="0" style="grid-column: span 2;">0</button>
+      <button data-number=".">.</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    let currentInput = '';
+    let resetNext = false;
+
+    function updateDisplay() {
+      display.textContent = currentInput || '0';
+    }
+
+    function appendNumber(num) {
+      if (resetNext) {
+        currentInput = '';
+        resetNext = false;
+      }
+      if (num === '.' && currentInput.endsWith('.')) return;
+      if (num === '.' && currentInput.split(/[\+\−\×\÷]/).pop().includes('.')) return;
+      currentInput += num;
+      updateDisplay();
+    }
+
+    function appendOperator(op) {
+      if (currentInput === '') return;
+      if (/[+\−×÷]$/.test(currentInput)) {
+        currentInput = currentInput.slice(0, -1) + op;
+      } else {
+        currentInput += op;
+      }
+      resetNext = false;
+      updateDisplay();
+    }
+
+    function clearDisplay() {
+      currentInput = '';
+      updateDisplay();
+    }
+
+    function calculate() {
+      try {
+        let expression = currentInput.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+        let result = eval(expression);
+        if (!isFinite(result)) {
+          display.textContent = 'Error';
+        } else {
+          currentInput = result.toString();
+          display.textContent = currentInput;
+        }
+        resetNext = true;
+      } catch (e) {
+        display.textContent = 'Error';
+        resetNext = true;
+      }
+    }
+
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', () => {
+        const number = button.dataset.number;
+        const action = button.dataset.action;
+
+        if (number !== undefined) {
+          appendNumber(number);
+        } else if (action === 'clear') {
+          clearDisplay();
+        } else if (action === 'equals') {
+          calculate();
+        } else if (action === 'add') {
+          appendOperator('+');
+        } else if (action === 'subtract') {
+          appendOperator('−');
+        } else if (action === 'multiply') {
+          appendOperator('×');
+        } else if (action === 'divide') {
+          appendOperator('÷');
+        }
+      });
+    });
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') {
+        appendNumber(e.key);
+      } else if (e.key === '.') {
+        appendNumber('.');
+      } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+        const opMap = {'+': '+', '-': '−', '*': '×', '/': '÷'};
+        appendOperator(opMap[e.key]);
+      } else if (e.key === 'Enter' || e.key === '=') {
+        e.preventDefault();
+        calculate();
+      } else if (e.key === 'Backspace') {
+        currentInput = currentInput.slice(0, -1);
+        updateDisplay();
+      } else if (e.key.toLowerCase() === 'c') {
+        clearDisplay();
+      }
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>

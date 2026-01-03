@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .add-card-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .add-card-input {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 300px;
+        }
+
+        .priority-select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .add-card-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add-card-btn:hover {
+            background-color: #45a049;
+        }
+
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            justify-content: center;
+        }
+
+        .column {
+            flex: 1;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 500px;
+        }
+
+        .column-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: move;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .card.priority-low {
+            border-left: 5px solid #4CAF50;
+        }
+
+        .card.priority-medium {
+            border-left: 5px solid #FFC107;
+        }
+
+        .card.priority-urgent {
+            border-left: 5px solid #f44336;
+        }
+
+        .card-content {
+            margin-bottom: 10px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .card-btn:hover {
+            opacity: 0.8;
+        }
+
+        .edit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .column.drag-over {
+            background-color: #d0d0d0;
+            border: 2px dashed #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            min-width: 300px;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .save-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #666;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .kanban-board {
+                flex-direction: column;
+            }
+            
+            .add-card-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .add-card-input {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Kanban Board</h1>
+    </div>
+
+    <div class="add-card-container">
+        <input type="text" class="add-card-input" id="newCardInput" placeholder="Enter card title...">
+        <select class="priority-select" id="prioritySelect">
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="urgent">Urgent Priority</option>
+        </select>
+        <button class="add-card-btn" onclick="addNewCard()">Add Card</button>
+    </div>
+
+    <div class="kanban-board">
+        <div class="column" data-column="todo">
+            <div class="column-header">To Do</div>
+            <div class="cards-container" id="todoCards"></div>
+        </div>
+        <div class="column" data-column="inprogress">
+            <div class="column-header">In Progress</div>
+            <div class="cards-container" id="inprogressCards"></div>
+        </div>
+        <div class="column" data-column="done">
+            <div class="column-header">Done</div>
+            <div class="cards-container" id="doneCards"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Card</h3>
+            </div>
+            <input type="text" class="modal-input" id="editCardInput" placeholder="Card title...">
+            <select class="modal-input" id="editPrioritySelect">
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="urgent">Urgent Priority</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel-btn" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-btn save-btn" onclick="saveEditedCard()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cards = [];
+        let draggedCard = null;
+        let editingCardId = null;
+
+        // Load cards from localStorage on page load
+        window.onload = function() {
+            loadCards();
+            renderCards();
+        };
+
+        // Generate unique ID for cards
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // Load cards from localStorage
+        function loadCards() {
+            const savedCards = localStorage.getItem('kanbanCards');
+            if (savedCards) {
+                cards = JSON.parse(savedCards);
+            }
+        }
+
+        // Save cards to localStorage
+        function saveCards() {
+            localStorage.setItem('kanbanCards', JSON.stringify(cards));
+        }
+
+        // Add new card
+        function addNewCard() {
+            const input = document.getElementById('newCardInput');
+            const priority = document.getElementById('prioritySelect').value;
+            const title = input.value.trim();
+
+            if (title === '') {
+                alert('Please enter a card title');
+                return;
+            }
+
+            const newCard = {
+                id: generateId(),
+                title: title,
+                priority: priority,
+                column: 'todo'
+            };
+
+            cards.push(newCard);
+            input.value = '';
+            saveCards();
+            renderCards();
+        }
+
+        // Render all cards
+        function renderCards() {
+            const containers = {
+                'todo': document.getElementById('todoCards'),
+                'inprogress': document.getElementById('inprogressCards'),
+                'done': document.getElementById('doneCards')
+            };
+
+            // Clear all containers
+            Object.values(containers).forEach(container => {
+                container.innerHTML = '';
+            });
+
+            // Render cards in their respective columns
+            cards.forEach(card => {
+                const cardElement = createCardElement(card);
+                containers[card.column].appendChild(cardElement);
+            });
+        }
+
+        // Create card DOM element
+        function createCardElement(card) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card priority-${card.priority}`;
+            cardDiv.draggable = true;
+            cardDiv.dataset.cardId = card.id;
+
+            cardDiv.innerHTML = `
+                <div class="card-content">${card.title}</div>
+                <div class="card-actions">
+                    <button class="card-btn edit-btn" onclick="editCard('${card.id}')">Edit</button>
+                    <button class="card-btn delete-btn" onclick="deleteCard('${card.id}')">Delete</button>
+                </div>
+            `;
+
+            // Add drag event listeners
+            cardDiv.addEventListener('dragstart', handleDragStart);
+            cardDiv.addEventListener('dragend', handleDragEnd);
+
+            return cardDiv;
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedCard = e.target;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        // Set up column drag and drop
+        document.querySelectorAll('.column').forEach(column => {
+            column.addEventListener('dragover', handleDragOver);
+            column.addEventListener('drop', handleDrop);
+            column.addEventListener('dragleave', handleDragLeave);
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (draggedCard) {
+                const cardId = draggedCard.dataset.cardId;
+                const newColumn = e.currentTarget.dataset.column;
+
+                // Update card's column in the data
+                const card = cards.find(c => c.id === cardId);
+                if (card) {
+                    card.column = newColumn;
+                    saveCards();
+                    renderCards();
+                }
+            }
+        }
+
+        // Edit card
+        function editCard(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (card) {
+                editingCardId = cardId;
+                document.getElementById('editCardInput').value = card.title;
+                document.getElementById('editPrioritySelect').value = card.priority;
+                document.getElementById('editModal').style.display = 'block';
+            }
+        }
+
+        // Save edited card
+        function saveEditedCard() {
+            const newTitle = document.getElementById('editCardInput').value.trim();
+            const newPriority = document.getElementById('editPrioritySelect').value;
+
+            if (newTitle === '') {
+                alert('Please enter a card title');
+                return;
+            }
+
+            const card = cards.find(c => c.id === editingCardId);
+            if (card) {
+                card.title = newTitle;
+                card.priority = newPriority;
+                saveCards();
+                renderCards();
+                closeEditModal();
+            }
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            editingCardId = null;
+        }
+
+        // Delete card
+        function deleteCard(cardId) {
+            if (confirm('Are you sure you want to delete this card?')) {
+                cards = cards.filter(c => c.id !== cardId);
+                saveCards();
+                renderCards();
+            }
+        }
+
+        // Add card on Enter key press
+        document.getElementById('newCardInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addNewCard();
+            }
+        });
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('editModal')) {
+                closeEditModal();
+            }
+        };
+    </script>
+</body>
+</html>

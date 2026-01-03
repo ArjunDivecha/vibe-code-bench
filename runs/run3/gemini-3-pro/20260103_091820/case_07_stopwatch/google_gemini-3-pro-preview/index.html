@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Chronometer</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #00ff9d;
+            --danger-color: #ff4d4d;
+            --secondary-color: #4a4a4a;
+            --font-main: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        .container {
+            background-color: var(--panel-color);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 380px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            background: var(--bg-color);
+            border-radius: 25px;
+            padding: 5px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--secondary-color);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            border-radius: 20px;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .mode-btn.active {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        .display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+            letter-spacing: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1.5rem;
+            gap: 10px;
+        }
+
+        button.control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary-color);
+            background: transparent;
+            color: var(--text-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button.control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        button.control-btn:not(:disabled):hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        button.control-btn.primary {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(0,255,157,0.1);
+        }
+
+        button.control-btn.primary:not(:disabled):hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        button.control-btn.danger {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.1);
+        }
+
+        button.control-btn.danger:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* Stopwatch Specifics */
+        .laps {
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            border-top: 1px solid var(--secondary-color);
+            padding-top: 10px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid #333;
+            color: #aaa;
+        }
+
+        .lap-item:first-child {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .lap-item span:first-child {
+            width: 30px;
+        }
+
+        /* Timer Specifics */
+        .timer-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+            height: 3.5rem; /* Match display height roughly */
+            align-items: center;
+        }
+
+        .timer-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .timer-input-group input {
+            width: 60px;
+            background: var(--bg-color);
+            border: 1px solid var(--secondary-color);
+            color: var(--accent-color);
+            padding: 10px;
+            text-align: center;
+            font-family: inherit;
+            font-size: 1.5rem;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .timer-input-group input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 5px rgba(0, 255, 157, 0.3);
+        }
+
+        .timer-input-group label {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            color: var(--secondary-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary-color); 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666; 
+        }
+
+        /* Blink animation for finished timer */
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+        .blinking {
+            animation: blink 1s infinite;
+            color: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mode-switch">
+            <button class="mode-btn active" id="btn-mode-sw" onclick="switchMode('stopwatch')">Stopwatch</button>
+            <button class="mode-btn" id="btn-mode-timer" onclick="switchMode('timer')">Timer</button>
+        </div>
+
+        <!-- STOPWATCH UI -->
+        <div id="stopwatch-ui">
+            <div class="display" id="sw-display">00:00:00.00</div>
+            <div class="controls">
+                <button class="control-btn" id="sw-reset" onclick="swReset()">Reset</button>
+                <button class="control-btn primary" id="sw-startstop" onclick="swToggle()">Start</button>
+                <button class="control-btn" id="sw-lap" onclick="swLap()" disabled>Lap</button>
+            </div>
+            <div class="laps" id="sw-laps">
+                <!-- Laps go here -->
+            </div>
+        </div>
+
+        <!-- TIMER UI -->
+        <div id="timer-ui" class="hidden">
+            <!-- Inputs shown when not running/paused -->
+            <div class="timer-inputs" id="timer-inputs">
+                <div class="timer-input-group">
+                    <input type="number" id="t-h" min="0" max="99" value="00" onchange="formatInput(this)">
+                    <label>HR</label>
+                </div>
+                <div class="timer-input-group">
+                    <input type="number" id="t-m" min="0" max="59" value="05" onchange="formatInput(this)">
+                    <label>MIN</label>
+                </div>
+                <div class="timer-input-group">
+                    <input type="number" id="t-s" min="0" max="59" value="00" onchange="formatInput(this)">
+                    <label>SEC</label>
+                </div>
+            </div>
+            <!-- Display shown when running -->
+            <div class="display hidden" id="timer-display">00:00:00</div>
+            
+            <div class="controls">
+                <button class="control-btn" id="t-reset" onclick="timerReset()">Reset</button>
+                <button class="control-btn primary" id="t-startstop" onclick="timerToggle()">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SHARED UTILS ---
+        function formatTime(ms, includeMs = true) {
+            const date = new Date(ms);
+            const h = String(Math.floor(ms / 3600000)).padStart(2, '0');
+            const m = String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0');
+            const s = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+            const centi = String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+            
+            if (includeMs) {
+                return `${h}:${m}:${s}.${centi}`;
+            } else {
+                return `${h}:${m}:${s}`;
+            }
+        }
+
+        function formatInput(input) {
+            let val = parseInt(input.value);
+            if (isNaN(val) || val < 0) val = 0;
+            // Max constraints
+            if (input.id === 't-m' || input.id === 't-s') {
+                if (val > 59) val = 59;
+            }
+            if (input.id === 't-h') {
+                if (val > 99) val = 99;
+            }
+            input.value = String(val).padStart(2, '0');
+        }
+
+        function switchMode(mode) {
+            // Stop any alarms
+            stopAlarm();
+
+            if (mode === 'stopwatch') {
+                document.getElementById('stopwatch-ui').classList.remove('hidden');
+                document.getElementById('timer-ui').classList.add('hidden');
+                document.getElementById('btn-mode-sw').classList.add('active');
+                document.getElementById('btn-mode-timer').classList.remove('active');
+            } else {
+                document.getElementById('stopwatch-ui').classList.add('hidden');
+                document.getElementById('timer-ui').classList.remove('hidden');
+                document.getElementById('btn-mode-sw').classList.remove('active');
+                document.getElementById('btn-mode-timer').classList.add('active');
+            }
+        }
+
+        // --- STOPWATCH LOGIC ---
+        let swInterval = null;
+        let swStartTime = 0;
+        let swAccumulated = 0;
+        let swRunning = false;
+        let lapCounter = 1;
+
+        const swDisplay = document.getElementById('sw-display');
+        const swBtnStart = document.getElementById('sw-startstop');
+        const swBtnLap = document.getElementById('sw-lap');
+        const swLapsList = document.getElementById('sw-laps');
+
+        function swUpdate() {
+            const now = Date.now();
+            const elapsed = now - swStartTime + swAccumulated;
+            swDisplay.textContent = formatTime(elapsed);
+        }
+
+        function swToggle() {
+            if (swRunning) {
+                // Stop
+                clearInterval(swInterval);
+                swAccumulated += Date.now() - swStartTime;
+                swRunning = false;
+                swBtnStart.textContent = "Start";
+                swBtnStart.classList.remove('danger');
+                swBtnStart.classList.add('primary');
+                swBtnLap.disabled = true;
+            } else {
+                // Start
+                swStartTime = Date.now();
+                swInterval = setInterval(swUpdate, 10);
+                swRunning = true;
+                swBtnStart.textContent = "Stop";
+                swBtnStart.classList.remove('primary');
+                swBtnStart.classList.add('danger');
+                swBtnLap.disabled = false;
+            }
+        }
+
+        function swReset() {
+            if (swRunning) {
+                swToggle(); // Stop it first
+            }
+            swAccumulated = 0;
+            swDisplay.textContent = "00:00:00.00";
+            swLapsList.innerHTML = "";
+            lapCounter = 1;
+        }
+
+        function swLap() {
+            if (!swRunning) return;
+            const now = Date.now();
+            const elapsed = now - swStartTime + swAccumulated;
+            
+            const div = document.createElement('div');
+            div.className = 'lap-item';
+            div.innerHTML = `<span>#${lapCounter}</span><span>${formatTime(elapsed)}</span>`;
+            
+            // Prepend
+            swLapsList.insertBefore(div, swLapsList.firstChild);
+            lapCounter++;
+        }
+
+        // --- TIMER LOGIC ---
+        let timerInterval = null;
+        let timerEndTime = 0;
+        let timerRemaining = 0;
+        let timerRunning = false;
+        let timerTotalDuration = 0;
+
+        const tDisplay = document.getElementById('timer-display');
+        const tInputs = document.getElementById('timer-inputs');
+        const tBtnStart = document.getElementById('t-startstop');
+        
+        // Audio context
+        let audioCtx = null;
+        let oscillator = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playAlarm() {
+            initAudio();
+            oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'square';
+            oscillator.frequency.value = 440; // A4
+            
+            // Beeping pattern
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Pulse volume
+            const now = audioCtx.currentTime;
+            gainNode.gain.setValueAtTime(1, now);
+            gainNode.gain.setValueAtTime(0, now + 0.5);
+            gainNode.gain.setValueAtTime(1, now + 1);
+            gainNode.gain.setValueAtTime(0, now + 1.5);
+            
+            oscillator.start();
+        }
+
+        function stopAlarm() {
+            if (oscillator) {
+                try {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                } catch(e) {}
+                oscillator = null;
+            }
+            tDisplay.classList.remove('blinking');
+        }
+
+        function getInputValue() {
+            const h = parseInt(document.getElementById('t-h').value) || 0;
+            const m = parseInt(document.getElementById('t-m').value) || 0;
+            const s = parseInt(document.getElementById('t-s').value) || 0;
+            return (h * 3600000) + (m * 60000) + (s * 1000);
+        }
+
+        function timerUpdate() {
+            const now = Date.now();
+            const left = timerEndTime - now;
+
+            if (left <= 0) {
+                // Finished
+                clearInterval(timerInterval);
+                timerRunning = false;
+                timerRemaining = 0;
+                tDisplay.textContent = "00:00:00";
+                
+                // Alarm
+                playAlarm();
+                tDisplay.classList.add('blinking');
+                
+                // Change button to stop alarm
+                tBtnStart.textContent = "Stop";
+                tBtnStart.classList.add('danger');
+                tBtnStart.onclick = timerStopAlarm;
+            } else {
+                // Use Math.ceil so it doesn't show 00:00:00 while there are still milliseconds left
+                tDisplay.textContent = formatTime(Math.ceil(left), false);
+            }
+        }
+
+        function timerToggle() {
+            initAudio(); // Ensure audio context is ready on user gesture
+
+            if (timerRunning) {
+                // Pause
+                clearInterval(timerInterval);
+                timerRemaining = timerEndTime - Date.now();
+                timerRunning = false;
+                tBtnStart.textContent = "Resume";
+                tBtnStart.classList.remove('danger');
+                tBtnStart.classList.add('primary');
+            } else {
+                // Start
+                if (timerRemaining === 0) {
+                    // Start from inputs
+                    timerTotalDuration = getInputValue();
+                    if (timerTotalDuration === 0) return; // Do nothing if 0
+                    timerRemaining = timerTotalDuration;
+                    
+                    // Switch UI
+                    tInputs.classList.add('hidden');
+                    tDisplay.classList.remove('hidden');
+                    tDisplay.textContent = formatTime(timerRemaining, false);
+                }
+                
+                timerEndTime = Date.now() + timerRemaining;
+                timerInterval = setInterval(timerUpdate, 50); // 50ms is enough for seconds display
+                timerRunning = true;
+                
+                tBtnStart.textContent = "Pause";
+                tBtnStart.classList.remove('primary');
+                tBtnStart.classList.add('danger');
+            }
+        }
+
+        function timerStopAlarm() {
+            stopAlarm();
+            // Reset state partially to allow restart or full reset
+            tBtnStart.textContent = "Start";
+            tBtnStart.classList.remove('danger');
+            tBtnStart.classList.add('primary');
+            tBtnStart.onclick = timerToggle;
+            
+            // Show inputs again? Or keep 00:00:00?
+            // Let's keep 00:00:00 until Reset is pressed.
+        }
+
+        function timerReset() {
+            stopAlarm();
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerRemaining = 0;
+            
+            // Restore UI
+            tInputs.classList.remove('hidden');
+            tDisplay.classList.add('hidden');
+            
+            // Reset Button
+            tBtnStart.textContent = "Start";
+            tBtnStart.classList.remove('danger');
+            tBtnStart.classList.add('primary');
+            tBtnStart.onclick = timerToggle;
+        }
+
+        // Initialize formatting
+        formatInput(document.getElementById('t-h'));
+        formatInput(document.getElementById('t-m'));
+        formatInput(document.getElementById('t-s'));
+
+    </script>
+</body>
+</html>

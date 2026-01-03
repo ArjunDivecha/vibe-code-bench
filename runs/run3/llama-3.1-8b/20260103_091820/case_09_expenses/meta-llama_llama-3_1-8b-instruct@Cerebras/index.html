@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            height: 40px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .form-group input[type="date"] {
+            padding: 10px;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #3e8e41;
+        }
+        .chart {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Expense Tracker</h2>
+        <form id="add-expense-form">
+            <div class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <select id="category" required>
+                    <option value="">Select a category</option>
+                    <option value="Food">Food</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Bills">Bills</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <input type="text" id="description" required>
+            </div>
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+            </div>
+            <button class="button" type="submit">Add Expense</button>
+        </form>
+        <button class="button" id="filter-button">Filter</button>
+        <div id="expenses-list"></div>
+        <div id="chart-container" class="chart"></div>
+        <script>
+            const addExpenseForm = document.getElementById('add-expense-form');
+            const filterButton = document.getElementById('filter-button');
+            const expensesList = document.getElementById('expenses-list');
+            const chartContainer = document.getElementById('chart-container');
+
+            addExpenseForm.addEventListener('submit', addExpense);
+            filterButton.addEventListener('click', filterExpenses);
+
+            function addExpense(e) {
+                e.preventDefault();
+                const amount = document.getElementById('amount').value;
+                const category = document.getElementById('category').value;
+                const description = document.getElementById('description').value;
+                const date = document.getElementById('date').value;
+                const expense = {
+                    amount: parseFloat(amount),
+                    category: category,
+                    description: description,
+                    date: date
+                };
+
+                const expenses = getExpensesFromStorage();
+                expenses.push(expense);
+                saveExpensesToStorage(expenses);
+
+                renderExpensesList();
+                renderChart();
+            }
+
+            function filterExpenses() {
+                const category = prompt('Enter a category or leave blank for all');
+                const startDate = prompt('Enter a start date (YYYY-MM-DD) or leave blank for all');
+                const endDate = prompt('Enter an end date (YYYY-MM-DD) or leave blank for all');
+
+                const filteredExpenses = getExpensesFromStorage().filter(expense => {
+                    const matchCategory = category === '' || expense.category === category;
+                    const matchDate = startDate === '' || new Date(expense.date) >= new Date(startDate);
+                    const matchEndDate = endDate === '' || new Date(expense.date) <= new Date(endDate);
+                    return matchCategory && matchDate && matchEndDate;
+                });
+
+                renderExpensesList(filteredExpenses);
+                renderChart(filteredExpenses);
+            }
+
+            function getExpensesFromStorage() {
+                const storedExpenses = localStorage.getItem('expenses');
+                return storedExpenses ? JSON.parse(storedExpenses) : [];
+            }
+
+            function saveExpensesToStorage(expenses) {
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+            }
+
+            function renderExpensesList(expenses = getExpensesFromStorage()) {
+                const listHTML = expenses.map(expense => {
+                    return `
+                        <div>
+                            <p>Amount: ${expense.amount}</p>
+                            <p>Category: ${expense.category}</p>
+                            <p>Description: ${expense.description}</p>
+                            <p>Date: ${expense.date}</p>
+                        </div>
+                    `;
+                }).join('');
+                expensesList.innerHTML = listHTML;
+            }
+
+            function renderChart(expenses = getExpensesFromStorage()) {
+                const chartData = expenses.reduce((acc, expense) => {
+                    const category = expense.category;
+                    acc[category] = (acc[category] || 0) + expense.amount;
+                    return acc;
+                }, {});
+
+                const categories = Object.keys(chartData);
+                const amounts = categories.map(category => chartData[category]);
+
+                const chartHTML = `
+                    <canvas id="chart"></canvas>
+                    <script>
+                        const ctx = document.getElementById('chart').getContext('2d');
+                        const chart = new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: ${JSON.stringify(categories)},
+                                datasets: [
+                                    {
+                                        label: 'Expenses by Category',
+                                        data: ${JSON.stringify(amounts)},
+                                        backgroundColor: [
+                                            'rgba(255, 99, 132, 0.2)',
+                                            'rgba(54, 162, 235, 0.2)',
+                                            'rgba(255, 206, 86, 0.2)',
+                                            'rgba(75, 192, 192, 0.2)',
+                                            'rgba(153, 102, 255, 0.2)',
+                                            'rgba(255, 159, 64, 0.2)'
+                                        ],
+                                        borderColor: [
+                                            'rgba(255, 99, 132, 1)',
+                                            'rgba(54, 162, 235, 1)',
+                                            'rgba(255, 206, 86, 1)',
+                                            'rgba(75, 192, 192, 1)',
+                                            'rgba(153, 102, 255, 1)',
+                                            'rgba(255, 159, 64, 1)'
+                                        ],
+                                        borderWidth: 1
+                                    }
+                                ]
+                            },
+                            options: {
+                                title: {
+                                    display: true,
+                                    text: 'Expenses by Category'
+                                },
+                                responsive: true
+                            }
+                        });
+                    </script>
+                `;
+                chartContainer.innerHTML = chartHTML;
+                const chartCtx = document.getElementById('chart').getContext('2d');
+                new Chart(chartCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            label: 'Expenses by Category',
+                            data: amounts,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(153, 102, 255, 0.2)',
+                                'rgba(255, 159, 64, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Expenses by Category'
+                        },
+                        responsive: true
+                    }
+                });
+            }
+
+            renderExpensesList();
+            renderChart();
+        </script>
+    </div>
+</body>
+</html>

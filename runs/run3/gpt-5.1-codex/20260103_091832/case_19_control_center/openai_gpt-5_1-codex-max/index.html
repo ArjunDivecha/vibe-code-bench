@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Control Center</title>
+<style>
+:root{
+    --bg:#0b0e1a;
+    --glass:rgba(255,255,255,0.08);
+    --border:rgba(255,255,255,0.18);
+    --accent:#6ddcff;
+    --accent2:#8e7bff;
+    --text:#e8f1ff;
+    --muted:#99a4c2;
+    --shadow:0 20px 60px rgba(0,0,0,0.45);
+    --radius:18px;
+    --blur:16px;
+}
+*{box-sizing:border-box;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;margin:0;padding:0;}
+body{
+    background: radial-gradient(circle at 20% 20%, rgba(109,220,255,0.08), transparent 30%),
+                radial-gradient(circle at 80% 10%, rgba(142,123,255,0.08), transparent 25%),
+                radial-gradient(circle at 50% 70%, rgba(109,220,255,0.05), transparent 35%),
+                var(--bg);
+    color:var(--text);
+    height:100vh;
+    overflow:hidden;
+}
+.app{
+    display:flex;
+    height:100vh;
+    padding:18px;
+    gap:18px;
+}
+.sidebar{
+    width:240px;
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    backdrop-filter:blur(var(--blur));
+    -webkit-backdrop-filter:blur(var(--blur));
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    padding:16px;
+}
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--text);
+    padding:12px 10px;
+}
+.logo .dot{
+    width:14px;height:14px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 0 16px rgba(109,220,255,0.7);
+}
+.nav{
+    margin-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.nav button{
+    background:transparent;
+    color:var(--text);
+    border:1px solid transparent;
+    border-radius:12px;
+    padding:12px 14px;
+    text-align:left;
+    font-weight:600;
+    letter-spacing:0.2px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    transition:all 0.2s ease;
+}
+.nav button:hover{
+    border-color:var(--border);
+    background:rgba(255,255,255,0.06);
+    transform:translateY(-1px);
+}
+.nav button.active{
+    background:linear-gradient(120deg,rgba(109,220,255,0.18),rgba(142,123,255,0.18));
+    border-color:rgba(255,255,255,0.25);
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+}
+.sidebar .bottom{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+.primary-btn{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0b0e1a;
+    border:none;
+    padding:12px 14px;
+    border-radius:12px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 15px 40px rgba(109,220,255,0.28);
+    transition:transform 0.15s ease, filter 0.2s ease;
+}
+.primary-btn:hover{transform:translateY(-1px);filter:brightness(1.08);}
+.primary-btn:active{transform:translateY(0);}
+
+.main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow:hidden;
+}
+.header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    backdrop-filter:blur(var(--blur));
+    box-shadow:var(--shadow);
+}
+.header .title{
+    font-size:20px;
+    font-weight:800;
+}
+.header .actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.badge{
+    background:rgba(109,220,255,0.16);
+    color:var(--accent);
+    padding:6px 10px;
+    border-radius:12px;
+    font-size:12px;
+    border:1px solid rgba(109,220,255,0.35);
+}
+.content{
+    flex:1;
+    overflow:auto;
+    padding-right:4px;
+}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:14px;
+}
+.widget{
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(var(--blur));
+    transition:transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+}
+.widget:hover{
+    transform:translateY(-3px);
+    border-color:rgba(255,255,255,0.25);
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+}
+.widget h3{
+    margin-bottom:12px;
+    font-size:16px;
+    letter-spacing:0.4px;
+}
+.project-card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:10px;
+    transition:transform 0.2s ease;
+}
+.project-card:hover{transform:translateX(2px);}
+.project-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-weight:600;
+}
+.small{
+    color:var(--muted);
+    font-size:13px;
+}
+.progress{
+    height:8px;
+    background:rgba(255,255,255,0.05);
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08);
+}
+.progress .bar{
+    height:100%;
+    border-radius:10px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    box-shadow:0 5px 18px rgba(109,220,255,0.4);
+}
+
+.timeline{
+    position:relative;
+    margin-left:6px;
+}
+.timeline::before{
+    content:"";
+    position:absolute;
+    left:10px;
+    top:5px;
+    bottom:5px;
+    width:2px;
+    background:linear-gradient(var(--accent),var(--accent2));
+    opacity:0.35;
+}
+.event{
+    position:relative;
+    padding-left:28px;
+    margin-bottom:16px;
+}
+.event:last-child{margin-bottom:0;}
+.dot{
+    position:absolute;
+    left:4px;
+    top:2px;
+    width:12px;height:12px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 0 12px rgba(109,220,255,0.8);
+}
+.event .time{font-size:12px;color:var(--muted);}
+.event .desc{margin-top:4px;}
+
+.links-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:12px;
+}
+.link-card{
+    text-align:center;
+    padding:14px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    cursor:pointer;
+    transition:all 0.2s ease;
+}
+.link-card:hover{
+    transform:translateY(-2px);
+    border-color:rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.06);
+}
+.link-icon{
+    width:46px;height:46px;
+    border-radius:12px;
+    margin:0 auto 10px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(135deg,rgba(109,220,255,0.25),rgba(142,123,255,0.25));
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    font-size:20px;
+}
+.tasks{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.task{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    cursor:pointer;
+    transition:all 0.15s ease;
+}
+.task:hover{border-color:rgba(255,255,255,0.2);}
+.task input{accent-color:var(--accent);}
+.task .label{
+    flex:1;
+}
+.task.completed .label{
+    text-decoration:line-through;
+    color:var(--muted);
+}
+.task .small{
+    font-size:12px;
+}
+.add-task{
+    display:flex;
+    gap:8px;
+    margin-top:6px;
+}
+.add-task input{
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(255,255,255,0.05);
+    color:var(--text);
+    outline:none;
+}
+.add-task button{
+    border:none;
+    padding:10px 14px;
+    border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0b0e1a;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform 0.1s ease;
+}
+.add-task button:hover{transform:translateY(-1px);}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+.modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    display:grid;
+    place-items:center;
+    visibility:hidden;
+    opacity:0;
+    transition:opacity 0.2s ease, visibility 0.2s ease;
+    z-index:50;
+}
+.modal-backdrop.active{
+    visibility:visible;
+    opacity:1;
+}
+.modal{
+    width:420px;
+    max-width:90vw;
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter:blur(var(--blur));
+}
+.modal h3{margin-bottom:10px;}
+.modal form{display:flex;flex-direction:column;gap:10px;}
+.modal input,.modal textarea{
+    padding:10px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.05);
+    color:var(--text);
+    resize:vertical;
+    min-height:38px;
+    outline:none;
+}
+.modal .actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:6px;
+}
+.secondary{
+    background:transparent;
+    color:var(--text);
+    border:1px solid rgba(255,255,255,0.2);
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="logo"><div class="dot"></div> Control Center</div>
+        <div class="nav">
+            <button data-view="home" class="active">🏠 Home</button>
+            <button data-view="projects">📁 Projects</button>
+            <button data-view="settings">⚙️ Settings</button>
+        </div>
+        <div class="bottom">
+            <div class="small" style="color:var(--muted);">Workspace: Aurora Labs</div>
+            <button class="primary-btn" id="newProjectBtn">+ New Project</button>
+        </div>
+    </aside>
+    <main class="main">
+        <div class="header">
+            <div>
+                <div class="title" id="viewTitle">Home Overview</div>
+                <div class="small" style="color:var(--muted);">Project Control Center</div>
+            </div>
+            <div class="actions">
+                <div class="badge" id="statusBadge">Online</div>
+                <div class="badge" style="border-color:rgba(142,123,255,0.35);color:var(--accent2);">v1.0</div>
+            </div>
+        </div>
+        <div class="content" id="contentArea">
+            <!-- dynamic -->
+        </div>
+    </main>
+</div>
+
+<div class="modal-backdrop" id="modal">
+    <div class="modal">
+        <h3>New Project</h3>
+        <form id="projectForm">
+            <input type="text" id="projName" placeholder="Project name" required>
+            <textarea id="projDesc" rows="3" placeholder="Short description"></textarea>
+            <div class="actions">
+                <button type="button" class="secondary" id="cancelModal">Cancel</button>
+                <button type="submit" class="primary-btn">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const views = {
+    home: renderHome,
+    projects: renderProjects,
+    settings: renderSettings,
+};
+const contentArea = document.getElementById('contentArea');
+const viewTitle = document.getElementById('viewTitle');
+const statusBadge = document.getElementById('statusBadge');
+const modal = document.getElementById('modal');
+const newProjectBtn = document.getElementById('newProjectBtn');
+
+let activeProjects = [
+    {name:'Neon Dashboard', progress:72, owner:'Design'},
+    {name:'API Revamp', progress:45, owner:'Backend'},
+    {name:'Mobile Sync', progress:88, owner:'Mobile'},
+    {name:'AI Copilot', progress:32, owner:'R&D'}
+];
+let recentActivities = [
+    {time:'09:20', desc:'Pushed updates to API Revamp'},
+    {time:'10:05', desc:'Design review completed for Neon Dashboard'},
+    {time:'11:40', desc:'New sprint started: Mobile Sync'},
+    {time:'12:10', desc:'Created branch feature/copilot-ui'}
+];
+const links = [
+    {name:'Repository', icon:'📦'},
+    {name:'Docs', icon:'📑'},
+    {name:'Analytics', icon:'📊'},
+    {name:'Calendar', icon:'🗓️'},
+    {name:'Messages', icon:'💬'},
+    {name:'Support', icon:'🛟'},
+];
+const LS_KEY="pcc_tasks";
+
+function saveTasks(tasks){localStorage.setItem(LS_KEY,JSON.stringify(tasks));}
+function loadTasks(){try{return JSON.parse(localStorage.getItem(LS_KEY))|| [];}catch(e){return [];}}
+function toggleModal(show){modal.classList.toggle('active',show);if(show){document.getElementById('projName').focus();}}
+
+document.querySelectorAll('.nav button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const view=btn.dataset.view;
+        viewTitle.textContent=view.charAt(0).toUpperCase()+view.slice(1)+' View';
+        views[view]();
+    });
+});
+
+newProjectBtn.addEventListener('click',()=>toggleModal(true));
+document.getElementById('cancelModal').addEventListener('click',()=>toggleModal(false));
+modal.addEventListener('click',e=>{if(e.target===modal)toggleModal(false);});
+document.getElementById('projectForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=document.getElementById('projName').value.trim();
+    const desc=document.getElementById('projDesc').value.trim();
+    if(!name) return;
+    activeProjects.unshift({name,progress:5+Math.floor(Math.random()*20),owner:desc||'New'});
+    toggleModal(false);
+    e.target.reset();
+    const current=document.querySelector('.nav button.active').dataset.view;
+    if(current==='home'||current==='projects') views[current]();
+});
+
+function renderHome(){
+    statusBadge.textContent="Online";
+    statusBadge.style.color="var(--accent)";
+    contentArea.innerHTML=`
+        <div class="grid">
+            ${activeProjectsWidget()}
+            ${recentActivityWidget()}
+            ${quickLinksWidget()}
+            ${tasksWidget()}
+        </div>
+    `;
+    attachTaskHandlers();
+}
+function renderProjects(){
+    statusBadge.textContent="Projects";
+    statusBadge.style.color="var(--accent2)";
+    contentArea.innerHTML=`
+        <div class="grid">
+            ${activeProjectsWidget(true)}
+            ${tasksWidget()}
+        </div>
+    `;
+    attachTaskHandlers();
+}
+function renderSettings(){
+    statusBadge.textContent="Settings";
+    statusBadge.style.color="var(--muted)";
+    contentArea.innerHTML=`
+        <div class="grid">
+            <div class="widget">
+                <h3>Theme</h3>
+                <div class="small">Glassmorphism · Premium</div>
+            </div>
+            <div class="widget">
+                <h3>Notifications</h3>
+                <div class="small">Desktop alerts enabled</div>
+            </div>
+            ${tasksWidget()}
+        </div>
+    `;
+    attachTaskHandlers();
+}
+
+function activeProjectsWidget(showDesc=false){
+    const cards=activeProjects.map(p=>`
+        <div class="project-card">
+            <div class="project-top">
+                <div>${p.name}</div>
+                <div class="small">${p.progress}%</div>
+            </div>
+            <div class="small">${showDesc? (p.owner||'Team'): 'Team: '+p.owner}</div>
+            <div class="progress"><div class="bar" style="width:${p.progress}%"></div></div>
+        </div>
+    `).join('');
+    return `<div class="widget"><h3>Active Projects</h3>${cards}</div>`;
+}
+function recentActivityWidget(){
+    const events=recentActivities.map(ev=>`
+        <div class="event">
+            <div class="dot"></div>
+            <div class="time">${ev.time}</div>
+            <div class="desc">${ev.desc}</div>
+        </div>
+    `).join('');
+    return `<div class="widget"><h3>Recent Activity</h3><div class="timeline">${events}</div></div>`;
+}
+function quickLinksWidget(){
+    const items=links.map(l=>`
+        <div class="link-card">
+            <div class="link-icon">${l.icon}</div>
+            <div>${l.name}</div>
+        </div>
+    `).join('');
+    return `<div class="widget"><h3>Quick Links</h3><div class="links-grid">${items}</div></div>`;
+}
+function tasksWidget(){
+    const tasks=loadTasks();
+    const rows=tasks.map((t,i)=>`
+        <div class="task ${t.done?'completed':''}" data-index="${i}">
+            <input type="checkbox" ${t.done?'checked':''}>
+            <div class="label">${t.text}</div>
+            <div class="small">${t.tag||''}</div>
+        </div>
+    `).join('');
+    return `<div class="widget">
+        <h3>Task List</h3>
+        <div class="tasks" id="taskList">${rows||'<div class="small">No tasks yet.</div>'}</div>
+        <div class="add-task">
+            <input id="taskInput" placeholder="Add a task">
+            <button id="taskAddBtn">Add</button>
+        </div>
+    </div>`;
+}
+
+function attachTaskHandlers(){
+    const addBtn=document.getElementById('taskAddBtn');
+    const taskInput=document.getElementById('taskInput');
+    if(!addBtn) return;
+    addBtn.onclick=()=>{
+        const text=taskInput.value.trim();
+        if(!text) return;
+        const tasks=loadTasks();
+        tasks.unshift({text,done:false,tag:'New'});
+        saveTasks(tasks);
+        taskInput.value="";
+        views[document.querySelector('.nav button.active').dataset.view]();
+    };
+    taskInput.onkeypress=(e)=>{if(e.key==='Enter'){addBtn.click();}};
+    document.querySelectorAll('.task').forEach(el=>{
+        el.querySelector('input').addEventListener('change',()=>{
+            const idx=+el.dataset.index;
+            const tasks=loadTasks();
+            tasks[idx].done=!tasks[idx].done;
+            saveTasks(tasks);
+            views[document.querySelector('.nav button.active').dataset.view]();
+        });
+        el.addEventListener('dblclick',()=>{
+            const idx=+el.dataset.index;
+            const tasks=loadTasks();
+            tasks.splice(idx,1);
+            saveTasks(tasks);
+            views[document.querySelector('.nav button.active').dataset.view]();
+        });
+    });
+}
+
+// init
+renderHome();
+</script>
+</body>
+</html>

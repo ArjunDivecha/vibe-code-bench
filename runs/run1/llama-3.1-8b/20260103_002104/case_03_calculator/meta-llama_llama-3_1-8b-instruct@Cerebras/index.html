@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .calculator {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .display {
+            background-color: #f2f2f2;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            height: 40px;
+            text-align: right;
+            font-size: 24px;
+            font-family: monospace;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        .button:hover {
+            background-color: #3e8e41;
+        }
+        
+        .clear {
+            background-color: #ff0000;
+        }
+        
+        .clear:hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display"></div>
+        <div class="buttons">
+            <button class="button" onclick="append('7')">7</button>
+            <button class="button" onclick="append('8')">8</button>
+            <button class="button" onclick="append('9')">9</button>
+            <button class="button" onclick="append('/')">/</button>
+            <button class="button" onclick="append('4')">4</button>
+            <button class="button" onclick="append('5')">5</button>
+            <button class="button" onclick="append('6')">6</button>
+            <button class="button" onclick="append('*')">*</button>
+            <button class="button" onclick="append('1')">1</button>
+            <button class="button" onclick="append('2')">2</button>
+            <button class="button" onclick="append('3')">3</button>
+            <button class="button" onclick="append('-')">-</button>
+            <button class="button" onclick="append('0')">0</button>
+            <button class="button" onclick="append('.')">.</button>
+            <button class="button" onclick="append('+')">+</button>
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="button" onclick="calculate()">=</button>
+        </div>
+    </div>
+    <script>
+        let display = document.getElementById('display');
+        let input = '';
+        let result = 0;
+        
+        function append(char) {
+            if (char === '.' && input.includes('.')) return;
+            input += char;
+            display.innerText = input;
+        }
+        
+        function clearDisplay() {
+            input = '';
+            display.innerText = '';
+        }
+        
+        function calculate() {
+            try {
+                result = eval(input);
+                display.innerText = result.toString();
+                input = result.toString();
+            } catch (e) {
+                if (e instanceof SyntaxError && e.message === 'divide by zero') {
+                    display.innerText = 'Error: Division by zero';
+                } else {
+                    display.innerText = 'Error: ' + e.message;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #ddd;
+            --button-bg: #4CAF50;
+            --button-hover: #45a049;
+            --code-bg: #f4f4f4;
+            --blockquote-border: #ddd;
+        }
+
+        body.dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #444;
+            --button-bg: #5a9e5d;
+            --button-hover: #4a8e4d;
+            --code-bg: #2d2d2d;
+            --blockquote-border: #555;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .toggle-dark {
+            background-color: #666;
+        }
+
+        .toggle-dark:hover {
+            background-color: #555;
+        }
+
+        .export-btn {
+            background-color: #2196F3;
+        }
+
+        .export-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pane-header {
+            background-color: var(--bg-secondary);
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #editor {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            border: none;
+            resize: none;
+            outline: none;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-right: 1px solid var(--border-color);
+        }
+
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-primary);
+        }
+
+        /* Markdown Preview Styles */
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }
+
+        #preview h1 { font-size: 2em; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        #preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        #preview h3 { font-size: 1.25em; }
+        #preview h4 { font-size: 1.1em; }
+        #preview h5 { font-size: 1em; }
+        #preview h6 { font-size: 0.9em; }
+
+        #preview p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        #preview strong {
+            font-weight: 700;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview ul, #preview ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+
+        #preview li {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+
+        #preview code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        #preview pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            padding-left: 15px;
+            margin: 15px 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .pane {
+                height: 50vh;
+            }
+
+            #editor {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Markdown Editor</h1>
+        <div class="controls">
+            <button class="save-btn" onclick="saveToLocalStorage()">💾 Save</button>
+            <button class="load-btn" onclick="loadFromLocalStorage()">📂 Load</button>
+            <button class="export-btn" onclick="exportHTML()">📄 Export HTML</button>
+            <button class="toggle-dark" onclick="toggleDarkMode()">🌓 Dark Mode</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="pane">
+            <div class="pane-header">Markdown Input</div>
+            <textarea id="editor" placeholder="Type your markdown here..."></textarea>
+        </div>
+        <div class="pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+
+        // Markdown Parser
+        function parseMarkdown(markdown) {
+            let html = markdown;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;');
+
+            // Code blocks (must be processed before other replacements)
+            html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+            // Split into lines for line-by-line processing
+            let lines = html.split('\n');
+            let result = [];
+            let inList = false;
+            let inOrderedList = false;
+            let inBlockquote = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                let processedLine = line;
+                let isListItem = false;
+                let isOrderedListItem = false;
+                let isBlockquote = false;
+
+                // Headers
+                if (line.match(/^######\s+(.+)/)) {
+                    processedLine = line.replace(/^######\s+(.+)/, '<h6>$1</h6>');
+                } else if (line.match(/^#####\s+(.+)/)) {
+                    processedLine = line.replace(/^#####\s+(.+)/, '<h5>$1</h5>');
+                } else if (line.match(/^####\s+(.+)/)) {
+                    processedLine = line.replace(/^####\s+(.+)/, '<h4>$1</h4>');
+                } else if (line.match(/^###\s+(.+)/)) {
+                    processedLine = line.replace(/^###\s+(.+)/, '<h3>$1</h3>');
+                } else if (line.match(/^##\s+(.+)/)) {
+                    processedLine = line.replace(/^##\s+(.+)/, '<h2>$1</h2>');
+                } else if (line.match(/^#\s+(.+)/)) {
+                    processedLine = line.replace(/^#\s+(.+)/, '<h1>$1</h1>');
+                }
+                // Unordered lists
+                else if (line.match(/^-\s+(.+)/)) {
+                    processedLine = line.replace(/^-\s+(.+)/, '<li>$1</li>');
+                    isListItem = true;
+                }
+                // Ordered lists
+                else if (line.match(/^\d+\.\s+(.+)/)) {
+                    processedLine = line.replace(/^\d+\.\s+(.+)/, '<li>$1</li>');
+                    isOrderedListItem = true;
+                }
+                // Blockquotes
+                else if (line.match(/^>\s+(.+)/)) {
+                    processedLine = line.replace(/^>\s+(.+)/, '$1');
+                    isBlockquote = true;
+                }
+                // Horizontal rule
+                else if (line.match(/^---$/)) {
+                    processedLine = '<hr>';
+                }
+                // Paragraph (if not empty and not already processed)
+                else if (line.trim() !== '' && !line.match(/^<.*>$/)) {
+                    processedLine = '<p>' + line + '</p>';
+                }
+
+                // Handle list transitions
+                if (isListItem && !inList) {
+                    result.push('<ul>');
+                    inList = true;
+                } else if (!isListItem && inList) {
+                    result.push('</ul>');
+                    inList = false;
+                }
+
+                if (isOrderedListItem && !inOrderedList) {
+                    result.push('<ol>');
+                    inOrderedList = true;
+                } else if (!isOrderedListItem && inOrderedList) {
+                    result.push('</ol>');
+                    inOrderedList = false;
+                }
+
+                // Handle blockquote transitions
+                if (isBlockquote && !inBlockquote) {
+                    result.push('<blockquote>');
+                    inBlockquote = true;
+                } else if (!isBlockquote && inBlockquote) {
+                    result.push('</blockquote>');
+                    inBlockquote = false;
+                }
+
+                result.push(processedLine);
+            }
+
+            // Close any open lists or blockquotes
+            if (inList) result.push('</ul>');
+            if (inOrderedList) result.push('</ol>');
+            if (inBlockquote) result.push('</blockquote>');
+
+            html = result.join('\n');
+
+            // Inline formatting (must be after block processing)
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            // Inline code (not in code blocks)
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            return html;
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdown = editor.value;
+            const html = parseMarkdown(markdown);
+            preview.innerHTML = html;
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('markdownContent', editor.value);
+            alert('Content saved!');
+        }
+
+        // Load from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('markdownContent');
+            if (saved) {
+                editor.value = saved;
+                updatePreview();
+                alert('Content loaded!');
+            } else {
+                alert('No saved content found.');
+            }
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1, h2 { border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+        pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        pre code { background-color: transparent; padding: 0; }
+        blockquote { border-left: 4px solid #ddd; padding-left: 15px; color: #666; font-style: italic; }
+        a { color: #2196F3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+        }
+
+        // Load dark mode preference
+        function loadDarkModePreference() {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+            }
+        }
+
+        // Auto-save every 5 seconds
+        setInterval(() => {
+            if (editor.value) {
+                localStorage.setItem('markdownContent', editor.value);
+            }
+        }, 5000);
+
+        // Event listeners
+        editor.addEventListener('input', updatePreview);
+
+        // Load saved content on page load
+        window.addEventListener('load', () => {
+            loadDarkModePreference();
+            const saved = localStorage.getItem('markdownContent');
+            if (saved) {
+                editor.value = saved;
+                updatePreview();
+            } else {
+                // Default content
+                editor.value = `# Welcome to Markdown Editor
+
+## Features
+
+This editor supports:
+
+- **Bold text** with double asterisks
+- *Italic text* with single asterisks
+- Lists (like this one!)
+- [Links](https://example.com)
+- \`inline code\`
+- Code blocks
+
+### Code Example
+
+\`\`\`
+function hello() {
+    console.log("Hello World!");
+}
+\`\`\`
+
+### Blockquote
+
+> This is a blockquote.
+> It can span multiple lines.
+
+### Ordered List
+
+1. First item
+2. Second item
+3. Third item
+
+---
+
+Start editing to see your changes in real-time!`;
+                updatePreview();
+            }
+        });
+    </script>
+</body>
+</html>

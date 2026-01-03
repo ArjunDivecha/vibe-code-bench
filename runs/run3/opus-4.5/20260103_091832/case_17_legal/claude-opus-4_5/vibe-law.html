@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --bg-hover: #21262d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-blue-dark: #1f6feb;
+            --accent-gold: #d4a84b;
+            --highlight-entity: #3fb9504d;
+            --highlight-date: #58a6ff4d;
+            --danger: #f85149;
+            --success: #3fb950;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue-dark), var(--accent-blue));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 44px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue-dark);
+            border-color: var(--accent-blue-dark);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue);
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 57px);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            width: 380px;
+            min-width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .case-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .case-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .case-item.active {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .case-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .case-court {
+            color: var(--accent-gold);
+        }
+
+        .case-snippet {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .detail-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .detail-header {
+            padding: 20px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .detail-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-toolbar {
+            padding: 12px 24px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .content-text {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .content-text p {
+            margin-bottom: 16px;
+        }
+
+        .content-text h3 {
+            color: var(--accent-gold);
+            font-size: 14px;
+            font-weight: 600;
+            margin: 24px 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .entity-name {
+            background: var(--highlight-entity);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--success);
+        }
+
+        .entity-date {
+            background: var(--highlight-date);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+
+        .notes-sidebar.open {
+            transform: translateX(0);
+            position: relative;
+        }
+
+        .notes-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .close-notes {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+
+        .close-notes:hover {
+            color: var(--text-primary);
+        }
+
+        .notes-input-area {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notes-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .notes-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .save-note-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .note-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .note-case {
+            font-size: 11px;
+            color: var(--accent-blue);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .note-text {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .note-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .note-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .delete-note {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .delete-note:hover {
+            color: var(--danger);
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        /* Summary specific styles */
+        .summary-section {
+            margin-bottom: 24px;
+        }
+
+        .summary-section h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-points li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .key-points li::before {
+            content: "•";
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .citation-box {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Empty state */
+        .no-results {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Tooltip for entities legend */
+        .entity-legend {
+            display: flex;
+            gap: 16px;
+            padding: 12px 24px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.name {
+            background: var(--highlight-entity);
+            border-bottom: 2px solid var(--success);
+        }
+
+        .legend-dot.date {
+            background: var(--highlight-date);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚖</div>
+            <span>Vibe-Law</span>
+        </div>
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search case law by keyword, citation, or topic...">
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="notesToggle">📝 Notes</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="results-panel">
+            <div class="results-header">
+                <span class="results-count" id="resultsCount">0 cases found</span>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+        </aside>
+
+        <section class="detail-panel" id="detailPanel">
+            <div class="detail-empty" id="detailEmpty">
+                <div class="detail-empty-icon">⚖</div>
+                <p>Select a case to view details</p>
+            </div>
+            <div class="detail-view hidden" id="detailView">
+                <div class="detail-header">
+                    <h2 class="detail-title" id="detailTitle"></h2>
+                    <div class="detail-meta">
+                        <span>🏛 <span id="detailCourt"></span></span>
+                        <span>📅 <span id="detailDate"></span></span>
+                        <span>📑 <span id="detailCitation"></span></span>
+                    </div>
+                </div>
+                <div class="detail-toolbar">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="summary">Summary</button>
+                        <button class="tab" data-tab="fulltext">Full Text</button>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button class="btn" id="extractEntities">🔍 Extract Entities</button>
+                        <button class="btn" id="addToNotes">📌 Save to Notes</button>
+                    </div>
+                </div>
+                <div class="entity-legend hidden" id="entityLegend">
+                    <div class="legend-item"><div class="legend-dot name"></div> Names/Parties</div>
+                    <div class="legend-item"><div class="legend-dot date"></div> Dates</div>
+                </div>
+                <div class="detail-content">
+                    <div class="content-area">
+                        <div class="content-text" id="contentSummary"></div>
+                        <div class="content-text hidden" id="contentFullText"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="notes-sidebar" id="notesSidebar">
+            <div class="notes-header">
+                <h3>📝 Research Notes</h3>
+                <button class="close-notes" id="closeNotes">✕</button>
+            </div>
+            <div class="notes-input-area">
+                <textarea class="notes-textarea" id="noteInput" placeholder="Add a note about the current case..."></textarea>
+                <button class="btn btn-primary save-note-btn" id="saveNote">Save Note</button>
+            </div>
+            <div class="notes-list" id="notesList"></div>
+        </aside>
+    </main>
+
+    <script>
+        // Mock Legal Cases Data
+        const legalCases = [
+            {
+                id: 1,
+                title: "Miranda v. Arizona",
+                court: "Supreme Court of the United States",
+                date: "June 13, 1966",
+                citation: "384 U.S. 436 (1966)",
+                snippet: "The prosecution may not use statements stemming from custodial interrogation of the defendant unless procedural safeguards are demonstrated...",
+                summary: {
+                    holding: "The Court held that the prosecution may not use statements made by a defendant during custodial interrogation unless the defendant was informed of their Fifth Amendment rights.",
+                    keyPoints: [
+                        "Defendants must be informed of their right to remain silent",
+                        "Any statement made may be used against them in court",
+                        "Defendants have the right to an attorney during questioning",
+                        "If they cannot afford an attorney, one will be appointed"
+                    ],
+                    impact: "This landmark decision established the 'Miranda warnings' that law enforcement must provide to suspects before custodial interrogation."
+                },
+                fullText: `MIRANDA v. ARIZONA\n\nChief Justice Earl Warren delivered the opinion of the Court.\n\nThe cases before us raise questions which go to the roots of our concepts of American criminal jurisprudence: the restraints society must observe consistent with the Federal Constitution in prosecuting individuals for crime.\n\nMore specifically, we deal with the admissibility of statements obtained from an individual who is subjected to custodial police interrogation and the necessity for procedures which assure that the individual is accorded his privilege under the Fifth Amendment to the Constitution not to be compelled to incriminate himself.\n\nWe dealt with certain phases of this problem recently in Escobedo v. Illinois, 378 U.S. 478 (1964). There, as in the four cases before us, law enforcement officials took the defendant into custody and interrogated him in a police station for the purpose of obtaining a confession.\n\nThe defendant, Ernesto Miranda, was arrested on March 13, 1963, at his home in Phoenix, Arizona and taken to the police station. After two hours of interrogation, Miranda signed a written confession.\n\nWe hold that when an individual is taken into custody or otherwise deprived of his freedom by the authorities in any significant way and is subjected to questioning, the privilege against self-incrimination is jeopardized.\n\nProcedural safeguards must be employed to protect the privilege, and unless other fully effective means are adopted to notify the person of his right of silence and to assure that the exercise of the right will be scrupulously honored, the following measures are required:\n\nPrior to any questioning, the person must be warned that he has a right to remain silent, that any statement he does make may be used as evidence against him, and that he has a right to the presence of an attorney, either retained or appointed.\n\nThe defendant may waive effectuation of these rights, provided the waiver is made voluntarily, knowingly and intelligently. If, however, he indicates in any manner and at any stage of the process that he wishes to consult with an attorney before speaking there can be no questioning.\n\nReversed and remanded.`
+            },
+            {
+                id: 2,
+                title: "Brown v. Board of Education",
+                court: "Supreme Court of the United States",
+                date: "May 17, 1954",
+                citation: "347 U.S. 483 (1954)",
+                snippet: "We conclude that in the field of public education the doctrine of 'separate but equal' has no place...",
+                summary: {
+                    holding: "The Court unanimously held that racial segregation in public schools violated the Equal Protection Clause of the Fourteenth Amendment.",
+                    keyPoints: [
+                        "Separate educational facilities are inherently unequal",
+                        "Segregation deprives minority children of equal educational opportunities",
+                        "The 'separate but equal' doctrine from Plessy v. Ferguson has no place in public education",
+                        "Segregation generates feelings of inferiority affecting motivation to learn"
+                    ],
+                    impact: "This decision overturned Plessy v. Ferguson and became a cornerstone of the Civil Rights Movement, ending legal segregation in public schools."
+                },
+                fullText: `BROWN v. BOARD OF EDUCATION OF TOPEKA\n\nChief Justice Earl Warren delivered the opinion of the Court.\n\nThese cases come to us from the States of Kansas, South Carolina, Virginia, and Delaware. They are premised on different facts and different local conditions, but a common legal question justifies their consideration together in this consolidated opinion.\n\nIn each of the cases, minors of the Negro race, through their legal representatives, seek the aid of the courts in obtaining admission to the public schools of their community on a nonsegregated basis.\n\nIn approaching this problem, we cannot turn the clock back to 1868 when the Amendment was adopted, or even to 1896 when Plessy v. Ferguson was written. We must consider public education in the light of its full development and its present place in American life throughout the Nation.\n\nOliver Brown, along with twelve other plaintiffs, filed suit against the Board of Education of Topeka, Kansas on February 28, 1951. The plaintiffs' children were denied admission to white public schools.\n\nToday, education is perhaps the most important function of state and local governments. Compulsory school attendance laws and the great expenditures for education both demonstrate our recognition of the importance of education to our democratic society.\n\nIn these days, it is doubtful that any child may reasonably be expected to succeed in life if he is denied the opportunity of an education. Such an opportunity, where the state has undertaken to provide it, is a right which must be made available to all on equal terms.\n\nWe come then to the question presented: Does segregation of children in public schools solely on the basis of race, even though the physical facilities and other \"tangible\" factors may be equal, deprive the children of the minority group of equal educational opportunities?\n\nWe believe that it does.\n\nTo separate them from others of similar age and qualifications solely because of their race generates a feeling of inferiority as to their status in the community that may affect their hearts and minds in a way unlikely ever to be undone.\n\nWe conclude that in the field of public education the doctrine of \"separate but equal\" has no place. Separate educational facilities are inherently unequal.\n\nIt is so ordered.`
+            },
+            {
+                id: 3,
+                title: "Roe v. Wade",
+                court: "Supreme Court of the United States",
+                date: "January 22, 1973",
+                citation: "410 U.S. 113 (1973)",
+                snippet: "The Constitution does not explicitly mention any right of privacy, but the Court has recognized that a right of personal privacy exists...",
+                summary: {
+                    holding: "The Court held that the Constitution protects a woman's right to choose to have an abortion prior to viability, with different levels of state interest at various stages of pregnancy.",
+                    keyPoints: [
+                        "A constitutional right to privacy extends to a woman's decision to have an abortion",
+                        "States may regulate abortion procedures in the second trimester for maternal health",
+                        "States may prohibit abortion in the third trimester except to preserve the mother's health",
+                        "The decision established the trimester framework for abortion regulation"
+                    ],
+                    impact: "This landmark decision legalized abortion nationwide and established a framework for balancing women's rights against state interests in potential life."
+                },
+                fullText: `ROE v. WADE\n\nJustice Harry Blackmun delivered the opinion of the Court.\n\nThis Texas federal appeal and its Georgia companion, Doe v. Bolton, present constitutional challenges to state criminal abortion legislation. The Texas statutes under attack here make it a crime to \"procure an abortion\" except \"by medical advice for the purpose of saving the life of the mother.\"\n\nJane Roe, a single woman residing in Dallas County, Texas, instituted this federal action in March 1970 against the District Attorney of the county. She sought a declaratory judgment that the Texas criminal abortion statutes were unconstitutional on their face.\n\nThe principal thrust of appellant's attack on the Texas statutes is that they improperly invade a right, said to be possessed by the pregnant woman, to choose to terminate her pregnancy.\n\nThe Constitution does not explicitly mention any right of privacy. In a line of decisions, however, going back perhaps as far as Union Pacific R. Co. v. Botsford, 141 U.S. 250 (1891), the Court has recognized that a right of personal privacy, or a guarantee of certain areas or zones of privacy, does exist under the Constitution.\n\nThis right of privacy, whether it be founded in the Fourteenth Amendment's concept of personal liberty and restrictions upon state action, as we feel it is, or in the Ninth Amendment's reservation of rights to the people, is broad enough to encompass a woman's decision whether or not to terminate her pregnancy.\n\nThe State does have an important and legitimate interest in preserving and protecting the health of the pregnant woman. The State's interest becomes \"compelling\" at approximately the end of the first trimester.\n\nWith respect to the State's important and legitimate interest in potential life, the \"compelling\" point is at viability. State regulation protective of fetal life after viability thus has both logical and biological justifications.\n\nWe need not resolve the difficult question of when life begins. When those trained in the respective disciplines of medicine, philosophy, and theology are unable to arrive at any consensus, the judiciary is not in a position to speculate as to the answer.\n\nThe judgment of the District Court is affirmed in part and reversed in part.`
+            },
+            {
+                id: 4,
+                title: "Gideon v. Wainwright",
+                court: "Supreme Court of the United States",
+                date: "March 18, 1963",
+                citation: "372 U.S. 335 (1963)",
+                snippet: "The right of one charged with crime to counsel may not be deemed fundamental and essential to fair trials in some countries...",
+                summary: {
+                    holding: "The Court unanimously held that the Sixth Amendment's guarantee of counsel is a fundamental right essential to a fair trial and applies to state criminal proceedings through the Fourteenth Amendment.",
+                    keyPoints: [
+                        "The right to counsel is fundamental and essential to fair trials",
+                        "States must provide attorneys to criminal defendants who cannot afford one",
+                        "The Sixth Amendment applies to states through the Fourteenth Amendment",
+                        "Overruled Betts v. Brady which limited the right to capital cases"
+                    ],
+                    impact: "This decision guaranteed legal representation to all criminal defendants regardless of ability to pay, transforming the American criminal justice system."
+                },
+                fullText: `GIDEON v. WAINWRIGHT\n\nJustice Hugo Black delivered the opinion of the Court.\n\nPetitioner was charged in a Florida state court with having broken and entered a poolroom with intent to commit a misdemeanor. This offense is a felony under Florida law. Appearing in court without funds and without a lawyer, petitioner asked the court to appoint counsel for him.\n\nClarence Earl Gideon was arrested on June 3, 1961, for breaking into a poolroom in Panama City, Florida. Unable to afford a lawyer, Gideon conducted his own defense and was found guilty.\n\nThe Court said: \"Mr. Gideon, I am sorry, but I cannot appoint Counsel to represent you in this case. Under the laws of the State of Florida, the only time the Court can appoint Counsel to represent a Defendant is when that person is charged with a capital offense.\"\n\nPut to trial before a jury, Gideon conducted his defense about as well as could be expected from a layman. He made an opening statement to the jury, cross-examined the State's witnesses, presented witnesses in his own defense, and made a short argument emphasizing his innocence.\n\nGideon was convicted and sentenced to serve five years in the state prison. From prison, Gideon filed a handwritten petition for habeas corpus with the Florida Supreme Court, which was denied.\n\nThe Sixth Amendment provides, \"In all criminal prosecutions, the accused shall enjoy the right to have the Assistance of Counsel for his defence.\" We have construed this to mean that in federal courts counsel must be provided for defendants unable to employ counsel unless the right is competently and intelligently waived.\n\nReason and reflection require us to recognize that in our adversary system of criminal justice, any person haled into court, who is too poor to hire a lawyer, cannot be assured a fair trial unless counsel is provided for him.\n\nThe right of one charged with crime to counsel may not be deemed fundamental and essential to fair trials in some countries, but it is in ours. From the very beginning, our state and national constitutions and laws have laid great emphasis on procedural and substantive safeguards designed to assure fair trials before impartial tribunals.\n\nThe judgment is reversed.`
+            },
+            {
+                id: 5,
+                title: "New York Times Co. v. Sullivan",
+                court: "Supreme Court of the United States",
+                date: "March 9, 1964",
+                citation: "376 U.S. 254 (1964)",
+                snippet: "The constitutional guarantees require a federal rule that prohibits a public official from recovering damages for defamatory falsehood...",
+                summary: {
+                    holding: "The Court held that the First Amendment protects the publication of false statements about public officials unless made with 'actual malice'—knowledge of falsity or reckless disregard for the truth.",
+                    keyPoints: [
+                        "Public officials must prove 'actual malice' to recover damages for defamation",
+                        "Actual malice means knowledge of falsity or reckless disregard for truth",
+                        "Erroneous statement is inevitable in free debate and must be protected",
+                        "Criticism of government is at the core of First Amendment protection"
+                    ],
+                    impact: "This decision revolutionized libel law and strengthened press freedom to report on public officials without fear of lawsuits."
+                },
+                fullText: `NEW YORK TIMES CO. v. SULLIVAN\n\nJustice William Brennan delivered the opinion of the Court.\n\nWe are required in this case to determine for the first time the extent to which the constitutional protections for speech and press limit a State's power to award damages in a libel action brought by a public official against critics of his official conduct.\n\nL.B. Sullivan was one of the three elected Commissioners of Montgomery, Alabama. On March 29, 1960, the New York Times published a full-page advertisement entitled \"Heed Their Rising Voices,\" which criticized the treatment of civil rights protesters in the South.\n\nSullivan claimed the advertisement defamed him, even though he was not mentioned by name. A jury awarded Sullivan $500,000 in damages against the Times and four African American ministers whose names appeared in the ad.\n\nThe publication here was not a \"commercial\" advertisement in the sense in which the word was used in Chrestensen. It communicated information, expressed opinion, recited grievances, protested claimed abuses, and sought financial support on behalf of a movement whose existence and objectives are matters of the highest public interest and concern.\n\nThe general proposition that freedom of expression upon public questions is secured by the First Amendment has long been settled by our decisions. The constitutional safeguard, we have said, \"was fashioned to assure unfettered interchange of ideas for the bringing about of political and social changes desired by the people.\"\n\nThus we consider this case against the background of a profound national commitment to the principle that debate on public issues should be uninhibited, robust, and wide-open, and that it may well include vehement, caustic, and sometimes unpleasantly sharp attacks on government and public officials.\n\nA rule compelling the critic of official conduct to guarantee the truth of all his factual assertions—and to do so on pain of libel judgments virtually unlimited in amount—leads to \"self-censorship.\"\n\nThe constitutional guarantees require, we think, a federal rule that prohibits a public official from recovering damages for a defamatory falsehood relating to his official conduct unless he proves that the statement was made with \"actual malice\"—that is, with knowledge that it was false or with reckless disregard of whether it was false or not.\n\nReversed and remanded.`
+            },
+            {
+                id: 6,
+                title: "Marbury v. Madison",
+                court: "Supreme Court of the United States",
+                date: "February 24, 1803",
+                citation: "5 U.S. 137 (1803)",
+                snippet: "It is emphatically the province and duty of the Judicial Department to say what the law is...",
+                summary: {
+                    holding: "The Court held that it had the power to review acts of Congress and determine whether they were unconstitutional, establishing the principle of judicial review.",
+                    keyPoints: [
+                        "The Constitution is the supreme law of the land",
+                        "Courts have the authority to review legislative acts",
+                        "A law contrary to the Constitution is void",
+                        "It is the duty of the judiciary to say what the law is"
+                    ],
+                    impact: "This foundational decision established judicial review, making the Supreme Court the ultimate arbiter of constitutional questions."
+                },
+                fullText: `MARBURY v. MADISON\n\nChief Justice John Marshall delivered the opinion of the Court.\n\nAt the last term, on the affidavits then read and filed with the clerk, a rule was granted in this case, requiring the secretary of state to show cause why a mandamus should not issue, directing him to deliver to William Marbury his commission as a justice of the peace for the county of Washington.\n\nWilliam Marbury had been appointed Justice of the Peace for the District of Columbia by President John Adams on March 2, 1801. However, his commission was not delivered before Thomas Jefferson took office on March 4, 1801.\n\nJefferson's Secretary of State, James Madison, refused to deliver the commission. Marbury petitioned the Supreme Court for a writ of mandamus compelling delivery.\n\nIn the order in which the court has viewed this subject, the following questions have been considered and decided:\n\n1st. Has the applicant a right to the commission he demands?\n2dly. If he has a right, and that right has been violated, do the laws of his country afford him a remedy?\n3dly. If they do afford him a remedy, is it a mandamus issuing from this court?\n\nIt is then the opinion of the Court: That by signing the commission of Mr. Marbury, the President of the United States appointed him a justice of peace for the county of Washington. That the seal of the United States, affixed thereto by the secretary of state, is conclusive testimony of the verity of the signature.\n\nThe Constitution is either a superior, paramount law, unchangeable by ordinary means, or it is on a level with ordinary legislative acts, and like other acts, is alterable when the legislature shall please to alter it.\n\nCertainly all those who have framed written constitutions contemplate them as forming the fundamental and paramount law of the nation, and consequently the theory of every such government must be, that an act of the legislature, repugnant to the constitution, is void.\n\nIt is emphatically the province and duty of the Judicial Department to say what the law is. Those who apply the rule to particular cases, must of necessity expound and interpret that rule. If two laws conflict with each other, the courts must decide on the operation of each.\n\nThe rule must be discharged.`
+            },
+            {
+                id: 7,
+                title: "Mapp v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 19, 1961",
+                citation: "367 U.S. 643 (1961)",
+                snippet: "All evidence obtained by searches and seizures in violation of the Constitution is inadmissible in a state court...",
+                summary: {
+                    holding: "The Court held that the exclusionary rule, which prevents illegally obtained evidence from being used in court, applies to state courts through the Fourteenth Amendment.",
+                    keyPoints: [
+                        "The Fourth Amendment protection against unreasonable searches applies to states",
+                        "Evidence obtained in violation of the Fourth Amendment is inadmissible",
+                        "The exclusionary rule is essential to deter police misconduct",
+                        "Overruled Wolf v. Colorado regarding exclusionary rule application"
+                    ],
+                    impact: "This decision extended federal constitutional protections to state criminal proceedings and transformed police procedures nationwide."
+                },
+                fullText: `MAPP v. OHIO\n\nJustice Tom Clark delivered the opinion of the Court.\n\nAppellant stands convicted of knowingly having had in her possession and under her control certain lewd and lascivious books, pictures, and photographs in violation of § 2905.34 of Ohio's Revised Code.\n\nOn May 23, 1957, three Cleveland police officers arrived at Dollree Mapp's residence seeking a suspect wanted for questioning in a bombing case. They also had information that there was a large amount of policy paraphernalia hidden in the home.\n\nMiss Mapp and her daughter by a former marriage lived on the top floor of the two-family dwelling. Upon their arrival at that house, the officers knocked on the door and demanded entrance, but appellant, after telephoning her attorney, refused to admit them without a search warrant.\n\nThey advised their headquarters of the situation and undertook a surveillance of the house. The officers again sought entrance some three hours later when four or more additional officers arrived on the scene. When Miss Mapp did not come to the door immediately, at least one of the several doors to the house was forcibly opened and the policemen gained admittance.\n\nMeanwhile Miss Mapp's attorney arrived, but the officers would not permit him to see his client or to enter the house. Miss Mapp demanded to see the search warrant. A paper, claimed to be a warrant, was held up by one of the officers. She grabbed the \"warrant\" and placed it in her bosom.\n\nA struggle ensued in which the officers recovered the piece of paper and handcuffed appellant because she had been \"belligerent\" in resisting their official rescue of the \"warrant\" from her person.\n\nRunning roughshod over appellant, a policeman grabbed her and twisted her hand. She was then handcuffed. A search of the entire house was conducted, including the basement. The obscene materials were discovered in a trunk in the basement.\n\nNo search warrant was ever produced in court.\n\nWe hold that all evidence obtained by searches and seizures in violation of the Constitution is, by that same authority, inadmissible in a state court.\n\nReversed and remanded.`
+            },
+            {
+                id: 8,
+                title: "Terry v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 10, 1968",
+                citation: "392 U.S. 1 (1968)",
+                snippet: "A police officer may stop a person and conduct a limited search for weapons when the officer reasonably believes...",
+                summary: {
+                    holding: "The Court held that police may stop and briefly detain a person for investigative purposes if the officer has a reasonable suspicion that criminal activity is afoot, and may conduct a pat-down for weapons if there is reasonable belief the person is armed.",
+                    keyPoints: [
+                        "Police may conduct 'stop and frisk' based on reasonable suspicion",
+                        "This is a lesser standard than probable cause required for arrest",
+                        "Officer safety justifies limited searches for weapons",
+                        "The stop must be brief and the frisk limited to outer clothing"
+                    ],
+                    impact: "This decision created the legal framework for police stops and pat-downs that remains in effect today, balancing law enforcement needs against Fourth Amendment rights."
+                },
+                fullText: `TERRY v. OHIO\n\nChief Justice Earl Warren delivered the opinion of the Court.\n\nThis case presents serious questions concerning the role of the Fourth Amendment in the confrontation on the street between the citizen and the policeman investigating suspicious circumstances.\n\nOn October 31, 1963, Detective Martin McFadden, a Cleveland police officer with 39 years of experience, observed two strangers, John Terry and Richard Chilton, on a street corner. McFadden watched the men take turns walking past a store window, peering in, and returning to confer with each other.\n\nOfficer McFadden's attention was attracted to these men at approximately 2:30 in the afternoon. He had never seen the two men before, and he was unable to say precisely what first drew his eye to them. However, he testified that he had been a policeman for 39 years and a detective for 35.\n\nAfter observing their behavior for about 10-12 minutes, during which each man walked past the store approximately 5-6 times, McFadden's suspicions were aroused. Fearing that they were casing the store for a robbery and might have guns, McFadden approached the men.\n\nHe identified himself as a police officer and asked for their names. When the men \"mumbled something\" in response to his inquiries, McFadden grabbed Terry, spun him around so that they were facing the other two, with Terry between McFadden and the others, and patted down the outside of his clothing.\n\nIn the left breast pocket of Terry's overcoat, McFadden felt a pistol. He reached inside the overcoat pocket, but was unable to remove the gun. He removed Terry's overcoat completely, retrieved a .38-caliber revolver from the pocket, and ordered all three men to face the wall with their hands raised.\n\nWe merely hold today that where a police officer observes unusual conduct which leads him reasonably to conclude in light of his experience that criminal activity may be afoot and that the persons with whom he is dealing may be armed and presently dangerous, he is entitled for the protection of himself and others to conduct a carefully limited search.\n\nAffirmed.`
+            },
+            {
+                id: 9,
+                title: "Plessy v. Ferguson",
+                court: "Supreme Court of the United States",
+                date: "May 18, 1896",
+                citation: "163 U.S. 537 (1896)",
+                snippet: "Laws permitting, and even requiring, separation of the races do not necessarily imply the inferiority of either race...",
+                summary: {
+                    holding: "The Court held that state laws requiring racial segregation in public facilities were constitutional as long as the separate facilities were equal in quality.",
+                    keyPoints: [
+                        "Established the 'separate but equal' doctrine",
+                        "State-mandated segregation does not violate the Fourteenth Amendment",
+                        "Social equality cannot be legislated",
+                        "Justice Harlan's famous dissent: 'Our Constitution is color-blind'"
+                    ],
+                    impact: "This decision legitimized racial segregation for nearly 60 years until overturned by Brown v. Board of Education in 1954."
+                },
+                fullText: `PLESSY v. FERGUSON\n\nJustice Henry Billings Brown delivered the opinion of the Court.\n\nThis case turns upon the constitutionality of an act of the General Assembly of the State of Louisiana, passed in 1890, providing for separate railway carriages for the white and colored races.\n\nHomer Plessy, who was seven-eighths Caucasian and one-eighth African, purchased a first-class ticket on the East Louisiana Railway on June 7, 1892. He took a seat in a whites-only car and refused to move to the car for colored passengers.\n\nPlessy was arrested and charged with violating the Separate Car Act. He petitioned the Louisiana Supreme Court for a writ of prohibition against Judge John Ferguson, arguing that the segregation law was unconstitutional.\n\nThe information filed in the criminal district court charged that Plessy, being a passenger between two stations within the state of Louisiana, was assigned by officers of the company to the coach used for the race to which he belonged, but he insisted upon going into a coach used by the race to which he did not belong.\n\nThe object of the amendment was undoubtedly to enforce the absolute equality of the two races before the law, but in the nature of things it could not have been intended to abolish distinctions based upon color, or to enforce social, as distinguished from political equality.\n\nLaws permitting, and even requiring, their separation in places where they are liable to be brought into contact do not necessarily imply the inferiority of either race to the other, and have been generally, if not universally, recognized as within the competency of the state legislatures in the exercise of their police power.\n\nWe consider the underlying fallacy of the plaintiff's argument to consist in the assumption that the enforced separation of the two races stamps the colored race with a badge of inferiority. If this be so, it is not by reason of anything found in the act, but solely because the colored race chooses to put that construction upon it.\n\nJustice John Marshall Harlan, dissenting:\n\nIn my opinion, the judgment this day rendered will, in time, prove to be quite as pernicious as the decision made by this tribunal in the Dred Scott case. Our Constitution is color-blind, and neither knows nor tolerates classes among citizens.\n\nThe judgment of the court below is affirmed.`
+            },
+            {
+                id: 10,
+                title: "Obergefell v. Hodges",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2015",
+                citation: "576 U.S. 644 (2015)",
+                snippet: "The right to marry is a fundamental right inherent in the liberty of the person, and under the Due Process and Equal Protection Clauses...",
+                summary: {
+                    holding: "The Court held that same-sex couples have a fundamental right to marry under both the Due Process and Equal Protection Clauses of the Fourteenth Amendment.",
+                    keyPoints: [
+                        "Marriage is a fundamental right protected by the Constitution",
+                        "Same-sex couples may not be denied the right to marry",
+                        "States must recognize same-sex marriages performed in other states",
+                        "Marriage equality is required by both due process and equal protection"
+                    ],
+                    impact: "This landmark decision legalized same-sex marriage nationwide and was a major victory for LGBTQ rights."
+                },
+                fullText: `OBERGEFELL v. HODGES\n\nJustice Anthony Kennedy delivered the opinion of the Court.\n\nThe Constitution promises liberty to all within its reach, a liberty that includes certain specific rights that allow persons, within a lawful realm, to define and express their identity. The petitioners in these cases seek to find that liberty by marrying someone of the same sex and having their marriages deemed lawful on the same terms and conditions as marriages between persons of the opposite sex.\n\nJames Obergefell and John Arthur were married in Maryland on July 11, 2013. Arthur suffered from ALS and died three months later on October 22, 2013. Ohio refused to list Obergefell as the surviving spouse on Arthur's death certificate.\n\nFrom their beginning to their most recent page, the annals of human history reveal the transcendent importance of marriage. The lifelong union of a man and a woman always has promised nobility and dignity to all persons, without regard to their station in life.\n\nThe centrality of marriage to the human condition makes it unsurprising that the institution has existed for millennia and across civilizations. Since the dawn of history, marriage has transformed strangers into relatives, binding families and societies together.\n\nThe nature of marriage is that, through its enduring bond, two persons together can find other freedoms, such as expression, intimacy, and spirituality. This is true for all persons, whatever their sexual orientation.\n\nThe right to marry is fundamental as a matter of history and tradition, but rights come not from ancient sources alone. They rise, too, from a better informed understanding of how constitutional imperatives define a liberty that remains urgent in our own era.\n\nThe limitation of marriage to opposite-sex couples may long have seemed natural and just, but its inconsistency with the central meaning of the fundamental right to marry is now manifest.\n\nNo union is more profound than marriage, for it embodies the highest ideals of love, fidelity, devotion, sacrifice, and family. In forming a marital union, two people become something greater than once they were.\n\nThe judgment of the Court of Appeals for the Sixth Circuit is reversed.`
+            },
+            {
+                id: 11,
+                title: "Citizens United v. FEC",
+                court: "Supreme Court of the United States",
+                date: "January 21, 2010",
+                citation: "558 U.S. 310 (2010)",
+                snippet: "The First Amendment prohibits Congress from fining or jailing citizens, or associations of citizens, for simply engaging in political speech...",
+                summary: {
+                    holding: "The Court held that the First Amendment prohibits the government from restricting political independent expenditures by corporations, associations, or labor unions.",
+                    keyPoints: [
+                        "Corporations and unions have First Amendment rights to political speech",
+                        "The government cannot restrict independent political expenditures",
+                        "Overturned portions of the Bipartisan Campaign Reform Act (McCain-Feingold)",
+                        "Disclosure and disclaimer requirements remain constitutional"
+                    ],
+                    impact: "This controversial decision transformed campaign finance, leading to the rise of Super PACs and significantly increased political spending."
+                },
+                fullText: `CITIZENS UNITED v. FEDERAL ELECTION COMMISSION\n\nJustice Anthony Kennedy delivered the opinion of the Court.\n\nFederal law prohibits corporations and unions from using their general treasury funds to make independent expenditures for speech defined as an \"electioneering communication\" or for speech expressly advocating the election or defeat of a candidate.\n\nCitizens United is a nonprofit corporation. It brought this action in the United States District Court for the District of Columbia. A three-judge court denied Citizens United's motion for a preliminary injunction.\n\nCitizens United planned to make Hillary: The Movie available through video-on-demand within 30 days of the 2008 primary elections. The movie is a documentary about then-Senator Hillary Clinton, who was a candidate in the Democratic Party's 2008 Presidential primary elections.\n\nThe law before us is an outright ban, backed by criminal sanctions. Section 441b makes it a felony for all corporations—including nonprofit advocacy corporations—either to expressly advocate the election or defeat of candidates or to broadcast electioneering communications within 30 days of a primary election.\n\nSpeech is an essential mechanism of democracy, for it is the means to hold officials accountable to the people. The right of citizens to inquire, to hear, to speak, and to use information to reach consensus is a precondition to enlightened self-government and a necessary means to protect it.\n\nThe First Amendment does not permit Congress to make these categorical distinctions based on the corporate identity of the speaker and the content of the political speech.\n\nIf the First Amendment has any force, it prohibits Congress from fining or jailing citizens, or associations of citizens, for simply engaging in political speech. If the antidistortion rationale were to be accepted, however, it would permit Government to ban political speech simply because the speaker is an association that has taken on the corporate form.\n\nPolitical speech does not lose First Amendment protection simply because its source is a corporation.\n\nThe judgment of the District Court is reversed with respect to the constitutionality of 2 U.S.C. § 441b's restrictions on corporate independent expenditures.`
+            },
+            {
+                id: 12,
+                title: "Dred Scott v. Sandford",
+                court: "Supreme Court of the United States",
+                date: "March 6, 1857",
+                citation: "60 U.S. 393 (1857)",
+                snippet: "A free negro of the African race, whose ancestors were brought to this country and sold as slaves, is not a 'citizen' within the meaning of the Constitution...",
+                summary: {
+                    holding: "The Court held that African Americans, whether enslaved or free, could not be American citizens and therefore had no standing to sue in federal court.",
+                    keyPoints: [
+                        "African Americans could not be citizens of the United States",
+                        "Congress lacked authority to prohibit slavery in federal territories",
+                        "The Missouri Compromise was unconstitutional",
+                        "Slaves were property protected by the Fifth Amendment"
+                    ],
+                    impact: "Widely considered one of the worst Supreme Court decisions, it inflamed sectional tensions and helped precipitate the Civil War."
+                },
+                fullText: `DRED SCOTT v. SANDFORD\n\nChief Justice Roger Taney delivered the opinion of the Court.\n\nThe question is simply this: Can a negro, whose ancestors were imported into this country, and sold as slaves, become a member of the political community formed and brought into existence by the Constitution of the United States, and as such become entitled to all the rights, and privileges, and immunities, guarantied by that instrument to the citizen?\n\nDred Scott was a slave owned by John Emerson, an army surgeon stationed in Missouri. Between 1833 and 1843, Emerson took Scott to live in Illinois and the Wisconsin Territory, both of which prohibited slavery.\n\nIn 1846, after Emerson's death, Scott sued for his freedom in Missouri state court, arguing that his residence in free territories had made him a free man.\n\nThe words \"people of the United States\" and \"citizens\" are synonymous terms, and mean the same thing. They both describe the political body who, according to our republican institutions, form the sovereignty, and who hold the power and conduct the Government through their representatives.\n\nThe question before us is, whether the class of persons described in the plea in abatement compose a portion of this people, and are constituent members of this sovereignty? We think they are not, and that they are not included, and were not intended to be included, under the word \"citizens\" in the Constitution.\n\nThey had for more than a century before been regarded as beings of an inferior order, and altogether unfit to associate with the white race, either in social or political relations; and so far inferior, that they had no rights which the white man was bound to respect.\n\nThe right of property in a slave is distinctly and expressly affirmed in the Constitution. The right to traffic in it, like an ordinary article of merchandise and property, was guarantied to the citizens of the United States.\n\nUpon these considerations, it is the opinion of the court that the act of Congress which prohibited a citizen from holding and owning property of this kind in the territory of the United States north of the line therein mentioned, is not warranted by the Constitution, and is therefore void.\n\nThe judgment of the Circuit Court is reversed.`
+            },
+            {
+                id: 13,
+                title: "Brandenburg v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 9, 1969",
+                citation: "395 U.S. 444 (1969)",
+                snippet: "The constitutional guarantees of free speech and free press do not permit a State to forbid or proscribe advocacy of the use of force...",
+                summary: {
+                    holding: "The Court held that government cannot punish inflammatory speech unless it is directed to inciting and likely to produce imminent lawless action.",
+                    keyPoints: [
+                        "Mere advocacy of illegal acts is protected by the First Amendment",
+                        "Speech can only be punished if it incites imminent lawless action",
+                        "The speech must be both intended and likely to cause such action",
+                        "Overruled Whitney v. California regarding criminal syndicalism laws"
+                    ],
+                    impact: "This decision established the modern 'imminent lawless action' test for free speech, significantly expanding First Amendment protections."
+                },
+                fullText: `BRANDENBURG v. OHIO\n\nPer Curiam.\n\nThe appellant, a leader of a Ku Klux Klan group, was convicted under the Ohio Criminal Syndicalism statute for \"advocat[ing] the duty, necessity, or propriety of crime, sabotage, violence, or unlawful methods of terrorism as a means of accomplishing industrial or political reform.\"\n\nClarence Brandenburg was arrested after leading a Ku Klux Klan rally on a farm in Hamilton County, Ohio on August 1, 1964. A Cincinnati television station reporter was invited to attend the rally and filmed the events.\n\nThe prosecution's case rested on the films and on testimony identifying the appellant as the person who communicated with the reporter and who spoke at the rally.\n\nThe film showed 12 hooded figures, some of whom carried firearms. They were gathered around a large wooden cross, which they burned. One of the figures spoke, making derogatory statements about African Americans and Jews.\n\nBrandenburg stated: \"We're not a revengent organization, but if our President, our Congress, our Supreme Court, continues to suppress the white, Caucasian race, it's possible that there might have to be some revengeance taken.\"\n\nThe Ohio Criminal Syndicalism Statute was enacted in 1919, when similar statutes were enacted in many States. It punishes persons who \"advocate or teach the duty, necessity, or propriety\" of violence.\n\nStatutes affecting the right of assembly, like those touching on freedom of speech, must observe the established distinctions between mere advocacy and incitement to imminent lawless action.\n\nThe constitutional guarantees of free speech and free press do not permit a State to forbid or proscribe advocacy of the use of force or of law violation except where such advocacy is directed to inciting or producing imminent lawless action and is likely to incite or produce such action.\n\nMeasured by this test, Ohio's Criminal Syndicalism Act cannot be sustained. The Act punishes mere advocacy and assembly with others merely to advocate the described type of action.\n\nReversed.`
+            }
+        ];
+
+        // State
+        let selectedCase = null;
+        let activeTab = 'summary';
+        let entitiesExtracted = false;
+        let notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+        let notesSidebarOpen = false;
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const detailEmpty = document.getElementById('detailEmpty');
+        const detailView = document.getElementById('detailView');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCourt = document.getElementById('detailCourt');
+        const detailDate = document.getElementById('detailDate');
+        const detailCitation = document.getElementById('detailCitation');
+        const contentSummary = document.getElementById('contentSummary');
+        const contentFullText = document.getElementById('contentFullText');
+        const entityLegend = document.getElementById('entityLegend');
+        const notesSidebar = document.getElementById('notesSidebar');
+        const notesList = document.getElementById('notesList');
+        const noteInput = document.getElementById('noteInput');
+
+        // Initialize
+        function init() {
+            renderCases(legalCases);
+            setupEventListeners();
+            renderNotes();
+        }
+
+        // Render cases list
+        function renderCases(cases) {
+            resultsList.innerHTML = '';
+            resultsCount.textContent = `${cases.length} cases found`;
+
+            if (cases.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No cases match your search criteria</div>';
+                return;
+            }
+
+            cases.forEach(caseItem => {
+                const div = document.createElement('div');
+                div.className = 'case-item' + (selectedCase?.id === caseItem.id ? ' active' : '');
+                div.innerHTML = `
+                    <div class="case-title">${caseItem.title}</div>
+                    <div class="case-meta">
+                        <span class="case-court">${caseItem.court.split(' ').slice(-3).join(' ')}</span>
+                        <span>${caseItem.date}</span>
+                    </div>
+                    <div class="case-snippet">${caseItem.snippet}</div>
+                `;
+                div.onclick = () => selectCase(caseItem);
+                resultsList.appendChild(div);
+            });
+        }
+
+        // Select a case
+        function selectCase(caseItem) {
+            selectedCase = caseItem;
+            entitiesExtracted = false;
+            
+            document.querySelectorAll('.case-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            detailEmpty.classList.add('hidden');
+            detailView.classList.remove('hidden');
+            entityLegend.classList.add('hidden');
+
+            detailTitle.textContent = caseItem.title;
+            detailCourt.textContent = caseItem.court;
+            detailDate.textContent = caseItem.date;
+            detailCitation.textContent = caseItem.citation;
+
+            renderSummary(caseItem);
+            renderFullText(caseItem);
+            setActiveTab('summary');
+        }
+
+        // Render summary
+        function renderSummary(caseItem) {
+            contentSummary.innerHTML = `
+                <div class="summary-section">
+                    <h4>Holding</h4>
+                    <p>${caseItem.summary.holding}</p>
+                </div>
+                <div class="summary-section">
+                    <h4>Key Points</h4>
+                    <ul class="key-points">
+                        ${caseItem.summary.keyPoints.map(point => `<li>${point}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="summary-section">
+                    <h4>Impact</h4>
+                    <p>${caseItem.summary.impact}</p>
+                </div>
+                <div class="summary-section">
+                    <h4>Citation</h4>
+                    <div class="citation-box">${caseItem.citation}</div>
+                </div>
+            `;
+        }
+
+        // Render full text
+        function renderFullText(caseItem) {
+            const paragraphs = caseItem.fullText.split('\n\n').map(p => `<p>${p}</p>`).join('');
+            contentFullText.innerHTML = paragraphs;
+        }
+
+        // Set active tab
+        function setActiveTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === tab);
+            });
+            contentSummary.classList.toggle('hidden', tab !== 'summary');
+            contentFullText.classList.toggle('hidden', tab !== 'fulltext');
+        }
+
+        // Extract entities
+        function extractEntities() {
+            if (!selectedCase || entitiesExtracted) return;
+            
+            entitiesExtracted = true;
+            entityLegend.classList.remove('hidden');
+
+            // Name patterns - common legal names and party references
+            const namePatterns = [
+                /\b(Chief Justice|Justice)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g,
+                /\b([A-Z][a-z]+(?:\s+[A-Z]\.?\s+)?[A-Z][a-z]+)\s+(?:v\.|vs\.)/g,
+                /(?:v\.|vs\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g,
+                /\b(Mr\.|Mrs\.|Ms\.|Dr\.)\s+([A-Z][a-z]+)/g,
+                /\bDefendant[s]?\s+([A-Z][a-z]+)/g,
+                /\bPlaintiff[s]?\s+([A-Z][a-z]+)/g,
+                /\b(Miranda|Brown|Roe|Gideon|Sullivan|Marbury|Madison|Mapp|Terry|Plessy|Ferguson|Obergefell|Hodges|Scott|Brandenburg)\b/g
+            ];
+
+            // Date patterns
+            const datePatterns = [
+                /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g,
+                /\b\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December),?\s+\d{4}\b/g,
+                /\b\d{4}\b(?=\s*\)|\s*\])/g,
+                /\b(18|19|20)\d{2}\b/g
+            ];
+
+            // Process full text
+            let fullTextHtml = contentFullText.innerHTML;
+            
+            // Highlight names
+            namePatterns.forEach(pattern => {
+                fullTextHtml = fullTextHtml.replace(pattern, match => {
+                    if (!match.includes('entity-')) {
+                        return `<span class="entity-name">${match}</span>`;
+                    }
+                    return match;
+                });
+            });
+
+            // Highlight dates
+            datePatterns.forEach(pattern => {
+                fullTextHtml = fullTextHtml.replace(pattern, match => {
+                    if (!match.includes('entity-')) {
+                        return `<span class="entity-date">${match}</span>`;
+                    }
+                    return match;
+                });
+            });
+
+            contentFullText.innerHTML = fullTextHtml;
+
+            // Process summary
+            let summaryHtml = contentSummary.innerHTML;
+            
+            namePatterns.forEach(pattern => {
+                summaryHtml = summaryHtml.replace(pattern, match => {
+                    if (!match.includes('entity-')) {
+                        return `<span class="entity-name">${match}</span>`;
+                    }
+                    return match;
+                });
+            });
+
+            datePatterns.forEach(pattern => {
+                summaryHtml = summaryHtml.replace(pattern, match => {
+                    if (!match.includes('entity-')) {
+                        return `<span class="entity-date">${match}</span>`;
+                    }
+                    return match;
+                });
+            });
+
+            contentSummary.innerHTML = summaryHtml;
+        }
+
+        // Save note
+        function saveNote() {
+            const text = noteInput.value.trim();
+            if (!text) return;
+
+            const note = {
+                id: Date.now(),
+                caseId: selectedCase?.id,
+                caseTitle: selectedCase?.title || 'General Note',
+                text: text,
+                date: new Date().toLocaleDateString()
+            };
+
+            notes.unshift(note);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            noteInput.value = '';
+            renderNotes();
+        }
+
+        // Delete note
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        // Render notes
+        function renderNotes() {
+            notesList.innerHTML = '';
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="no-results">No notes saved yet</div>';
+                return;
+            }
+
+            notes.forEach(note => {
+                const div = document.createElement('div');
+                div.className = 'note-item';
+                div.innerHTML = `
+                    <div class="note-case">${note.caseTitle}</div>
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-footer">
+                        <span class="note-date">${note.date}</span>
+                        <button class="delete-note" onclick="deleteNote(${note.id})">Delete</button>
+                    </div>
+                `;
+                notesList.appendChild(div);
+            });
+        }
+
+        // Toggle notes sidebar
+        function toggleNotes() {
+            notesSidebarOpen = !notesSidebarOpen;
+            notesSidebar.classList.toggle('open', notesSidebarOpen);
+        }
+
+        // Search cases
+        function searchCases(query) {
+            query = query.toLowerCase();
+            if (!query) {
+                renderCases(legalCases);
+                return;
+            }
+
+            const filtered = legalCases.filter(c => 
+                c.title.toLowerCase().includes(query) ||
+                c.court.toLowerCase().includes(query) ||
+                c.snippet.toLowerCase().includes(query) ||
+                c.citation.toLowerCase().includes(query) ||
+                c.fullText.toLowerCase().includes(query) ||
+                c.summary.holding.toLowerCase().includes(query)
+            );
+
+            renderCases(filtered);
+        }
+
+        // Add to notes (from selection)
+        function addToNotes() {
+            const selection = window.getSelection().toString().trim();
+            if (selection) {
+                noteInput.value = selection;
+            }
+            if (!notesSidebarOpen) {
+                toggleNotes();
+            }
+            noteInput.focus();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => searchCases(e.target.value), 200);
+            });
+
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+            });
+
+            // Extract entities
+            document.getElementById('extractEntities').addEventListener('click', extractEntities);
+
+            // Add to notes
+            document.getElementById('addToNotes').addEventListener('click', addToNotes);
+
+            // Save note
+            document.getElementById('saveNote').addEventListener('click', saveNote);
+
+            // Toggle notes
+            document.getElementById('notesToggle').addEventListener('click', toggleNotes);
+            document.getElementById('closeNotes').addEventListener('click', toggleNotes);
+
+            // Enter key in note input
+            noteInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    saveNote();
+                }
+            });
+        }
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>

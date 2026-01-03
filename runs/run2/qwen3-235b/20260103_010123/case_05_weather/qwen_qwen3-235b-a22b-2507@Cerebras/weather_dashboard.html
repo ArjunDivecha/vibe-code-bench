@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f5ff;
+            color: #333;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .city-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .city-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .city-name {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .temperature {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .condition {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .condition-icon {
+            font-size: 2rem;
+            margin-right: 8px;
+        }
+
+        .humidity {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .details-panel {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .details-panel h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .chart-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .bar-chart {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 200px;
+            padding: 20px 0;
+        }
+
+        .bar {
+            width: 60px;
+            background-color: #3498db;
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .bar:hover {
+            background-color: #2980b9;
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        /* Condition-based backgrounds */
+        .sunny {
+            background-color: #ffebd6;
+        }
+
+        .cloudy {
+            background-color: #e0ecf8;
+        }
+
+        .rainy {
+            background-color: #d6eaf8;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .city-card {
+                padding: 15px;
+            }
+
+            .temperature {
+                font-size: 2rem;
+            }
+
+            .details-panel {
+                padding: 15px;
+            }
+
+            .bar {
+                width: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bar-chart {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Weather Dashboard</h1>
+            <p>Current weather conditions around the world</p>
+        </header>
+
+        <div class="weather-grid" id="weatherGrid">
+            <!-- City cards will be inserted here by JavaScript -->
+        </div>
+
+        <div class="details-panel" id="detailsPanel">
+            <h2 id="detailsCity">City Details</h2>
+            <div class="details-grid" id="detailsGrid">
+                <!-- Detail items will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2 class="chart-title">Temperature Comparison</h2>
+            <div class="bar-chart" id="barChart">
+                <!-- Bars will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock weather data
+        const weatherData = [
+            {
+                city: "New York",
+                temperature: 72,
+                condition: "sunny",
+                humidity: 65,
+                windSpeed: 8,
+                pressure: 30.15,
+                uvIndex: 6,
+                visibility: 10
+            },
+            {
+                city: "London",
+                temperature: 59,
+                condition: "cloudy",
+                humidity: 78,
+                windSpeed: 12,
+                pressure: 29.85,
+                uvIndex: 2,
+                visibility: 6
+            },
+            {
+                city: "Tokyo",
+                temperature: 78,
+                condition: "sunny",
+                humidity: 60,
+                windSpeed: 10,
+                pressure: 30.02,
+                uvIndex: 5,
+                visibility: 9
+            },
+            {
+                city: "Sydney",
+                temperature: 85,
+                condition: "sunny",
+                humidity: 55,
+                windSpeed: 14,
+                pressure: 29.98,
+                uvIndex: 8,
+                visibility: 8
+            },
+            {
+                city: "Paris",
+                temperature: 64,
+                condition: "rainy",
+                humidity: 82,
+                windSpeed: 6,
+                pressure: 29.75,
+                uvIndex: 3,
+                visibility: 5
+            }
+        ];
+
+        // Condition icons mapping
+        const conditionIcons = {
+            sunny: "☀️",
+            cloudy: "☁️",
+            rainy: "🌧️"
+        };
+
+        // Condition display names
+        const conditionNames = {
+            sunny: "Sunny",
+            cloudy: "Cloudy",
+            rainy: "Rainy"
+        };
+
+        // Function to update background based on selected condition
+        function updateBackground(condition) {
+            document.body.className = condition;
+        }
+
+        // Function to create city cards
+        function createCityCards() {
+            const weatherGrid = document.getElementById('weatherGrid');
+            weatherGrid.innerHTML = '';
+
+            weatherData.forEach(city => {
+                const card = document.createElement('div');
+                card.className = `city-card ${city.condition}`;
+                card.dataset.city = city.city;
+                card.innerHTML = `
+                    <h3 class="city-name">${city.city}</h3>
+                    <div class="temperature">${city.temperature}°F</div>
+                    <div class="condition">
+                        <span class="condition-icon">${conditionIcons[city.condition]}</span>
+                        <span>${conditionNames[city.condition]}</span>
+                    </div>
+                    <div class="humidity">Humidity: ${city.humidity}%</div>
+                `;
+                card.addEventListener('click', () => showCityDetails(city.city));
+                weatherGrid.appendChild(card);
+            });
+
+            // Set initial background based on first city's condition
+            updateBackground(weatherData[0].condition);
+        }
+
+        // Function to show city details
+        function showCityDetails(cityName) {
+            const city = weatherData.find(c => c.city === cityName);
+            if (!city) return;
+
+            const detailsPanel = document.getElementById('detailsPanel');
+            const detailsCity = document.getElementById('detailsCity');
+            const detailsGrid = document.getElementById('detailsGrid');
+
+            detailsCity.textContent = `${city.city} Details`;
+            detailsGrid.innerHTML = `
+                <div class="detail-item">
+                    <div class="detail-label">Temperature</div>
+                    <div class="detail-value">${city.temperature}°F</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Condition</div>
+                    <div class="detail-value">${conditionNames[city.condition]}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Humidity</div>
+                    <div class="detail-value">${city.humidity}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Wind Speed</div>
+                    <div class="detail-value">${city.windSpeed} mph</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Pressure</div>
+                    <div class="detail-value">${city.pressure} in</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">UV Index</div>
+                    <div class="detail-value">${city.uvIndex}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Visibility</div>
+                    <div class="detail-value">${city.visibility} mi</div>
+                </div>
+            `;
+
+            detailsPanel.style.display = 'block';
+            updateBackground(city.condition);
+        }
+
+        // Function to create temperature bar chart
+        function createBarChart() {
+            const barChart = document.getElementById('barChart');
+            barChart.innerHTML = '';
+
+            // Find min and max temperatures for scaling
+            const temperatures = weatherData.map(city => city.temperature);
+            const minTemp = Math.min(...temperatures);
+            const maxTemp = Math.max(...temperatures);
+            const tempRange = maxTemp - minTemp;
+
+            weatherData.forEach(city => {
+                // Scale bar height between 50px and 180px
+                const barHeight = 50 + (130 * (city.temperature - minTemp) / (tempRange || 1));
+                
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${barHeight}px`;
+                bar.innerHTML = `
+                    <div class="bar-value">${city.temperature}°</div>
+                    <div class="bar-label">${city.city}</div>
+                `;
+                barChart.appendChild(bar);
+            });
+        }
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            createCityCards();
+            createBarChart();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simple Kanban Board</title>
+<style>
+    :root {
+        --bg: #f5f6fa;
+        --border: #dcdde1;
+        --text: #2f3640;
+        --card-bg: #fff;
+        --red: #ff6b6b;
+        --yellow: #feca57;
+        --green: #1dd1a1;
+        --shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    header h1 {
+        margin: 0;
+        font-size: 20px;
+        flex: 1;
+    }
+    .form-row {
+        display: flex;
+        gap: 8px;
+    }
+    input[type="text"], select, button {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 14px;
+        background: #fff;
+    }
+    button {
+        cursor: pointer;
+        background: #4070f4;
+        color: #fff;
+        border: none;
+        box-shadow: var(--shadow);
+        transition: transform 0.08s ease, box-shadow 0.12s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.16); }
+    button:active { transform: translateY(0); }
+    main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding: 16px;
+    }
+    .column {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        min-height: 60vh;
+        box-shadow: var(--shadow);
+    }
+    .column-header {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .column-body {
+        padding: 12px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .card {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: var(--shadow);
+        border-left: 6px solid var(--border);
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        word-break: break-word;
+    }
+    .card:active { cursor: grabbing; }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0,0,0,0.14); }
+    .priority-low { border-left-color: var(--green); }
+    .priority-medium { border-left-color: var(--yellow); }
+    .priority-urgent { border-left-color: var(--red); }
+    .drop-target {
+        border: 2px dashed #74b9ff;
+        background: rgba(116,185,255,0.08);
+    }
+    /* Modal */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.35);
+        z-index: 100;
+    }
+    .modal {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        min-width: 280px;
+        max-width: 360px;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.2);
+    }
+    .modal h3 { margin: 0 0 12px; }
+    .modal .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 12px;
+    }
+    .danger {
+        background: #e74c3c;
+    }
+    @media (max-width: 900px) {
+        main { grid-template-columns: 1fr; }
+        header { flex-direction: column; align-items: flex-start; }
+        .form-row { width: 100%; }
+        .form-row input[type="text"] { flex: 1; width: 100%; }
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>Kanban Board</h1>
+    <form id="new-card-form" class="form-row">
+        <input type="text" id="new-title" placeholder="Card title" required>
+        <select id="new-priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="urgent">Urgent</option>
+        </select>
+        <button type="submit">Add</button>
+    </form>
+</header>
+<main id="board"></main>
+
+<!-- Modal for edit/delete -->
+<div class="modal-backdrop" id="modal">
+    <div class="modal">
+        <h3>Edit Card</h3>
+        <label style="display:block; margin-bottom:6px;">
+            Title<br>
+            <input type="text" id="edit-title" style="width:100%; margin-top:4px;">
+        </label>
+        <label style="display:block; margin-bottom:6px;">
+            Priority<br>
+            <select id="edit-priority" style="width:100%; margin-top:4px;">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="urgent">Urgent</option>
+            </select>
+        </label>
+        <div class="actions">
+            <button type="button" class="danger" id="delete-btn">Delete</button>
+            <button type="button" id="cancel-btn">Cancel</button>
+            <button type="button" id="save-btn">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const STORAGE_KEY = 'kanban_data_v1';
+
+    const columns = [
+        { id: 'todo', title: 'To Do' },
+        { id: 'inprogress', title: 'In Progress' },
+        { id: 'done', title: 'Done' }
+    ];
+
+    let state = loadState();
+    const boardEl = document.getElementById('board');
+    const formEl = document.getElementById('new-card-form');
+    const newTitleEl = document.getElementById('new-title');
+    const newPriorityEl = document.getElementById('new-priority');
+
+    const modalBackdrop = document.getElementById('modal');
+    const editTitleEl = document.getElementById('edit-title');
+    const editPriorityEl = document.getElementById('edit-priority');
+    const saveBtn = document.getElementById('save-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    let editingCardId = null;
+    let editingColumnId = null;
+
+    function uuid() {
+        return 'xxxx-4xxx-yxxx-xxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch(e) { console.warn('Failed to load state', e); }
+        return {
+            todo: [],
+            inprogress: [],
+            done: []
+        };
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function render() {
+        boardEl.innerHTML = '';
+        columns.forEach(col => {
+            const colEl = document.createElement('section');
+            colEl.className = 'column';
+            colEl.dataset.column = col.id;
+
+            const header = document.createElement('div');
+            header.className = 'column-header';
+            header.textContent = col.title;
+
+            const body = document.createElement('div');
+            body.className = 'column-body';
+            body.dataset.columnBody = col.id;
+            body.addEventListener('dragover', handleDragOver);
+            body.addEventListener('drop', handleDrop);
+            body.addEventListener('dragleave', handleDragLeave);
+
+            const cards = state[col.id] || [];
+            cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card priority-${card.priority}`;
+                cardEl.draggable = true;
+                cardEl.textContent = card.title;
+                cardEl.dataset.id = card.id;
+                cardEl.dataset.column = col.id;
+                cardEl.addEventListener('dragstart', handleDragStart);
+                cardEl.addEventListener('dragend', handleDragEnd);
+                cardEl.addEventListener('click', () => openEdit(card.id, col.id));
+                body.appendChild(cardEl);
+            });
+
+            colEl.appendChild(header);
+            colEl.appendChild(body);
+            boardEl.appendChild(colEl);
+        });
+    }
+
+    function addCard(title, priority) {
+        const card = { id: uuid(), title, priority };
+        state.todo.push(card);
+        saveState();
+        render();
+    }
+
+    function openEdit(id, columnId) {
+        editingCardId = id;
+        editingColumnId = columnId;
+        const card = state[columnId].find(c => c.id === id);
+        if (!card) return;
+        editTitleEl.value = card.title;
+        editPriorityEl.value = card.priority;
+        modalBackdrop.style.display = 'flex';
+        editTitleEl.focus();
+    }
+
+    function closeModal() {
+        modalBackdrop.style.display = 'none';
+        editingCardId = null;
+        editingColumnId = null;
+    }
+
+    function saveEdit() {
+        if (!editingCardId || !editingColumnId) return;
+        const cards = state[editingColumnId];
+        const card = cards.find(c => c.id === editingCardId);
+        if (!card) return;
+        card.title = editTitleEl.value.trim() || card.title;
+        card.priority = editPriorityEl.value;
+        saveState();
+        render();
+        closeModal();
+    }
+
+    function deleteCard() {
+        if (!editingCardId || !editingColumnId) return;
+        state[editingColumnId] = state[editingColumnId].filter(c => c.id !== editingCardId);
+        saveState();
+        render();
+        closeModal();
+    }
+
+    let dragData = null;
+    function handleDragStart(e) {
+        const id = e.target.dataset.id;
+        const column = e.target.dataset.column;
+        dragData = { id, from: column };
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', id);
+        setTimeout(() => e.target.classList.add('dragging'), 0);
+    }
+
+    function handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+        clearDropTargets();
+        dragData = null;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        if (!dragData) return;
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('drop-target');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drop-target');
+    }
+
+    function clearDropTargets() {
+        document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const targetColumn = e.currentTarget.dataset.columnBody;
+        if (!dragData) return;
+        const { id, from } = dragData;
+        if (from === targetColumn) { clearDropTargets(); return; }
+        const fromList = state[from];
+        const cardIndex = fromList.findIndex(c => c.id === id);
+        if (cardIndex === -1) return;
+        const [card] = fromList.splice(cardIndex, 1);
+        state[targetColumn].push(card);
+        saveState();
+        render();
+    }
+
+    formEl.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = newTitleEl.value.trim();
+        if (!title) return;
+        addCard(title, newPriorityEl.value);
+        newTitleEl.value = '';
+        newTitleEl.focus();
+    });
+
+    saveBtn.addEventListener('click', saveEdit);
+    deleteBtn.addEventListener('click', deleteCard);
+    cancelBtn.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalBackdrop.style.display === 'flex') {
+            closeModal();
+        }
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>

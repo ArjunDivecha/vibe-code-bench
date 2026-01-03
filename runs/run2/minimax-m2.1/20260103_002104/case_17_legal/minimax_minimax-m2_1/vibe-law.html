@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-hover: #30363d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-gold: #d29922;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --highlight-yellow: rgba(210, 153, 34, 0.4);
+            --highlight-blue: rgba(88, 166, 255, 0.4);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-gold));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 40px;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 44px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            width: 380px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .results-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .results-count strong {
+            color: var(--text-primary);
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .results-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .results-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .case-card {
+            background: var(--bg-tertiary);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .case-card:hover {
+            border-color: var(--border-color);
+            background: var(--bg-hover);
+        }
+
+        .case-card.active {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.08);
+        }
+
+        .case-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .case-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .case-card-court {
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--accent-blue);
+        }
+
+        .case-card-snippet {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .case-card-snippet mark {
+            background: var(--highlight-yellow);
+            color: var(--text-primary);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .detail-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .detail-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .detail-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-meta-label {
+            color: var(--text-muted);
+        }
+
+        .detail-meta-value {
+            color: var(--text-primary);
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: #4393e6;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-gold {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--accent-gold);
+            border-color: rgba(210, 153, 34, 0.3);
+        }
+
+        .btn-gold:hover {
+            background: rgba(210, 153, 34, 0.25);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .tab-pane {
+            display: none;
+            max-width: 900px;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Summary Tab */
+        .summary-section {
+            margin-bottom: 24px;
+        }
+
+        .summary-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .issues-list {
+            list-style: none;
+        }
+
+        .issues-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .issues-list li:last-child {
+            border-bottom: none;
+        }
+
+        .issue-bullet {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .holding-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .holding-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .holding-text {
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Full Text Tab */
+        .full-text-content {
+            font-family: 'Georgia', serif;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .full-text-content p {
+            margin-bottom: 16px;
+            text-align: justify;
+        }
+
+        .full-text-content .citation {
+            color: var(--accent-gold);
+        }
+
+        .full-text-content .highlight-entity {
+            background: var(--highlight-blue);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .full-text-content .highlight-person {
+            background: rgba(88, 166, 255, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .full-text-content .highlight-date {
+            background: rgba(210, 153, 34, 0.35);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .notes-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notes-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .notes-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .note-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .note-card:hover {
+            border-color: var(--text-muted);
+        }
+
+        .note-case-ref {
+            font-size: 11px;
+            color: var(--accent-blue);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .note-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .note-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .note-card:hover .note-delete {
+            opacity: 1;
+        }
+
+        .note-delete:hover {
+            color: var(--accent-red);
+        }
+
+        .add-note-btn {
+            margin: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .add-note-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        /* Note Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: var(--shadow);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-body label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .modal-body textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .modal-body textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            max-width: 300px;
+        }
+
+        /* Selection popup */
+        .selection-popup {
+            position: fixed;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            z-index: 100;
+        }
+
+        .selection-popup.active {
+            display: block;
+        }
+
+        .selection-popup .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Entity legend */
+        .entity-legend {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-person {
+            background: rgba(88, 166, 255, 0.3);
+        }
+
+        .legend-date {
+            background: rgba(210, 153, 34, 0.35);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .notes-sidebar {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .results-panel {
+                width: 320px;
+            }
+            .notes-sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚖️</div>
+            <span>Vibe-Law</span>
+        </div>
+        <div class="search-container">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search cases, citations, parties, or topics...">
+            </div>
+        </div>
+        <div class="user-menu">
+            <div class="user-avatar">JL</div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Results Panel -->
+        <aside class="results-panel">
+            <div class="results-header">
+                <div class="results-count">Showing <strong id="resultsCount">0</strong> cases</div>
+            </div>
+            <div class="results-list" id="resultsList">
+                <!-- Cases will be rendered here -->
+            </div>
+        </aside>
+
+        <!-- Detail Panel -->
+        <main class="detail-panel" id="detailPanel">
+            <div class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <div class="empty-state-title">Select a case to view</div>
+                <div class="empty-state-text">Choose a case from the results list to view its details, full text, and add notes.</div>
+            </div>
+        </main>
+
+        <!-- Notes Sidebar -->
+        <aside class="notes-sidebar" id="notesSidebar" style="display: none;">
+            <div class="notes-header">
+                <div class="notes-title">📝 Research Notes</div>
+                <div class="notes-count" id="notesCount">0 notes</div>
+            </div>
+            <div class="notes-list" id="notesList">
+                <!-- Notes will be rendered here -->
+            </div>
+            <button class="add-note-btn" id="addNoteBtn">
+                <span>➕</span> Add Note
+            </button>
+        </aside>
+    </div>
+
+    <!-- Note Modal -->
+    <div class="modal-overlay" id="noteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Research Note</div>
+                <button class="modal-close" id="modalClose">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="noteText">Note</label>
+                <textarea id="noteText" placeholder="Enter your notes about this case..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+                <button class="btn btn-primary" id="modalSave">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Popup -->
+    <div class="selection-popup" id="selectionPopup">
+        <button class="btn btn-gold" id="selectionNote">📝 Add to Notes</button>
+    </div>
+
+    <script>
+        // Mock Legal Cases Data
+        const cases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson Industries, Inc.",
+                citation: "572 U.S. 847 (2023)",
+                court: "Supreme Court",
+                date: "2023-04-15",
+                summary: "This case addresses the scope of employer liability under Title VII for discriminatory workplace practices. The Court considered whether a corporation can be held liable for the discriminatory actions of mid-level managers acting outside their express authority. The petitioner argued that corporate culture must be examined as a whole, while respondents contended that only direct supervisory actions should trigger liability.",
+                fullText: `The petition for a writ of certiorari is granted.
+
+This case presents the important question of employer liability under Title VII of the Civil Rights Act of 1964. The petitioner, Maria Smith, filed a complaint alleging that Johnson Industries, Inc. engaged in systematic discrimination against female employees in its engineering division.
+
+The District Court granted summary judgment for the respondent, holding that the company could not be liable because the supervisors involved acted outside the scope of their employment. The Court of Appeals affirmed, adopting a narrow interpretation of employer responsibility.
+
+We hold that an employer may be held liable for the discriminatory actions of its employees when those actions occur within the scope of employment or when the employer has failed to prevent such discrimination through adequate policies and training. The culture of an organization is relevant to determining liability.
+
+The judgment of the Court of Appeals is reversed, and the case is remanded for further proceedings consistent with this opinion. Chief Justice Thompson delivered the opinion of the Court.
+
+Justice Garcia, concurring in part and dissenting in part, wrote separately to emphasize the need for clearer standards in determining the scope of employment.`,
+                issues: ["Scope of employer liability for mid-level supervisor actions", "Relevance of corporate culture in discrimination cases", "Adequacy of preventative policies"],
+                holding: "An employer may be held liable for discriminatory actions of employees when those actions occur within the scope of employment or when the employer has failed to implement adequate preventative measures.",
+                parties: ["Maria Smith", "Johnson Industries, Inc.", "Chief Justice Thompson", "Justice Garcia"]
+            },
+            {
+                id: 2,
+                title: "In re: Securities Litigation - TechCorp",
+                citation: "892 F.3d 1124 (9th Cir. 2023)",
+                court: "9th Circuit",
+                date: "2023-06-22",
+                summary: "Consolidated appeal addressing securities fraud claims arising from alleged material misrepresentations in quarterly earnings reports. The panel considered the application of the Private Securities Litigation Reform Act's safe harbor provisions for forward-looking statements and the sufficiency of scienter allegations under the heightened pleading standards.",
+                fullText: `This consolidated appeal arises from securities fraud claims brought by investors against TechCorp, Inc. and several of its executive officers. The plaintiffs allege that the defendants made material misrepresentations regarding the company's financial performance and growth prospects in violation of Section 10(b) of the Securities Exchange Act of 1934.
+
+The district court dismissed the consolidated complaints for failure to state a claim, holding that the challenged statements constituted protected forward-looking statements under the PSLRA's safe harbor provision.
+
+We review de novo. The PSLRA provides a safe harbor for forward-looking statements that are identified as such and accompanied by meaningful cautionary language. However, the safe harbor does not apply to statements that are themselves false when made, even if they are framed as projections.
+
+Applying these principles, we conclude that several of the challenged statements fall outside the safe harbor because they purport to describe existing facts rather than future projections. The plaintiffs have adequately alleged scienter with respect to the individual defendants.
+
+REVERSED and REMANDED. Judge Morrison wrote the opinion.`,
+                issues: ["Application of PSLRA safe harbor provisions", "Scienter pleading requirements", "Distinction between forward-looking statements and existing facts"],
+                holding: "The PSLRA safe harbor does not protect statements that, while framed as projections, actually misrepresent existing facts at the time they were made.",
+                parties: ["TechCorp, Inc.", "Executive Officers of TechCorp", "Investor Plaintiffs", "Judge Morrison"]
+            },
+            {
+                id: 3,
+                title: "State of California v. Martinez",
+                citation: "14 Cal.5th 892 (2023)",
+                court: "California Supreme Court",
+                date: "2023-03-08",
+                summary: "Criminal appeal addressing the admissibility of digital evidence obtained through a warrantless search of cloud storage. The Court examined the third-party doctrine's application to modern data storage technologies and whether individuals retain a reasonable expectation of privacy in their cloud-archived documents.",
+                fullText: `Defendant Roberto Martinez appeals from a judgment of conviction for identity theft and computer fraud. The trial court denied his motion to suppress evidence obtained from his iCloud account, which was accessed by law enforcement without a warrant.
+
+The Attorney General argues that under the third-party doctrine established in Smith v. Maryland, Martinez had no reasonable expectation of privacy in information voluntarily transmitted to a third-party service provider.
+
+We disagree. The nature of cloud storage is fundamentally different from the telephone records at issue in Smith. When individuals store documents in cloud services, they retain a significant expectation of privacy. The third-party doctrine, developed in an era of analog communications, does not seamlessly translate to digital data storage.
+
+We hold that law enforcement must obtain a warrant before accessing the contents of cloud storage accounts. The judgment is reversed, and the case is remanded for further proceedings.
+
+Justice Chen, concurring, wrote separately to emphasize the need for comprehensive privacy legislation addressing emerging technologies.`,
+                issues: ["Warrant requirements for cloud storage", "Third-party doctrine in digital context", "Reasonable expectation of privacy in cloud data"],
+                holding: "Individuals retain a reasonable expectation of privacy in the contents of their cloud storage accounts, requiring law enforcement to obtain a warrant before access.",
+                parties: ["State of California", "Roberto Martinez", "Attorney General", "Justice Chen"]
+            },
+            {
+                id: 4,
+                title: "National Association of Realtors v. Federal Trade Commission",
+                citation: "1 F.4th 567 (D.C. Cir. 2023)",
+                court: "D.C. Circuit",
+                date: "2023-05-18",
+                summary: "Administrative law challenge to the FTC's rulemaking authority under Section 5 of the FTC Act. The court considered whether the Commission properly invoked its unfairness authority to regulate business practices beyond consumer protection and whether the procedural requirements of the Administrative Procedure Act were satisfied.",
+                fullText: `The National Association of Realtors petitions for review of a Federal Trade Commission rule regulating real estate commission structures. NAR argues that the Commission exceeded its authority under Section 5 of the FTC Act and failed to follow proper rulemaking procedures.
+
+The Commission contends that the challenged practices constitute unfair methods of competition under Section 5's broad mandate to protect consumers and preserve competitive markets.
+
+We hold that the Commission's interpretation of its unfairness authority is entitled to Chevron deference. The Commission has reasonably determined that certain commission structures harm consumers and distort market competition. However, we conclude that the final rule was issued without adequate notice-and-comment proceedings.
+
+PETITION GRANTED IN PART, DENIED IN PART. The rule is VACATED and REMANDED for proceedings consistent with this opinion.`,
+                issues: ["Scope of FTC rulemaking authority", "Application of Chevron deference to agency interpretations", "Notice-and-comment requirements"],
+                holding: "The FTC possesses broad authority to regulate unfair methods of competition, but must follow proper notice-and-comment procedures when promulgating substantive rules.",
+                parties: ["National Association of Realtors", "Federal Trade Commission", "Commissioner Williams"]
+            },
+            {
+                id: 5,
+                title: "Doe v. Harvard University",
+                citation: "456 Mass. 874 (2023)",
+                court: "Massachusetts Supreme Judicial Court",
+                date: "2023-07-12",
+                summary: "Civil rights action challenging university disciplinary procedures under state anti-discrimination law. The plaintiff alleged that Harvard's hearing process for sexual assault allegations violated procedural due process and the state's fair education practices requirements.",
+                fullText: `Plaintiff Jane Doe, a former Harvard undergraduate, brings this action alleging violations of state anti-discrimination law and breach of contract. Doe's claims arise from Harvard's disciplinary proceedings that resulted in her suspension for alleged violations of the university's sexual misconduct policy.
+
+Doe argues that the hearing was fundamentally unfair because she was denied the opportunity to confront her accuser and present witness testimony. Harvard maintains that its procedures satisfy due process requirements and exceed what is required by law.
+
+We recognize the difficult balance universities must strike between providing fair procedures and protecting complainants from secondary trauma. However, fundamental fairness requires that accused students be given meaningful notice and an opportunity to respond to the evidence against them.
+
+The judgment of the trial court is AFFIRMED in part, REVERSED in part. The case is REMANDED for determination of appropriate remedies.
+
+Justice O'Connor, concurring, wrote separately to encourage universities to continue improving their procedures to ensure both fairness and sensitivity.`,
+                issues: ["Due process in university disciplinary proceedings", "Rights of accused students", "Balance between complainant protection and procedural fairness"],
+                holding: "Universities must provide accused students with meaningful notice and an opportunity to respond to evidence, though the precise procedures may vary based on institutional context.",
+                parties: ["Jane Doe", "Harvard University", "Justice O'Connor"]
+            },
+            {
+                id: 6,
+                title: "Environmental Coalition v. Department of Energy",
+                citation: "789 F.3d 445 (7th Cir. 2023)",
+                court: "7th Circuit",
+                date: "2023-02-28",
+                summary: "Environmental challenge to the Department of Energy's approval of liquefied natural gas export facilities. The court considered whether the agency adequately considered greenhouse gas emissions under the National Environmental Policy Act and whether its economic analysis satisfied the requirements of the Natural Gas Act.",
+                fullText: `The Environmental Coalition and several state attorneys general petition for review of the Department of Energy's authorization of LNG export facilities in the Gulf Coast region. Petitioners challenge DOE's environmental review and economic justification for the authorizations.
+
+Under NEPA, federal agencies must consider the environmental impacts of their proposed actions. DOE conducted an environmental impact statement that assessed greenhouse gas emissions from the proposed facilities.
+
+We find that DOE's environmental analysis was adequate under NEPA's deferential standard of review. The agency considered cumulative impacts and reasonable alternatives. However, we conclude that the economic analysis supporting the public interest finding was insufficient.
+
+The petition is GRANTED IN PART. The export authorizations are VACATED and REMANDED for further proceedings. Judge Richardson wrote the opinion.`,
+                issues: ["NEPA compliance for energy infrastructure", "Greenhouse gas emission considerations", "Economic analysis requirements under Natural Gas Act"],
+                holding: "While agencies have discretion in conducting environmental reviews, the economic analysis supporting energy export authorizations must be thorough and supported by substantial evidence.",
+                parties: ["Environmental Coalition", "Department of Energy", "State Attorneys General", "Judge Richardson"]
+            },
+            {
+                id: 7,
+                title: "Williams v. Metropolitan Police Department",
+                citation: "345 F.Supp.3d 112 (D.D.C. 2023)",
+                court: "District Court, D.D.C.",
+                date: "2023-08-04",
+                summary: "Section 1983 action alleging unconstitutional use of force during a peaceful protest. The plaintiff sought damages and injunctive relief, claiming officers used excessive force in violation of the First and Fourth Amendments.",
+                fullText: `Plaintiff James Williams brings this action under 42 U.S.C. § 1983, alleging that Metropolitan Police Department officers used excessive force against him during a lawful protest in Washington, D.C. Williams seeks compensatory and punitive damages, as well as injunctive relief.
+
+The defendants move for summary judgment, arguing that the officers' actions were reasonable under the circumstances and that qualified immunity applies.
+
+Qualified immunity shields government officials from liability unless their conduct violates clearly established statutory or constitutional rights. The right to peaceful assembly is clearly established, and the right to be free from excessive force is clearly established.
+
+However, whether force was excessive in a particular context is fact-intensive. A reasonable jury could find that the force used against Williams was disproportionate to any threat he posed. Genuine disputes of material fact preclude summary judgment.
+
+DEFENDANTS' MOTION FOR SUMMARY JUDGMENT IS DENIED. The case will proceed to trial.`,
+                issues: ["Qualified immunity analysis", "Excessive force in protest contexts", "First Amendment rights during demonstrations"],
+                holding: "Genuine disputes of material fact regarding the reasonableness of force preclude summary judgment where qualified immunity is disputed.",
+                parties: ["James Williams", "Metropolitan Police Department", "Officer Names Redacted"]
+            },
+            {
+                id: 8,
+                title: "In re: Patent Dispute - Quantum Technologies",
+                citation: "2023 WL 1987456 (Fed. Cir. 2023)",
+                court: "Federal Circuit",
+                date: "2023-01-25",
+                summary: "Patent infringement action involving quantum computing technology. The court considered claim construction issues under Phillips v. AWH and the application of the doctrine of equivalents to software-implemented quantum algorithms.",
+                fullText: `Quantum Technologies, Inc. appeals from a judgment of the Patent Trial and Appeal Board holding that certain claims of its U.S. Patent are invalid as obvious. Quantum Computing Solutions, Inc. intervened to defend the validity of the patent and assert infringement.
+
+The parties dispute the proper construction of several claim terms related to quantum error correction methods. Under the principle established in Phillips v. AHW, we look to the intrinsic evidence of the patent, including the specification and prosecution history.
+
+The Board found that the prior art rendered the claimed invention obvious. We review the Board's factual findings for substantial evidence and its legal conclusions de novo.
+
+We conclude that the Board erred in its construction of the term "quantum error correction module." The specification makes clear that this term encompasses both hardware and software implementations. Under the correct construction, the prior art does not anticipate or render obvious the claimed invention.
+
+REVERSED and REMANDED. Chief Judge Patterson wrote the opinion.`,
+                issues: ["Claim construction for software patents", "Obviousness standard for complex technology", "Doctrine of equivalents in software context"],
+                holding: "Claim construction must be grounded in the specification and prosecution history, and the scope of software claims must be interpreted in light of the specification's disclosed implementations.",
+                parties: ["Quantum Technologies, Inc.", "Quantum Computing Solutions, Inc.", "Patent Trial and Appeal Board", "Chief Judge Patterson"]
+            },
+            {
+                id: 9,
+                title: "Garcia-Flores v. United States",
+                citation: "599 U.S. 445 (2023)",
+                court: "Supreme Court",
+                date: "2023-09-20",
+                summary: "Criminal appeal addressing the constitutional sufficiency of jury instructions in capital cases. The petitioner challenged the constitutionality of the felony murder aggravating factor, arguing it fails to adequately narrow the class of death-eligible defendants as required by the Eighth Amendment.",
+                fullText: `Petitioner Jose Garcia-Flores was convicted of first-degree murder and sentenced to death. The jury found that the murder was committed during the course of a felony, which served as an aggravating factor under state law.
+
+Garcia-Flores argues that this aggravating factor fails to adequately narrow the class of death-eligible defendants, as required by the Eighth Amendment. He contends that every first-degree murder involves some underlying conduct that could be characterized as a felony.
+
+The Eighth Amendment requires that aggravating factors genuinely narrow the class of defendants eligible for the death penalty and reasonably justify the imposition of a more severe sentence. The felony murder aggravating factor, as applied in this case, does not adequately perform this narrowing function.
+
+We hold that the challenged aggravating factor, as construed by the state courts, fails to satisfy Eighth Amendment requirements. The judgment of the Court of Appeals is REVERSED, and the case is REMANDED for further proceedings consistent with this opinion.
+
+Justice Brennan delivered the opinion of the Court, in which Justices Ginsburg, Sotomayor, and Kagan joined.`,
+                issues: ["Eighth Amendment narrowing requirement", "Sufficiency of aggravating factors", "Constitutionality of felony murder aggravator"],
+                holding: "Aggravating factors in capital sentencing must genuinely narrow the class of death-eligible defendants; a felony murder aggravator that applies to all such murders fails this constitutional requirement.",
+                parties: ["Jose Garcia-Flores", "United States", "Justice Brennan", "Justices Ginsburg, Sotomayor, Kagan"]
+            },
+            {
+                id: 10,
+                title: "City of Chicago v. Uber Technologies",
+                citation: "2023 IL App (1st) 220567 (2023)",
+                court: "Illinois Appellate Court",
+                date: "2023-04-03",
+                summary: "Municipal enforcement action challenging Uber's classification of drivers as independent contractors. The city alleged violations of local ordinances requiring employee classification for transportation workers, raising questions about the scope of municipal authority in the gig economy.",
+                fullText: `The City of Chicago brings this enforcement action against Uber Technologies, Inc., alleging that the company has misclassified its drivers as independent contractors in violation of the Chicago Fair Driving Ordinance.
+
+The ordinance requires that transportation network company drivers be classified as employees unless they meet specific criteria demonstrating true entrepreneurial independence. The City argues that Uber drivers do not satisfy these criteria.
+
+Uber contends that the ordinance is preempted by state law and that the classification determination should be left to federal labor law frameworks. Alternatively, Uber argues that its drivers do satisfy the ordinance's criteria.
+
+We conclude that the Chicago Fair Driving Ordinance is not preempted by state law and represents a valid exercise of municipal police power. The criteria established by the ordinance are clear and directly related to the city's legitimate interest in protecting workers.
+
+The trial court's judgment in favor of the City is AFFIRMED. Uber must reclassify its drivers as employees within ninety days of this opinion becoming final.`,
+                issues: ["Independent contractor classification in gig economy", "Municipal authority over worker classification", "Preemption of local employment ordinances"],
+                holding: "Municipalities may establish worker classification requirements for transportation network companies that are not preempted by state law and serve legitimate local interests.",
+                parties: ["City of Chicago", "Uber Technologies, Inc.", "Chicago Drivers"]
+            },
+            {
+                id: 11,
+                title: "Morgan Stanley v. Federal Reserve",
+                citation: "567 F.3d 89 (2nd Cir. 2023)",
+                court: "2nd Circuit",
+                date: "2023-05-30",
+                summary: "Financial regulatory challenge to the Federal Reserve's enforcement action regarding capital adequacy requirements. The bank contested the Board's findings of supervisory violations and the appropriateness of the civil monetary penalty imposed.",
+                fullText: `Morgan Stanley petitions for review of a Federal Reserve enforcement action that found deficiencies in the bank's capital adequacy reporting and imposed a substantial civil monetary penalty.
+
+The Board concluded that Morgan Stanley had materially misreported its capital positions and failed to maintain adequate risk management systems. Morgan Stanley challenges both the factual findings and the proportionality of the penalty.
+
+Under the Administrative Procedure Act, we review the Board's factual findings for substantial evidence. We find that the record supports the Board's findings regarding reporting deficiencies. However, we conclude that the penalty was disproportionate to the violations found.
+
+The petition is GRANTED IN PART. The enforcement order is MODIFIED to reduce the civil monetary penalty. Judge Torres wrote the opinion.`,
+                issues: ["Capital adequacy reporting requirements", "Administrative enforcement proportionality", "Scope of Fed supervisory authority"],
+                holding: "While banks must comply with capital reporting requirements, civil penalties must be proportionate to the nature and severity of the violations found.",
+                parties: ["Morgan Stanley", "Federal Reserve Board", "Judge Torres"]
+            },
+            {
+                id: 12,
+                title: "Republican National Committee v. Secretary of State",
+                citation: "2023 WL 5678901 (E.D. Mich. 2023)",
+                court: "Eastern District of Michigan",
+                date: "2023-06-15",
+                summary: "Voting rights action challenging state election administration procedures under the Voting Rights Act and Fourteenth Amendment. Plaintiffs alleged that certain ballot counting procedures disproportionately affected minority voters.",
+                fullText: `The Republican National Committee and several Michigan voters bring this action challenging the Secretary of State's guidance regarding ballot curing procedures. Plaintiffs argue that the guidance violates the Voting Rights Act and the Equal Protection Clause by creating inconsistent standards across counties.
+
+The defendants move to dismiss for lack of standing and failure to state a claim. Regarding standing, we find that the RNC has demonstrated a concrete injury sufficient to establish organizational standing.
+
+On the merits, plaintiffs argue that the ballot curing guidance allows inconsistent verification procedures that could lead to disparate treatment of voters. We conclude that the challenged guidance does not violate the Voting Rights Act's prohibition on discriminatory voting practices.
+
+However, we recognize the importance of uniformity in election administration. The Secretary is directed to provide clearer standards for ballot curing procedures.
+
+DEFENDANTS' MOTION TO DISMISS IS GRANTED IN PART, DENIED IN PART.`,
+                issues: ["Voting Rights Act compliance", "Equal protection in election administration", "Organizational standing in voting cases"],
+                holding: "While inconsistent ballot curing procedures raise concerns, the challenged guidance does not violate the Voting Rights Act on the current record.",
+                parties: ["Republican National Committee", "Michigan Secretary of State", "Michigan Voters"]
+            },
+            {
+                id: 13,
+                title: "Torres v. Janssen Pharmaceuticals",
+                citation: "45 F.4th 778 (3rd Cir. 2023)",
+                court: "3rd Circuit",
+                date: "2023-07-28",
+                summary: "Products liability action alleging failure to warn about pharmaceutical side effects. The court considered preemption issues under Wyeth v. Levine and the evidentiary standards for establishing causation in complex pharmaceutical litigation.",
+                fullText: `Plaintiff Maria Torres appeals from a judgment entered in favor of Janssen Pharmaceuticals, Inc. in this products liability action. Torres alleges that her use of a Janssen antipsychotic medication caused severe metabolic side effects that were inadequately warned against.
+
+The district court granted summary judgment on grounds of federal preemption, holding that Torres's state law failure-to-warn claims are preempted because the FDA would not have approved a stronger warning.
+
+Under the Supreme Court's decision in Wyeth v. Levine, federal preemption does not apply where a manufacturer could have strengthened its warning through the "changes being effected" (CBE) regulation without FDA approval. The record shows that Janssen could have added stronger warnings about metabolic risks.
+
+We also find that Torres has presented sufficient evidence of causation to survive summary judgment. Expert testimony linking the medication to Torres's conditions, combined with evidence of Janssen's awareness of similar reports, creates a genuine dispute of material fact.
+
+REVERSED and REMANDED. Judge Morrison wrote the opinion.`,
+                issues: ["Pharmaceutical failure-to-warn claims", "Federal preemption analysis", "Causation evidence in drug litigation"],
+                holding: "Pharmaceutical manufacturers may strengthen warnings under CBE regulations without FDA preapproval, and such strengthened warnings do not trigger federal preemption of state law claims.",
+                parties: ["Maria Torres", "Janssen Pharmaceuticals, Inc.", "FDA", "Judge Morrison"]
+            },
+            {
+                id: 14,
+                title: "Data Privacy Alliance v. Meta Platforms",
+                citation: "2023 WL 4456789 (N.D. Cal. 2023)",
+                court: "Northern District of California",
+                date: "2023-03-15",
+                summary: "Consumer privacy class action arising from alleged unauthorized data sharing with third-party applications. Plaintiffs asserted claims under the California Consumer Privacy Act and common law privacy torts.",
+                fullText: `The Data Privacy Alliance brings this class action on behalf of California consumers against Meta Platforms, Inc. The complaint alleges that Meta shared user data with thousands of third-party application developers without adequate disclosure or consent in violation of the CCPA.
+
+Meta moves to dismiss, arguing that users provided implied consent through the platform's terms of service and that the challenged data sharing falls within the CCPA's service provider exception.
+
+We conclude that the complaint adequately pleads a CCPA violation. The service provider exception does not apply to data sharing that enables independent third-party commercial activities. The allegations that Meta permitted third-party developers to access user data for their own purposes fall outside any reasonable interpretation of the service provider relationship.
+
+However, we dismiss the common law intrusion upon seclusion claim for failure to state a cognizable privacy tort under California law.
+
+DEFENDANTS' MOTION TO DISMISS IS GRANTED IN PART, DENIED IN PART.`,
+                issues: ["CCPA service provider exception", "Scope of consumer consent for data sharing", "Privacy torts under California law"],
+                holding: "Data sharing that enables third-party commercial activities does not fall within the CCPA's service provider exception, regardless of terms of service disclosures.",
+                parties: ["Data Privacy Alliance", "Meta Platforms, Inc.", "California Consumers"]
+            },
+            {
+                id: 15,
+                title: "Miller v. Alabama State Bar Association",
+                citation: "2023 WL 7890123 (Ala. 2023)",
+                court: "Alabama Supreme Court",
+                date: "2023-08-22",
+                summary: "Professional discipline matter addressing attorney advertising regulations. The respondent challenged the constitutionality of state bar rules prohibiting certain comparative legal advertisements as violative of commercial speech protections.",
+                false,
+                fullText: `Attorney Thomas Miller appeals from a disciplinary determination by the Alabama State Bar Association. The Bar found that Miller's advertising materials, which compared his verdicts to those of other personal injury attorneys, violated Rules of Professional Conduct governing attorney advertising.
+
+Miller argues that the restrictions violate his First Amendment right to commercial speech. The Bar contends that the restrictions are necessary to protect the public from misleading attorney advertising.
+
+Attorney advertising receives intermediate scrutiny under the First Amendment. Restrictions must directly advance a substantial government interest and be narrowly tailored to serve that interest.
+
+We conclude that the blanket prohibition on comparative advertising exceeds what is necessary to prevent misleading advertising. Attorneys may present truthful information about their results, provided the information is not misleading.
+
+The disciplinary determination is REVERSED. The Bar is directed to revise its advertising guidelines to permit truthful comparative advertising.`,
+                issues: ["Attorney advertising regulations", "Commercial speech protections", "Professional discipline standards"],
+                holding: "Blanket prohibitions on truthful comparative attorney advertising violate the First Amendment; restrictions must be narrowly tailored to prevent genuinely misleading communications.",
+                parties: ["Thomas Miller", "Alabama State Bar Association", "Alabama Consumers"]
+            }
+        ];
+
+        // App State
+        let currentCase = null;
+        let currentTab = 'summary';
+        let notes = JSON.parse(localStorage.getItem('vibeLawNotes') || '[]');
+        let entitiesHighlighted = false;
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const detailPanel = document.getElementById('detailPanel');
+        const notesSidebar = document.getElementById('notesSidebar');
+        const notesList = document.getElementById('notesList');
+        const notesCountEl = document.getElementById('notesCount');
+        const noteModal = document.getElementById('noteModal');
+        const noteText = document.getElementById('noteText');
+        const selectionPopup = document.getElementById('selectionPopup');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCases(cases);
+            renderNotes();
+            setupEventListeners();
+        });
+
+        // Render Cases List
+        function renderCases(casesToRender) {
+            resultsCount.textContent = casesToRender.length;
+            
+            if (casesToRender.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <div class="empty-state-text">No cases found matching your search.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            resultsList.innerHTML = casesToRender.map(caseData => {
+                const snippet = caseData.summary.substring(0, 150) + '...';
+                return `
+                    <div class="case-card" data-id="${caseData.id}" onclick="selectCase(${caseData.id})">
+                        <div class="case-card-title">${caseData.title}</div>
+                        <div class="case-card-meta">
+                            <span class="case-card-court">${caseData.court}</span>
+                            <span>${formatDate(caseData.date)}</span>
+                        </div>
+                        <div class="case-card-snippet">${snippet}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select Case
+        function selectCase(caseId) {
+            const caseData = cases.find(c => c.id === caseId);
+            if (!caseData) return;
+
+            currentCase = caseData;
+            entitiesHighlighted = false;
+
+            // Update active state
+            document.querySelectorAll('.case-card').forEach(card => {
+                card.classList.toggle('active', parseInt(card.dataset.id) === caseId);
+            });
+
+            // Show sidebar
+            notesSidebar.style.display = 'flex';
+
+            // Render detail panel
+            renderDetailPanel(caseData);
+        }
+
+        // Render Detail Panel
+        function renderDetailPanel(caseData) {
+            detailPanel.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-title">${caseData.title}</div>
+                    <div class="detail-meta">
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Citation:</span>
+                            <span class="detail-meta-value">${caseData.citation}</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Court:</span>
+                            <span class="detail-meta-value">${caseData.court}</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Date:</span>
+                            <span class="detail-meta-value">${formatDate(caseData.date)}</span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Parties:</span>
+                            <span class="detail-meta-value">${caseData.parties.slice(0, 2).join(' v. ')}</span>
+                        </div>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn btn-primary" onclick="openNoteModal()">
+                            <span>📝</span> Add Note
+                        </button>
+                        <button class="btn btn-gold" onclick="extractEntities()" ${currentTab !== 'fulltext' ? 'disabled style="opacity:0.5"' : ''}>
+                            <span>🔍</span> Extract Entities
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportCase()">
+                            <span>📤</span> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="tabs-container">
+                    <div class="tab ${currentTab === 'summary' ? 'active' : ''}" onclick="switchTab('summary')">Summary</div>
+                    <div class="tab ${currentTab === 'fulltext' ? 'active' : ''}" onclick="switchTab('fulltext')">Full Text</div>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane ${currentTab === 'summary' ? 'active' : 'summary'}" id="summaryTab">
+                        <div class="summary-section">
+                            <h3>Case Overview</h3>
+                            <p class="summary-text">${caseData.summary}</p>
+                        </div>
+                        <div class="summary-section">
+                            <h3>Issues Presented</h3>
+                            <ul class="issues-list">
+                                ${caseData.issues.map(issue => `
+                                    <li><span class="issue-bullet"></span>${issue}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        <div class="summary-section">
+                            <h3>Holding</h3>
+                            <div class="holding-box">
+                                <div class="holding-label">Court's Decision</div>
+                                <p class="holding-text">${caseData.holding}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane ${currentTab === 'fulltext' ? 'active' : ''}" id="fulltextTab">
+                        <div class="entity-legend" ${!entitiesHighlighted ? 'style="display:none"' : ''}>
+                            <div class="legend-item">
+                                <div class="legend-color legend-person"></div>
+                                <span>Persons</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-date"></div>
+                                <span>Dates/Citations</span>
+                            </div>
+                        </div>
+                        <div class="full-text-content" id="fullTextContent">
+                            ${formatFullText(caseData.fullText)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Format Full Text with highlighting
+        function formatFullText(text) {
+            let formatted = text;
+            
+            if (entitiesHighlighted) {
+                // Highlight person names
+                if (currentCase && currentCase.parties) {
+                    currentCase.parties.forEach(party => {
+                        const regex = new RegExp(`\\b${escapeRegex(party)}\\b`, 'gi');
+                        formatted = formatted.replace(regex, '<span class="highlight-person">$&</span>');
+                    });
+                }
+
+                // Highlight citations
+                const citationRegex = /\d+\s+[A-Za-z.]+\s+\d+\s*\([0-9]{4}\)/g;
+                formatted = formatted.replace(citationRegex, '<span class="highlight-date">$&</span>');
+
+                // Highlight dates
+                const dateRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi;
+                formatted = formatted.replace(dateRegex, '<span class="highlight-date">$&</span>');
+            }
+
+            return formatted.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+        }
+
+        // Switch Tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            if (currentCase) {
+                renderDetailPanel(currentCase);
+            }
+        }
+
+        // Extract Entities
+        function extractEntities() {
+            entitiesHighlighted = !entitiesHighlighted;
+            if (currentCase) {
+                const fullTextContent = document.getElementById('fullTextContent');
+                if (fullTextContent) {
+                    fullTextContent.innerHTML = formatFullText(currentCase.fullText);
+                }
+                
+                // Toggle legend visibility
+                const legend = document.querySelector('.entity-legend');
+                if (legend) {
+                    legend.style.display = entitiesHighlighted ? 'flex' : 'none';
+                }
+            }
+        }
+
+        // Open Note Modal
+        function openNoteModal() {
+            noteModal.classList.add('active');
+            noteText.value = '';
+            noteText.focus();
+        }
+
+        // Close Note Modal
+        function closeNoteModal() {
+            noteModal.classList.remove('active');
+        }
+
+        // Save Note
+        function saveNote() {
+            const text = noteText.value.trim();
+            if (!text || !currentCase) return;
+
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: text,
+                date: new Date().toISOString(),
+                selectedText: window.getSelection().toString().trim()
+            };
+
+            notes.unshift(note);
+            localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+            renderNotes();
+            closeNoteModal();
+        }
+
+        // Render Notes
+        function renderNotes() {
+            notesCountEl.textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <div class="empty-state-text" style="font-size:12px;">No notes yet. Select text or click "Add Note" to create one.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-card">
+                    <button class="note-delete" onclick="deleteNote(${note.id})">×</button>
+                    <div class="note-case-ref">${note.caseTitle}</div>
+                    <div class="note-text">${note.selectedText ? `<em>"${truncateText(note.selectedText, 100)}"</em><br><br>` : ''}${note.text}</div>
+                    <div class="note-date">${formatNoteDate(note.date)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Delete Note
+        function deleteNote(noteId) {
+            notes = notes.filter(n => n.id !== noteId);
+            localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        // Export Case
+        function exportCase() {
+            if (!currentCase) return;
+
+            const exportData = {
+                title: currentCase.title,
+                citation: currentCase.citation,
+                court: currentCase.court,
+                date: currentCase.date,
+                summary: currentCase.summary,
+                fullText: currentCase.fullText,
+                issues: currentCase.issues,
+                holding: currentCase.holding,
+                exportedAt: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentCase.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Search Functionality
+        function performSearch(query) {
+            if (!query.trim()) {
+                renderCases(cases);
+                return;
+            }
+
+            const lowerQuery = query.toLowerCase();
+            const matchedCases = cases.filter(caseData => {
+                return caseData.title.toLowerCase().includes(lowerQuery) ||
+                       caseData.summary.toLowerCase().includes(lowerQuery) ||
+                       caseData.court.toLowerCase().includes(lowerQuery) ||
+                       caseData.citation.toLowerCase().includes(lowerQuery) ||
+                       caseData.parties.some(p => p.toLowerCase().includes(lowerQuery)) ||
+                       caseData.issues.some(i => i.toLowerCase().includes(lowerQuery));
+            });
+
+            renderCases(matchedCases);
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            searchInput.addEventListener('input', (e) => {
+                performSearch(e.target.value);
+            });
+
+            document.getElementById('modalClose').addEventListener('click', closeNoteModal);
+            document.getElementById('modalCancel').addEventListener('click', closeNoteModal);
+            document.getElementById('modalSave').addEventListener('click', saveNote);
+            document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
+
+            noteModal.addEventListener('click', (e) => {
+                if (e.target === noteModal) closeNoteModal();
+            });
+
+            // Text selection for notes
+            document.addEventListener('mouseup', handleTextSelection);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeNoteModal();
+                    selectionPopup.classList.remove('active');
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+            });
+
+            // Selection note button
+            document.getElementById('selectionNote').addEventListener('click', () => {
+                const selectedText = window.getSelection().toString().trim();
+                if (selectedText) {
+                    openNoteModal();
+                    noteText.value = `"${selectedText}"\n\n`;
+                }
+                selectionPopup.classList.remove('active');
+            });
+        }
+
+        // Handle Text Selection
+        function handleTextSelection() {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            
+            if (selectedText.length > 10 && currentCase) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                selectionPopup.style.top = `${rect.bottom + window.scrollY + 10}px`;
+                selectionPopup.style.left = `${rect.left + window.scrollX}px`;
+                selectionPopup.classList.add('active');
+            } else {
+                selectionPopup.classList.remove('active');
+            }
+        }
+
+        // Utility Functions
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function formatNoteDate(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    </script>
+</body>
+</html>

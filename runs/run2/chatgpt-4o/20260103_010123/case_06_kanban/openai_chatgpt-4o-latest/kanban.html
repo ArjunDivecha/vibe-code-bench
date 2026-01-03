@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kanban Board</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+    #board {
+      display: flex;
+      justify-content: space-around;
+      padding: 20px;
+    }
+    .column {
+      background: #e2e2e2;
+      padding: 10px;
+      border-radius: 5px;
+      width: 30%;
+      min-height: 400px;
+    }
+    .column h2 {
+      text-align: center;
+    }
+    .card {
+      background: white;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      cursor: grab;
+    }
+    .card.urgent {
+      border-left: 6px solid red;
+    }
+    .card.medium {
+      border-left: 6px solid orange;
+    }
+    .card.low {
+      border-left: 6px solid green;
+    }
+    .add-card {
+      display: block;
+      margin: 10px auto;
+      padding: 5px 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-card:hover {
+      background: #0056b3;
+    }
+    .card .controls {
+      float: right;
+    }
+    .card .controls button {
+      margin-left: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #888;
+    }
+    .card .controls button:hover {
+      color: black;
+    }
+    .card textarea {
+      width: 100%;
+      resize: none;
+    }
+    .card select {
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kanban Board</h1>
+  <div id="board">
+    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>To Do</h2>
+      <button class="add-card" onclick="addCard('todo')">+ Add Card</button>
+      <div class="card-list"></div>
+    </div>
+    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>In Progress</h2>
+      <button class="add-card" onclick="addCard('in-progress')">+ Add Card</button>
+      <div class="card-list"></div>
+    </div>
+    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>Done</h2>
+      <button class="add-card" onclick="addCard('done')">+ Add Card</button>
+      <div class="card-list"></div>
+    </div>
+  </div>
+
+  <script>
+    let cardIdCounter = 0;
+
+    function saveBoard() {
+      const columns = ['todo', 'in-progress', 'done'];
+      const data = {};
+      columns.forEach(columnId => {
+        const cardList = document.querySelector('#' + columnId + ' .card-list');
+        const cards = Array.from(cardList.children).map(card => ({
+          id: card.dataset.id,
+          title: card.querySelector('.card-title').textContent,
+          priority: card.dataset.priority
+        }));
+        data[columnId] = cards;
+      });
+      localStorage.setItem('kanbanData', JSON.stringify(data));
+    }
+
+    function loadBoard() {
+      const data = JSON.parse(localStorage.getItem('kanbanData'));
+      if (!data) return;
+      ['todo', 'in-progress', 'done'].forEach(columnId => {
+        const cardList = document.querySelector('#' + columnId + ' .card-list');
+        cardList.innerHTML = '';
+        (data[columnId] || []).forEach(card => {
+          const cardEl = createCardElement(card.title, card.priority, card.id);
+          cardList.appendChild(cardEl);
+        });
+      });
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.dataset.id);
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const cardId = ev.dataTransfer.getData("text");
+      const cardEl = document.querySelector(`.card[data-id="${cardId}"]`);
+      const column = ev.currentTarget.querySelector('.card-list');
+      column.appendChild(cardEl);
+      saveBoard();
+    }
+
+    function addCard(columnId) {
+      const title = prompt("Enter card title:");
+      if (!title) return;
+      const priority = prompt("Enter priority (urgent, medium, low):", "medium").toLowerCase();
+      const normalizedPriority = ['urgent', 'medium', 'low'].includes(priority) ? priority : 'medium';
+      const newCard = createCardElement(title, normalizedPriority);
+      document.querySelector(`#${columnId} .card-list`).appendChild(newCard);
+      saveBoard();
+    }
+
+    function createCardElement(title, priority, id=null) {
+      const card = document.createElement('div');
+      card.className = `card ${priority}`;
+      card.setAttribute('draggable', 'true');
+      card.setAttribute('data-priority', priority);
+      card.dataset.id = id || 'card-' + (++cardIdCounter);
+      card.ondragstart = drag;
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'card-title';
+      titleEl.textContent = title;
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+
+      const editBtn = document.createElement('button');
+      editBtn.innerHTML = '✏️';
+      editBtn.onclick = () => editCard(card);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '🗑️';
+      deleteBtn.onclick = () => {
+        if (confirm("Delete this card?")) {
+          card.remove();
+          saveBoard();
+        }
+      };
+
+      controls.appendChild(editBtn);
+      controls.appendChild(deleteBtn);
+
+      card.appendChild(controls);
+      card.appendChild(titleEl);
+
+      return card;
+    }
+
+    function editCard(card) {
+      const currentTitle = card.querySelector('.card-title').textContent;
+      const newTitle = prompt("Edit title:", currentTitle);
+      if (newTitle === null) return;
+
+      const newPriority = prompt("Edit priority (urgent, medium, low):", card.dataset.priority).toLowerCase();
+      const normalizedPriority = ['urgent', 'medium', 'low'].includes(newPriority) ? newPriority : 'medium';
+
+      card.querySelector('.card-title').textContent = newTitle;
+      card.classList.remove('urgent', 'medium', 'low');
+      card.classList.add(normalizedPriority);
+      card.dataset.priority = normalizedPriority;
+
+      saveBoard();
+    }
+
+    window.onload = () => {
+      loadBoard();
+    };
+  </script>
+</body>
+</html>

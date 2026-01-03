@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: #1a1a2e;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1rem;
+        }
+
+        .shortcut-hint {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .shortcut-hint kbd {
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+
+        .palette-container {
+            display: flex;
+            gap: 5px;
+            margin: 30px 0;
+            height: 400px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .palette-container {
+                flex-direction: column;
+                height: 600px;
+            }
+        }
+
+        .color-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .color-column:hover {
+            flex: 1.2;
+        }
+
+        .color-column.generating {
+            animation: colorShift 0.3s ease;
+        }
+
+        @keyframes colorShift {
+            0% { transform: scaleY(1); }
+            50% { transform: scaleY(0.9); }
+            100% { transform: scaleY(1); }
+        }
+
+        .color-info {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            margin: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            width: 90%;
+            max-width: 180px;
+        }
+
+        .color-column:hover .color-info {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .color-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+        }
+
+        .hex-code {
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .rgb-code {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .lock-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lock-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .lock-btn.locked {
+            background: #ff6b6b;
+        }
+
+        .lock-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .copy-feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .favorites-section {
+            margin-top: 40px;
+        }
+
+        .favorites-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .favorites-title {
+            font-size: 1.3rem;
+            font-weight: 300;
+        }
+
+        .favorites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .saved-palette {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .saved-palette:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .saved-color {
+            flex: 1;
+            height: 50px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .saved-palette:hover .saved-color {
+            transform: scale(0.95);
+        }
+
+        .palette-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .palette-name {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .delete-btn {
+            background: rgba(255,107,107,0.2);
+            border: none;
+            color: #ff6b6b;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255,107,107,0.4);
+        }
+
+        .empty-favorites {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #2a2a4a;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            transform: scale(0.9);
+            transition: all 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-cancel {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .modal-btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .color-preview {
+            display: flex;
+            gap: 3px;
+            margin-top: 10px;
+        }
+
+        .preview-swatch {
+            flex: 1;
+            height: 30px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Color Palette Generator</h1>
+            <p class="subtitle">Click colors to copy • Lock to keep • Spacebar to generate</p>
+            <div class="shortcut-hint">
+                Press <kbd>Space</kbd> to generate • <kbd>Ctrl</kbd> + <kbd>S</kbd> to save
+            </div>
+        </header>
+
+        <div class="palette-container" id="paletteContainer">
+            <!-- Colors will be generated here -->
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="generateBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                </svg>
+                Generate Palette
+            </button>
+            <button class="btn btn-secondary" id="saveBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                Save Palette
+            </button>
+            <button class="btn btn-secondary" id="resetLocksBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Unlock All
+            </button>
+        </div>
+
+        <div class="favorites-section">
+            <div class="favorites-header">
+                <h2 class="favorites-title">Saved Palettes</h2>
+                <button class="btn btn-secondary" id="clearAllBtn" style="padding: 8px 15px; font-size: 0.85rem;">
+                    Clear All
+                </button>
+            </div>
+            <div class="favorites-grid" id="favoritesGrid">
+                <div class="empty-favorites">No saved palettes yet. Generate and save some!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Modal -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Save Palette</h3>
+            <input type="text" class="modal-input" id="paletteName" placeholder="Enter palette name..." maxlength="50">
+            <div class="color-preview" id="modalPreview"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="cancelSave">Cancel</button>
+                <button class="modal-btn modal-btn-save" id="confirmSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Color naming database for common colors
+        const colorNames = {
+            '#FF6B6B': 'Coral Red', '#FF8E72': 'Terra Cotta', '#FF6F61': 'Living Coral',
+            '#FFB6C1': 'Light Pink', '#FFC0CB': 'Pink', '#FF69B4': 'Hot Pink',
+            '#FF1493': 'Deep Pink', '#FF6347': 'Tomato', '#FF7F50': 'Coral',
+            '#FFA07A': 'Light Salmon', '#FFD700': 'Gold', '#FFD800': 'Yellow',
+            '#FFE4B5': 'Moccasin', '#FFE4C4': 'Bisque', '#FFEAA7': 'Cream Yellow',
+            '#FDCB6E': 'Mustard', '#F39C12': 'Orange', '#E67E22': 'Carrot',
+            '#D35400': 'Pumpkin', '#E74C3C': 'Alizarin', '#C0392B': 'Pomegranate',
+            '#2ECC71': 'Emerald', '#27AE60': 'Nephritis', '#1ABC9C': 'Turquoise',
+            '#00BCD4': 'Cyan', '#00CEC9': 'Teal', '#00B894': 'Mint',
+            '#55E6C1': 'Mint Green', '#58B19F': 'Medium Turquoise', '#3AE374': 'Spring Green',
+            '#3498DB': 'Blue', '#2980B9': 'Belize Hole', '#1E90FF': 'Dodger Blue',
+            '#4169E1': 'Royal Blue', '#6C5CE7': 'Blue Violet', '#8E44AD': 'Wisteria',
+            '#9B59B6': 'Amethyst', '#A55EEA': 'Medium Purple', '#D980FA': 'Lavender',
+            '#FD79A8': 'Light Pink', '#E84393': 'Orchid', '#B33939': 'Dark Red',
+            '#2D3436': 'Charcoal', '#636E72': 'Slate', '#B2BEC3': 'Silver',
+            '#DFE6E9': 'Light Gray', '#FFFFFF': 'White', '#000000': 'Black',
+            '#2C3E50': 'Midnight', '#34495E': 'Wet Asphalt', '#95A5A6': 'Concrete',
+            '#BDC3C7': 'Silver', '#ECF0F1': 'Clouds', '#1ABC9C': 'Mountain Meadow',
+            '#16A085': 'Green', '#2ECC71': 'Fern', '#27AE60': 'Hippie Green',
+            '#34D399': 'Zombie', '#48C9B0': 'Medium Turquoise', '#00D2D3': 'Spiro Disco Ball',
+            '#01A3A4': 'Blue Lagoon', '#00D2D3': 'Robin\'s Egg', '#5f27cd': 'Royal Purple',
+            '#341f97': 'Deep Blue', '#222f3e': 'Cappuccino', '#576574': 'Tory Blue',
+            '#c8d6e5': 'Submarine', '#8395a7': 'Blue Smoke', '#f8f9fa': 'Off White'
+        };
+
+        // State
+        let currentPalette = [];
+        let lockedColors = [false, false, false, false, false];
+        let favorites = JSON.parse(localStorage.getItem('paletteFavorites')) || [];
+
+        // DOM Elements
+        const paletteContainer = document.getElementById('paletteContainer');
+        const generateBtn = document.getElementById('generateBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const resetLocksBtn = document.getElementById('resetLocksBtn');
+        const favoritesGrid = document.getElementById('favoritesGrid');
+        const saveModal = document.getElementById('saveModal');
+        const paletteNameInput = document.getElementById('paletteName');
+        const modalPreview = document.getElementById('modalPreview');
+        const toast = document.getElementById('toast');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+
+        // Generate random color
+        function generateRandomColor() {
+            const h = Math.floor(Math.random() * 360);
+            const s = Math.floor(Math.random() * 40) + 50; // 50-90%
+            const l = Math.floor(Math.random() * 50) + 25; // 25-75%
+            return hslToHex(h, s, l);
+        }
+
+        // HSL to Hex conversion
+        function hslToHex(h, s, l) {
+            s /= 100;
+            l /= 100;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+        }
+
+        // HSL to RGB conversion
+        function hslToRgb(h, s, l) {
+            s /= 100;
+            l /= 100;
+            const k = n => (n + h / 30) % 12;
+            const a = s * Math.min(l, 1 - l);
+            const f = n => l - a * Math.max(Math.min(k(n) - 3, 9 - k(n), 1), -1);
+            return `${Math.round(f(0) * 255)}, ${Math.round(f(8) * 255)}, ${Math.round(f(4) * 255)}`;
+        }
+
+        // Get color name
+        function getColorName(hex) {
+            // Direct match
+            if (colorNames[hex]) return colorNames[hex];
+            
+            // Find closest named color using color distance
+            const rgb = hexToRgb(hex);
+            let closestName = 'Custom';
+            let closestDist = Infinity;
+            
+            for (const [colorHex, name] of Object.entries(colorNames)) {
+                const colorRgb = hexToRgb(colorHex);
+                const dist = colorDistance(rgb, colorRgb);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closestName = name;
+                }
+            }
+            
+            return closestName;
+        }
+
+        // Hex to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Color distance for finding closest named color
+        function colorDistance(rgb1, rgb2) {
+            return Math.sqrt(
+                Math.pow(rgb1.r - rgb2.r, 2) +
+                Math.pow(rgb1.g - rgb2.g, 2) +
+                Math.pow(rgb1.b - rgb2.b, 2)
+            );
+        }
+
+        // Get text color (black or white) based on background luminance
+        function getTextColor(hex) {
+            const rgb = hexToRgb(hex);
+            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+            return luminance > 0.5 ? '#000000' : '#ffffff';
+        }
+
+        // Generate palette
+        function generatePalette(animate = true) {
+            currentPalette = [];
+            
+            for (let i = 0; i < 5; i++) {
+                if (!lockedColors[i]) {
+                    currentPalette[i] = generateRandomColor();
+                }
+            }
+            
+            renderPalette(animate);
+        }
+
+        // Render palette
+        function renderPalette(animate = true) {
+            paletteContainer.innerHTML = '';
+            
+            currentPalette.forEach((color, index) => {
+                const textColor = getTextColor(color);
+                const colorName = getColorName(color);
+                const rgbValue = hslToRgb(...hexToHsl(color));
+                const hex = color;
+                
+                const column = document.createElement('div');
+                column.className = 'color-column' + (animate ? ' generating' : '');
+                column.style.backgroundColor = color;
+                column.innerHTML = `
+                    <div class="copy-feedback" id="feedback-${index}">Copied!</div>
+                    <div class="color-info">
+                        <div class="color-name" style="color: ${textColor}">${colorName}</div>
+                        <div class="hex-code" style="color: ${textColor}">${hex}</div>
+                        <div class="rgb-code">rgb(${rgbValue})</div>
+                        <button class="lock-btn ${lockedColors[index] ? 'locked' : ''}" 
+                                onclick="event.stopPropagation(); toggleLock(${index})"
+                                style="color: ${textColor}; border: 1px solid ${textColor}40">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="${lockedColors[index] ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                                ${lockedColors[index] 
+                                    ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+                                    : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+                                }
+                            </svg>
+                            ${lockedColors[index] ? 'Locked' : 'Lock'}
+                        </button>
+                    </div>
+                `;
+                
+                column.addEventListener('click', () => copyToClipboard(hex, index));
+                paletteContainer.appendChild(column);
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    column.classList.remove('generating');
+                }, animate ? 300 : 0);
+            });
+        }
+
+        // Convert hex to HSL
+        function hexToHsl(hex) {
+            const rgb = hexToRgb(hex);
+            const r = rgb.r / 255;
+            const g = rgb.g / 255;
+            const b = rgb.b / 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            
+            return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard(text, index) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const feedback = document.getElementById(`feedback-${index}`);
+                feedback.classList.add('show');
+                setTimeout(() => feedback.classList.remove('show'), 1000);
+                showToast(`Copied ${text} to clipboard`);
+            } catch (err) {
+                showToast('Failed to copy');
+            }
+        }
+
+        // Toggle lock
+        function toggleLock(index) {
+            lockedColors[index] = !lockedColors[index];
+            renderPalette(false);
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // Save palette modal
+        function openSaveModal() {
+            paletteNameInput.value = '';
+            modalPreview.innerHTML = currentPalette.map(color => 
+                `<div class="preview-swatch" style="background: ${color}"></div>`
+            ).join('');
+            saveModal.classList.add('show');
+            paletteNameInput.focus();
+        }
+
+        // Close save modal
+        function closeSaveModal() {
+            saveModal.classList.remove('show');
+        }
+
+        // Confirm save
+        function confirmSave() {
+            const name = paletteNameInput.value.trim() || `Palette ${favorites.length + 1}`;
+            
+            const palette = {
+                id: Date.now(),
+                name: name,
+                colors: [...currentPalette],
+                locked: [...lockedColors],
+                createdAt: new Date().toISOString()
+            };
+            
+            favorites.unshift(palette);
+            localStorage.setItem('paletteFavorites', JSON.stringify(favorites));
+            
+            closeSaveModal();
+            renderFavorites();
+            showToast('Palette saved!');
+        }
+
+        // Render favorites
+        function renderFavorites() {
+            if (favorites.length === 0) {
+                favoritesGrid.innerHTML = '<div class="empty-favorites">No saved palettes yet. Generate and save some!</div>';
+                return;
+            }
+            
+            favoritesGrid.innerHTML = favorites.map(palette => `
+                <div class="saved-palette" onclick="loadPalette(${palette.id})">
+                    <div style="display: flex; gap: 5px; flex: 1;">
+                        ${palette.colors.map(color => 
+                            `<div class="saved-color" style="background: ${color}"></div>`
+                        ).join('')}
+                    </div>
+                    <div class="palette-actions">
+                        <span class="palette-name">${palette.name}</span>
+                        <button class="delete-btn" onclick="event.stopPropagation(); deletePalette(${palette.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load palette
+        function loadPalette(id) {
+            const palette = favorites.find(p => p.id === id);
+            if (palette) {
+                currentPalette = [...palette.colors];
+                lockedColors = [...palette.locked];
+                renderPalette(false);
+                showToast(`Loaded "${palette.name}"`);
+            }
+        }
+
+        // Delete palette
+        function deletePalette(id) {
+            favorites = favorites.filter(p => p.id !== id);
+            localStorage.setItem('paletteFavorites', JSON.stringify(favorites));
+            renderFavorites();
+            showToast('Palette deleted');
+        }
+
+        // Reset all locks
+        function resetLocks() {
+            lockedColors = [false, false, false, false, false];
+            renderPalette(false);
+            showToast('All colors unlocked');
+        }
+
+        // Clear all favorites
+        function clearAllFavorites() {
+            if (confirm('Are you sure you want to delete all saved palettes?')) {
+                favorites = [];
+                localStorage.setItem('paletteFavorites', JSON.stringify(favorites));
+                renderFavorites();
+                showToast('All palettes cleared');
+            }
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', () => generatePalette(true));
+        
+        saveBtn.addEventListener('click', openSaveModal);
+        
+        resetLocksBtn.addEventListener('click', resetLocks);
+        
+        clearAllBtn.addEventListener('click', clearAllFavorites);
+        
+        document.getElementById('cancelSave').addEventListener('click', closeSaveModal);
+        
+        document.getElementById('confirmSave').addEventListener('click', confirmSave);
+        
+        paletteNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') confirmSave();
+        });
+        
+        saveModal.addEventListener('click', (e) => {
+            if (e.target === saveModal) closeSaveModal();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !saveModal.classList.contains('show')) {
+                e.preventDefault();
+                generatePalette(true);
+            }
+            
+            if (e.ctrlKey && e.code === 'KeyS') {
+                e.preventDefault();
+                openSaveModal();
+            }
+        });
+
+        // Initialize
+        generatePalette(false);
+        renderFavorites();
+    </script>
+</body>
+</html>

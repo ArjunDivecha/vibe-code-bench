@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vibe-Law</title>
+    <style>
+        body { margin:0; font-family:Arial,sans-serif; background:#1a1a1a; color:#f8f9fa; }
+        .highlight { background-color: #4a90e2; color: white; font-weight: bold; }
+        header { position:fixed; top:0; width:100%; background:#2c3e50; padding:10px; color:white; text-align:center; z-index:1000; }
+        #searchInput { padding:8px; border:1px solid #2c3e50; border-radius:4px; width:300px; margin-right:10px; background:#1a1a1a; color:white; font-size:16px; }
+        #resultsContainer { margin-top:50px; padding:20px; }
+        .case-item { display:flex; flex-direction:column; padding:15px; margin:5px; border-radius:4px; background:#2c3e50; color:white; cursor:pointer; align-items:center; }
+        .case-item h3 { margin:0; font-size:18px; }
+        .case-item p { font-size:14px; margin:5px 0; }
+        .no-results { text-align:center; padding:15px; }
+        .modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); padding:20px; background:#f0f0f0; border-radius:8px; width:80%; max-width:600px; box-shadow:0 2px 10px rgba(0,0,0,0.1); z-index:1000; display:none; }
+        .close { float:right; cursor:pointer; font-size:28px; color:#2c3e50; margin-left:10px; }
+        .tabs button { margin:0 5px; padding:5px 10px; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; }
+        .tabs button.active { background:#4a90e2; }
+        #summaryContent, #fullTextContent { margin-top:20px; padding:15px; font-size:16px; line-height:1.6; }
+        #notesSidebar { width:250px; margin-right:20px; background:#2c3e50; color:white; }
+        #notesList { margin-top:10px; padding:0; }
+        .note-item { margin:5px 0; padding:10px; background:#1a1a1a; color:white; border-radius:4px; }
+        #newNoteInput, #saveNote { margin-top:15px; padding:8px; border:1px solid #2c3e50; border-radius:4px; width:100%; }
+        #newNoteInput { width:70%; margin-right:10px; }
+        #saveNote { background:#4a90e2; color:white; }
+    </style>
+</head>
+<body>
+    <header>
+        <input type="text" id="searchInput" placeholder="Search cases...">
+    </header>
+    <main>
+        <div id="resultsContainer"></div>
+    </main>
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="hideDetail()">×</button>
+            <div class="tabs">
+                <button id="summaryTab">Summary</button>
+                <button id="fullTextTab">Full Text</button>
+            </div>
+            <div id="summaryContent"></div>
+            <div id="fullTextContent" style="display:none;"></div>
+            <button onclick="extractEntities()">Extract Entities</button>
+            <div id="notesSidebar">
+                <h3>Notes</h3>
+                <div id="notesList"></div>
+                <input type="text" id="newNoteInput" placeholder="Enter snippet...">
+                <button onclick="saveNote()">Save Snippet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cases = [
+            {title:"Smith v. Jones", court:"Supreme Court", date:"2023-05-15", preview:"The court ruled that the contract was void due to mutual misunderstanding.", fullText:"In the case of Smith versus Jones, the Supreme Court held that the plaintiff's claim of breach of contract was valid. The defendant argued that the terms were ambiguous, but the court found that the written agreement clearly stated obligations for both parties..."},
+            {title:"Doe v. City of New York", court:"US Court of Appeals", date:"2023-04-20", preview:"A landmark decision on housing rights and discrimination.", fullText:"This case addressed whether the city's housing policy violated fair housing laws. The court found that certain provisions disproportionately affected minority groups, thus being unconstitutional..."},
+            {title:"Brown v. Board of Education", court:"Supreme Court", date:"1954-05-17", preview:"Declared racial segregation in public schools unconstitutional.", fullText:"The landmark case that ended 'separate but equal' doctrine, ruling that segregated schools are inherently unequal..."},
+            {title:"Roe v. Wade", court:"Supreme Court", date:"1973-01-22", preview:"Legalized abortion nationwide.", fullText:"The court ruled that a woman's right to privacy under the Fourteenth Amendment encompasses the right to terminate her pregnancy..."},
+            {title:"United States v. Nixon", court:"Supreme Court", date:"1974-07-24", preview:"President must comply with subpoenas for evidence.", fullText:"The court unanimously held that the President's claim of executive privilege was insufficient to override the need for evidence in a criminal trial..."},
+            {title:"Miranda v. Arizona", court:"Supreme Court", date:"1966-06-13", preview:"Established Miranda rights.", fullText:"The court ruled that criminal suspects must be informed of their rights prior to interrogation..."},
+            {title:"Obergefell v. Hodges", court:"Supreme Court", date:"2015-06-26", preview:"Legalized same-sex marriage nationwide.", fullText:"The court held that the Fourteenth Amendment requires states to license marriage between same-sex couples..."},
+            {title:"Brown v. Board of Education II", court:"Supreme Court", date:"1955-03-31", preview:"Ordered desegregation of schools.", fullText:"This case enforced the earlier ruling by ordering the desegregation of public schools with 'all deliberate speed'..."},
+            {title:"Tinker v. Des Moines", court:"Supreme Court", date:"1969-06-26", preview:"Students' right to free speech in schools.", fullText:"The court ruled that students do not lose their First Amendment rights at school, protecting symbolic speech unless it disrupts school activities..."},
+            {title:"Citizens United v. FEC", court:"Supreme Court", date:"2010-01-21", preview:"Struck down limits on corporate spending in elections.", fullText:"The court held that political spending by corporations is protected by the First Amendment..."}
+        ];
+
+        let notes = [];
+        let currentDetail = null;
+
+        function loadNotes() {
+            const stored = localStorage.getItem('legalNotes');
+            if (stored) notes = JSON.parse(stored);
+        }
+
+        function saveNote() {
+            const input = document.getElementById('newNoteInput');
+            const content = input.value.trim();
+            if (!content) return;
+            const title = currentDetail ? `Snippet from ${currentDetail.title}` : 'Unknown Case';
+            notes.push({id:Date.now(), title, content});
+            localStorage.setItem('legalNotes', JSON.stringify(notes));
+            renderNotes();
+            input.value = '';
+        }
+
+        function renderNotes() {
+            const list = document.getElementById('notesList');
+            list.innerHTML = '';
+            notes.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'note-item';
+                item.innerHTML = `<h4>${n.title}</h4><p>${n.content}</p>`;
+                list.appendChild(item);
+            });
+        }
+
+        window.onload = function() {
+            loadNotes();
+            renderNotes();
+            renderResults(cases);
+        };
+
+        function searchCases(q) {
+            const term = q.toLowerCase();
+            const results = cases.filter(c => c.title.toLowerCase().includes(term));
+            renderResults(results);
+        }
+
+        function renderResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            if (results.length === 0) {
+                const p = document.createElement('p');
+                p.className = 'no-results';
+                p.textContent = 'No cases found.';
+                container.appendChild(p);
+            } else {
+                results.forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'case-item';
+                    item.innerHTML = `
+                        <h3>${c.title}</h3>
+                        <p>${c.court} - ${c.date}</p>
+                        <p>${c.preview}</p>
+                    `;
+                    item.addEventListener('click', () => showDetail(c));
+                    container.appendChild(item);
+                });
+            }
+        }
+
+        function showDetail(detail) {
+            const modal = document.getElementById('detailModal');
+            modal.style.display = 'block';
+            currentDetail = detail;
+            document.getElementById('resultsContainer').style.display = 'none';
+            updateTabsAndContent();
+        }
+
+        function hideDetail() {
+            const modal = document.getElementById('detailModal');
+            modal.style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'block';
+            currentDetail = null;
+        }
+
+        function updateTabsAndContent() {
+            const summaryTab = document.getElementById('summaryTab');
+            const fullTab = document.getElementById('fullTextTab');
+            const summaryContent = document.getElementById('summaryContent');
+            const fullContent = document.getElementById('fullTextContent');
+            summaryContent.style.display = 'block';
+            fullContent.style.display = 'none';
+            summaryContent.textContent = currentDetail.preview;
+            fullContent.textContent = currentDetail.fullText;
+            summaryTab.className = 'active';
+            fullTab.className = '';
+        }
+
+        document.getElementById('summaryTab').addEventListener('click', () => {
+            const summary = document.getElementById('summaryContent');
+            const full = document.getElementById('fullTextContent');
+            summary.style.display = 'block';
+            full.style.display = 'none';
+            document.getElementById('summaryTab').className = 'active';
+            document.getElementById('fullTextTab').className = '';
+        });
+
+        document.getElementById('fullTextTab').addEventListener('click', () => {
+            const summary = document.getElementById('summaryContent');
+            const full = document.getElementById('fullTextContent');
+            full.style.display = 'block';
+            summary.style.display = 'none';
+            document.getElementById('fullTextTab').className = 'active';
+            document.getElementById('summaryTab').className = '';
+        });
+
+        function extractEntities() {
+            if (!currentDetail || !currentDetail.fullText) return;
+            let text = currentDetail.fullText;
+            text = text.replace(/\b[A-Z][a-z]+\b/g, '<span class="highlight">$&</span>');
+            text = text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, '<span class="highlight">$&</span>');
+            document.getElementById('fullTextContent').innerHTML = text;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', e => searchCases(e.target.value));
+    </script>
+</body>
+</html>

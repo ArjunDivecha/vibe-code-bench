@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #ddd;
+            --accent-color: #2196F3;
+            --code-bg: #f4f4f4;
+            --blockquote-bg: #f9f9f9;
+            --blockquote-border: #ddd;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #444;
+            --accent-color: #64B5F6;
+            --code-bg: #2d2d2d;
+            --blockquote-bg: #2a2a2a;
+            --blockquote-border: #444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(0.9);
+        }
+
+        .theme-toggle {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .pane {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border-color);
+        }
+
+        .editor {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            resize: none;
+        }
+
+        .preview-pane {
+            background-color: var(--bg-secondary);
+        }
+
+        .preview {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .preview h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .preview h2 { font-size: 1.5em; }
+        .preview h3 { font-size: 1.25em; }
+        .preview h4 { font-size: 1em; }
+        .preview h5 { font-size: 0.875em; }
+        .preview h6 { font-size: 0.85em; color: var(--text-secondary); }
+
+        .preview p {
+            margin-bottom: 16px;
+        }
+
+        .preview strong {
+            font-weight: 600;
+        }
+
+        .preview em {
+            font-style: italic;
+        }
+
+        .preview code {
+            background-color: var(--code-bg);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .preview pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .preview pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .preview blockquote {
+            padding: 0 16px;
+            margin: 0 0 16px 0;
+            background-color: var(--blockquote-bg);
+            border-left: 4px solid var(--blockquote-border);
+            font-style: italic;
+        }
+
+        .preview ul, .preview ol {
+            margin-bottom: 16px;
+            padding-left: 32px;
+        }
+
+        .preview ul {
+            list-style-type: disc;
+        }
+
+        .preview ol {
+            list-style-type: decimal;
+        }
+
+        .preview li {
+            margin-bottom: 4px;
+        }
+
+        .preview a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .preview a:hover {
+            text-decoration: underline;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Markdown Editor</h1>
+        <div class="header-controls">
+            <button onclick="exportHTML()">Export HTML</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="pane editor-pane">
+            <textarea class="editor" id="editor" placeholder="Type your markdown here...
+
+# Heading 1
+## Heading 2
+### Heading 3
+
+**Bold text** and *italic text*
+
+- List item 1
+- List item 2
+  - Nested item
+
+1. Numbered list
+2. Second item
+
+[Link text](https://example.com)
+
+> Blockquote text
+
+\`\`\`
+code block
+\`\`\`
+
+Inline \`code\`"></textarea>
+        </div>
+        
+        <div class="pane preview-pane">
+            <div class="preview" id="preview"></div>
+        </div>
+    </div>
+    
+    <div class="status" id="status"></div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+
+        // Load saved content
+        const savedContent = localStorage.getItem('markdownContent');
+        if (savedContent) {
+            editor.value = savedContent;
+        }
+
+        // Parse markdown
+        function parseMarkdown(text) {
+            let html = text;
+
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // Code blocks
+            html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+            // Blockquotes
+            html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+            // Lists
+            html = html.replace(/^[\*\-] (.*$)/gim, '<ul><li>$1</li></ul>');
+            html = html.replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+
+            // Fix nested lists
+            html = html.replace(/<\/ul>\s*<ul>/g, '');
+            html = html.replace(/<\/ol>\s*<ol>/g, '');
+
+            // Line breaks
+            html = html.split('\n').map(line => {
+                if (line.match(/^<h[1-6]|<pre|<blockquote|<ul|<ol/)) {
+                    return line;
+                } else if (line.trim() === '') {
+                    return '';
+                } else {
+                    return `<p>${line}</p>`;
+                }
+            }).join('');
+
+            // Clean up empty paragraphs
+            html = html.replace(/<p><\/p>/g, '');
+
+            return html;
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdownText = editor.value;
+            const html = parseMarkdown(markdownText);
+            preview.innerHTML = html;
+            
+            // Save to localStorage
+            localStorage.setItem('markdownContent', markdownText);
+        }
+
+        // Export HTML
+        function exportHTML() {
+            const content = editor.value;
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        h1 { font-size: 2em; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        blockquote {
+            padding: 0 16px;
+            margin: 16px 0;
+            background-color: #f9f9f9;
+            border-left: 4px solid #ddd;
+            font-style: italic;
+        }
+        ul, ol {
+            margin-bottom: 16px;
+            padding-left: 32px;
+        }
+        a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+${parseMarkdown(content)}
+</body>
+</html>`;
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('HTML exported successfully!');
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Show status message
+        function showStatus(message) {
+            status.textContent = message;
+            status.classList.add('show');
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        // Event listeners
+        editor.addEventListener('input', updatePreview);
+
+        // Initial render
+        updatePreview();
+
+        // Auto-save indicator
+        let saveTimeout;
+        editor.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                showStatus('Content saved');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

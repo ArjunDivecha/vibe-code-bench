@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Habit Tracker</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #111827;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            background: var(--surface);
+            width: 100%;
+            max-width: 1400px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--text);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+            max-width: 500px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        button.add-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button.add-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .table-wrapper {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Sticky Columns/Headers */
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: var(--bg);
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-light);
+            background: #f9fafb;
+        }
+
+        /* First column (Habit Name) Sticky */
+        th:first-child, td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 30;
+            background: var(--surface);
+            border-right: 2px solid var(--border);
+            min-width: 200px;
+            text-align: left;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+        }
+
+        thead th:first-child {
+            z-index: 40; /* Corner needs highest z-index */
+            background: #f9fafb;
+        }
+
+        .habit-name {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .delete-btn:hover {
+            color: var(--danger);
+            background: #fef2f2;
+        }
+
+        .stat-cell {
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 60px;
+        }
+        
+        .streak { color: #d97706; } /* Amber */
+        .percentage { color: var(--primary); }
+
+        /* Date Headers */
+        .date-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 40px;
+        }
+        .date-dow { font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
+        .date-num { font-size: 14px; font-weight: bold; }
+        .today-header { color: var(--primary); }
+
+        /* Checkbox Cells */
+        .check-cell {
+            padding: 8px;
+            min-width: 40px;
+        }
+
+        .habit-check {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 2px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .habit-check:hover {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .habit-check.completed {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        
+        .habit-check.completed::after {
+            content: '✓';
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+        @media (max-width: 768px) {
+            .app-container { height: 100vh; padding: 10px; border-radius: 0; }
+            .controls { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Habit Tracker</h1>
+        <div class="controls">
+            <input type="text" id="newHabitInput" placeholder="Enter a new habit (e.g., Read for 15 mins)">
+            <button class="add-btn" onclick="addHabit()">Add Habit</button>
+        </div>
+    </header>
+
+    <div class="table-wrapper">
+        <table id="habitTable">
+            <!-- Populated by JS -->
+        </table>
+        <div id="emptyState" class="empty-state" style="display: none;">
+            No habits yet. Add one above to get started!
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- State Management ---
+    const STORAGE_KEY = 'habitTracker_v1';
+    let habits = [];
+
+    // Helper: Get today's date string YYYY-MM-DD
+    const getTodayStr = () => new Date().toISOString().split('T')[0];
+
+    // Helper: Get array of last 30 days (Date objects)
+    const getLast30Days = () => {
+        const days = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push(d);
+        }
+        return days;
+    };
+
+    // Helper: Format Date object to YYYY-MM-DD
+    const fmtDate = (d) => d.toISOString().split('T')[0];
+
+    // --- Logic ---
+
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            habits = JSON.parse(stored);
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        render();
+    }
+
+    function addHabit() {
+        const input = document.getElementById('newHabitInput');
+        const name = input.value.trim();
+        if (!name) return;
+
+        habits.push({
+            id: Date.now(),
+            name: name,
+            completedDates: [] // Array of YYYY-MM-DD strings
+        });
+        
+        input.value = '';
+        saveData();
+    }
+
+    function deleteHabit(id) {
+        if(confirm('Delete this habit?')) {
+            habits = habits.filter(h => h.id !== id);
+            saveData();
+        }
+    }
+
+    function toggleHabit(id, dateStr) {
+        const habit = habits.find(h => h.id === id);
+        if (!habit) return;
+
+        const idx = habit.completedDates.indexOf(dateStr);
+        if (idx > -1) {
+            habit.completedDates.splice(idx, 1);
+        } else {
+            habit.completedDates.push(dateStr);
+        }
+        saveData();
+    }
+
+    function calculateStreak(completedDates) {
+        if (!completedDates || completedDates.length === 0) return 0;
+        
+        // Sort dates descending
+        const sorted = [...completedDates].sort().reverse();
+        const today = getTodayStr();
+        
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = fmtDate(yesterdayDate);
+
+        // Determine start point
+        let currentCheck = null;
+        if (sorted.includes(today)) currentCheck = today;
+        else if (sorted.includes(yesterday)) currentCheck = yesterday;
+        
+        if (!currentCheck) return 0;
+
+        let streak = 0;
+        while (true) {
+            if (sorted.includes(currentCheck)) {
+                streak++;
+                // Go back one day
+                const d = new Date(currentCheck);
+                d.setDate(d.getDate() - 1);
+                currentCheck = fmtDate(d);
+            } else {
+                break;
+            }
+        }
+        return streak;
+    }
+
+    function calculatePercentage(completedDates, daysWindow) {
+        // daysWindow is array of date strings in the window
+        let count = 0;
+        daysWindow.forEach(d => {
+            if (completedDates.includes(d)) count++;
+        });
+        return Math.round((count / daysWindow.length) * 100);
+    }
+
+    // --- Rendering ---
+
+    function render() {
+        const table = document.getElementById('habitTable');
+        const emptyState = document.getElementById('emptyState');
+        const days = getLast30Days();
+        const daysStrs = days.map(fmtDate);
+        const todayStr = getTodayStr();
+
+        if (habits.length === 0) {
+            table.innerHTML = '';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        let html = '<thead><tr>';
+        
+        // Header Row
+        html += '<th>Habit</th>';
+        html += '<th class="stat-cell">Streak</th>';
+        html += '<th class="stat-cell">%</th>';
+        
+        days.forEach(d => {
+            const dateStr = fmtDate(d);
+            const isToday = dateStr === todayStr;
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayNum = d.getDate();
+            
+            html += `<th class="${isToday ? 'today-header' : ''}">
+                <div class="date-header">
+                    <span class="date-dow">${dayName}</span>
+                    <span class="date-num">${dayNum}</span>
+                </div>
+            </th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        // Body Rows
+        habits.forEach(habit => {
+            const streak = calculateStreak(habit.completedDates);
+            const percentage = calculatePercentage(habit.completedDates, daysStrs);
+            
+            html += `<tr>`;
+            
+            // Name Column
+            html += `<td>
+                <div class="habit-name">
+                    <span>${habit.name}</span>
+                    <button class="delete-btn" onclick="deleteHabit(${habit.id})" title="Delete Habit">×</button>
+                </div>
+            </td>`;
+            
+            // Stats
+            html += `<td class="stat-cell streak">🔥 ${streak}</td>`;
+            html += `<td class="stat-cell percentage">${percentage}%</td>`;
+            
+            // Date Columns
+            daysStrs.forEach(dateStr => {
+                const isCompleted = habit.completedDates.includes(dateStr);
+                html += `<td class="check-cell">
+                    <button 
+                        class="habit-check ${isCompleted ? 'completed' : ''}" 
+                        onclick="toggleHabit(${habit.id}, '${dateStr}')"
+                        title="${dateStr}"
+                    ></button>
+                </td>`;
+            });
+            
+            html += `</tr>`;
+        });
+
+        html += '</tbody>';
+        table.innerHTML = html;
+        
+        // Scroll to end (today) on initial load if needed
+        // But since we want to see the whole grid, standard left-to-right is fine. 
+        // Often trackers show today on the right.
+        // Let's scroll the table container to the right automatically if it overflows
+        // requestAnimationFrame(() => {
+        //    const wrapper = document.querySelector('.table-wrapper');
+        //    wrapper.scrollLeft = wrapper.scrollWidth;
+        // });
+    }
+
+    // --- Init ---
+    // Handle Enter key in input
+    document.getElementById('newHabitInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addHabit();
+    });
+
+    loadData();
+    render();
+    
+    // Auto-scroll to right (today)
+    setTimeout(() => {
+        const wrapper = document.querySelector('.table-wrapper');
+        wrapper.scrollLeft = wrapper.scrollWidth;
+    }, 100);
+
+</script>
+
+</body>
+</html>

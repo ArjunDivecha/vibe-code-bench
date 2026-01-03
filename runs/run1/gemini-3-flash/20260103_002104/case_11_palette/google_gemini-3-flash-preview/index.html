@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromaFlow - Color Palette Generator</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #1a1a1a;
+            --card-bg: #ffffff;
+            --accent: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #3b82f6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 150px);
+        }
+
+        .color-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: flex 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            padding-bottom: 2rem;
+        }
+
+        .color-column:hover {
+            flex: 1.2;
+        }
+
+        .color-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+            transition: transform 0.2s;
+            width: 80%;
+            max-width: 180px;
+        }
+
+        .color-column:hover .color-info {
+            transform: scale(1.05);
+        }
+
+        .hex-code {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .rgb-code {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .color-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+            color: #4b5563;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .icon-btn.locked {
+            color: #ef4444;
+        }
+
+        footer {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            font-size: 0.9rem;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        kbd {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            margin: 0 4px;
+        }
+
+        /* Favorites Sidebar */
+        #favorites-panel {
+            position: fixed;
+            right: -350px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            z-index: 100;
+            transition: right 0.3s ease;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        #favorites-panel.open {
+            right: 0;
+        }
+
+        .fav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .fav-item {
+            margin-bottom: 1.5rem;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .fav-palette-preview {
+            display: flex;
+            height: 40px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .fav-color-strip {
+            flex: 1;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            bottom: 100px;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                flex-direction: column;
+            }
+            .color-column {
+                padding-bottom: 0;
+            }
+            .color-info {
+                padding: 0.5rem;
+                flex-direction: row;
+                width: 90%;
+                max-width: none;
+                justify-content: space-around;
+                align-items: center;
+            }
+            .rgb-code { display: none; }
+            .color-name { margin-bottom: 0; }
+            .hex-code { margin-bottom: 0; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">ChromaFlow</div>
+        <div class="controls">
+            <button class="btn-secondary" onclick="toggleFavorites()">
+                <span>★</span> Favorites
+            </button>
+            <button class="btn-secondary" onclick="saveCurrentPalette()">
+                Save
+            </button>
+            <button class="btn-primary" onclick="generatePalette()">
+                Generate
+            </button>
+        </div>
+    </header>
+
+    <main id="palette-container">
+        <!-- Color columns will be injected here -->
+    </main>
+
+    <footer>
+        Press <kbd>Space</kbd> to generate a new palette • Click a color to copy
+    </footer>
+
+    <div id="favorites-panel">
+        <div class="fav-header">
+            <h2>Saved Palettes</h2>
+            <button class="icon-btn" onclick="toggleFavorites()">✕</button>
+        </div>
+        <div id="favorites-list">
+            <!-- Saved palettes will appear here -->
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Copied to clipboard!</div>
+
+    <script>
+        const container = document.getElementById('palette-container');
+        const favoritesList = document.getElementById('favorites-list');
+        const favoritesPanel = document.getElementById('favorites-panel');
+        const toast = document.getElementById('toast');
+
+        let currentPalette = [];
+        let favorites = JSON.parse(localStorage.getItem('chromaflow_favs') || '[]');
+
+        const colorNames = {
+            "000000": "Black", "ffffff": "White", "ff0000": "Red", "00ff00": "Lime", "0000ff": "Blue",
+            "ffff00": "Yellow", "00ffff": "Cyan", "ff00ff": "Magenta", "c0c0c0": "Silver", "808080": "Gray",
+            "800000": "Maroon", "808000": "Olive", "008000": "Green", "800080": "Purple", "008080": "Teal",
+            "000080": "Navy", "fbbf24": "Amber", "3b82f6": "Blue", "ef4444": "Rose", "10b981": "Emerald",
+            "6366f1": "Indigo", "8b5cf6": "Violet", "f59e0b": "Orange", "ec4899": "Pink", "14b8a6": "Teal"
+        };
+
+        function generateRandomHex() {
+            const chars = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += chars[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function hexToRgb(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function getBrightness(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        }
+
+        function getApproxName(hex) {
+            const cleanHex = hex.toLowerCase().replace('#', '');
+            if (colorNames[cleanHex]) return colorNames[cleanHex];
+            
+            // Very basic hue-based naming
+            const r = parseInt(cleanHex.slice(0, 2), 16);
+            const g = parseInt(cleanHex.slice(2, 4), 16);
+            const b = parseInt(cleanHex.slice(4, 6), 16);
+            
+            if (r > 200 && g > 200 && b > 200) return "Off-White";
+            if (r < 50 && g < 50 && b < 50) return "Deep Dark";
+            if (r > g && r > b) return "Warm Tone";
+            if (g > r && g > b) return "Nature Tone";
+            if (b > r && b > g) return "Cool Tone";
+            return "Neutral Tone";
+        }
+
+        function initPalette() {
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                currentPalette.push({
+                    hex: generateRandomHex(),
+                    locked: false
+                });
+            }
+            renderPalette();
+        }
+
+        function generatePalette() {
+            currentPalette = currentPalette.map(color => {
+                if (color.locked) return color;
+                return { ...color, hex: generateRandomHex() };
+            });
+            renderPalette();
+        }
+
+        function toggleLock(index, event) {
+            event.stopPropagation();
+            currentPalette[index].locked = !currentPalette[index].locked;
+            renderPalette();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${text}!`);
+            });
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function renderPalette() {
+            container.innerHTML = '';
+            currentPalette.forEach((color, index) => {
+                const brightness = getBrightness(color.hex);
+                const isDark = brightness < 128;
+                
+                const col = document.createElement('div');
+                col.className = 'color-column';
+                col.style.backgroundColor = color.hex;
+                col.onclick = () => copyToClipboard(color.hex);
+
+                col.innerHTML = `
+                    <div class="color-info" style="color: ${isDark ? '#fff' : '#000'}; background: ${isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)'}">
+                        <span class="hex-code">${color.hex}</span>
+                        <span class="rgb-code">${hexToRgb(color.hex)}</span>
+                        <span class="color-name" style="color: ${isDark ? '#60a5fa' : '#2563eb'}">${getApproxName(color.hex)}</span>
+                        <div class="actions">
+                            <button class="icon-btn ${color.locked ? 'locked' : ''}" 
+                                    onclick="toggleLock(${index}, event)" 
+                                    style="color: ${isDark ? '#fff' : '#333'}">
+                                ${color.locked ? '🔒' : '🔓'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function saveCurrentPalette() {
+            const paletteToSave = currentPalette.map(c => c.hex);
+            favorites.unshift(paletteToSave);
+            if (favorites.length > 20) favorites.pop();
+            localStorage.setItem('chromaflow_favs', JSON.stringify(favorites));
+            renderFavorites();
+            showToast("Palette saved to favorites!");
+        }
+
+        function deleteFavorite(index) {
+            favorites.splice(index, 1);
+            localStorage.setItem('chromaflow_favs', JSON.stringify(favorites));
+            renderFavorites();
+        }
+
+        function loadFavorite(index) {
+            const fav = favorites[index];
+            currentPalette = fav.map(hex => ({ hex, locked: false }));
+            renderPalette();
+            toggleFavorites();
+        }
+
+        function renderFavorites() {
+            favoritesList.innerHTML = favorites.length === 0 
+                ? '<p style="color: #999; text-align: center; margin-top: 2rem;">No saved palettes yet.</p>' 
+                : '';
+
+            favorites.forEach((fav, idx) => {
+                const item = document.createElement('div');
+                item.className = 'fav-item';
+                
+                let strips = fav.map(c => `<div class="fav-color-strip" style="background:${c}"></div>`).join('');
+                
+                item.innerHTML = `
+                    <div class="fav-palette-preview" onclick="loadFavorite(${idx})" style="cursor:pointer">
+                        ${strips}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <small style="color:#666">${fav[0]}, ${fav[1]}...</small>
+                        <button class="icon-btn" onclick="deleteFavorite(${idx})" style="font-size:0.8rem">🗑️</button>
+                    </div>
+                `;
+                favoritesList.appendChild(item);
+            });
+        }
+
+        function toggleFavorites() {
+            favoritesPanel.classList.toggle('open');
+            if (favoritesPanel.classList.contains('open')) {
+                renderFavorites();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                generatePalette();
+            }
+        });
+
+        // Initialize
+        initPalette();
+    </script>
+</body>
+</html>

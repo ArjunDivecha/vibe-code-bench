@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <style>
+        /* Simple CSS for a motivating design */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        
+        .habit-tracker {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        
+        .day {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .day::before {
+            content: attr(data-day);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .habit-checkbox {
+            margin-bottom: 10px;
+        }
+        
+        .streak-counter {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .completion-percentage {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="habit-tracker">
+        <h1>Habit Tracker</h1>
+        <form id="add-habit-form">
+            <input type="text" id="habit-name" placeholder="Enter habit name">
+            <button type="submit">Add Habit</button>
+        </form>
+        <div class="calendar-grid">
+            <div class="day" data-day="Today">
+                <h2>Today</h2>
+                <div class="habit-checkbox" id="today-checkboxes">
+                    <!-- Habit checkboxes will be generated here -->
+                </div>
+                <div class="streak-counter" id="today-streak-counter"></div>
+                <div class="completion-percentage" id="today-completion-percentage"></div>
+            </div>
+            <!-- Generate 29 more days -->
+            <?php for ($i = 1; $i <= 29; $i++) { ?>
+            <div class="day" data-day="<?php echo $i; ?>">
+                <h2><?php echo $i; ?></h2>
+                <div class="habit-checkbox" id="day-<?php echo $i; ?>-checkboxes">
+                    <!-- Habit checkboxes will be generated here -->
+                </div>
+                <div class="streak-counter" id="day-<?php echo $i; ?>-streak-counter"></div>
+                <div class="completion-percentage" id="day-<?php echo $i; ?>-completion-percentage"></div>
+                <?php } ?>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

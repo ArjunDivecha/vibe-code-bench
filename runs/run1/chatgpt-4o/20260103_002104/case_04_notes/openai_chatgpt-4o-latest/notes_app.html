@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Note Taking App</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      padding: 1em;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .search-bar {
+      margin-bottom: 1em;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.5em;
+      margin-top: 0.5em;
+      margin-bottom: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+
+    textarea {
+      height: 150px;
+      resize: vertical;
+    }
+
+    .note-form button {
+      padding: 0.5em 1em;
+      margin-right: 0.5em;
+      border: none;
+      background: #4a90e2;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .note-form button.delete {
+      background: #e94e4e;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1em;
+    }
+
+    .note-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 1em;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .note-card h3 {
+      margin-top: 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .editor {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      margin-bottom: 1em;
+    }
+
+    .format-buttons {
+      margin-bottom: 0.5em;
+    }
+
+    .format-buttons button {
+      margin-right: 0.5em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Notes</h1>
+  </header>
+  <div class="container">
+    <input type="text" id="search" class="search-bar" placeholder="Search notes...">
+
+    <div id="note-editor" class="note-form hidden">
+      <input type="text" id="note-title" placeholder="Title">
+      <div class="format-buttons">
+        <button onclick="format('bold')"><b>B</b></button>
+        <button onclick="format('italic')"><i>I</i></button>
+      </div>
+      <div id="note-content" class="editor" contenteditable="true"></div>
+      <button onclick="saveNote()">Save</button>
+      <button class="delete" onclick="deleteNote()">Delete</button>
+      <button onclick="cancelEdit()">Cancel</button>
+    </div>
+
+    <button onclick="newNote()">+ New Note</button>
+
+    <div class="notes-grid" id="notes-list"></div>
+  </div>
+
+  <script>
+    let notes = [];
+    let editingNoteId = null;
+
+    function saveToLocalStorage() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    function loadFromLocalStorage() {
+      const data = localStorage.getItem('notes');
+      if (data) {
+        notes = JSON.parse(data);
+      }
+    }
+
+    function renderNotes(filter = '') {
+      const container = document.getElementById('notes-list');
+      container.innerHTML = '';
+      const filtered = notes.filter(note =>
+        note.title.toLowerCase().includes(filter.toLowerCase()) ||
+        note.content.toLowerCase().includes(filter.toLowerCase())
+      );
+      filtered.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+          <h3>${note.title}</h3>
+          <div>${note.content.substring(0, 100)}...</div>
+        `;
+        card.onclick = () => openNote(note.id);
+        container.appendChild(card);
+      });
+    }
+
+    function newNote() {
+      editingNoteId = null;
+      document.getElementById('note-title').value = '';
+      document.getElementById('note-content').innerHTML = '';
+      document.getElementById('note-editor').classList.remove('hidden');
+    }
+
+    function openNote(id) {
+      const note = notes.find(n => n.id === id);
+      if (note) {
+        editingNoteId = id;
+        document.getElementById('note-title').value = note.title;
+        document.getElementById('note-content').innerHTML = note.content;
+        document.getElementById('note-editor').classList.remove('hidden');
+      }
+    }
+
+    function saveNote() {
+      const title = document.getElementById('note-title').value.trim();
+      const content = document.getElementById('note-content').innerHTML.trim();
+      if (!title && !content) {
+        alert("Note is empty");
+        return;
+      }
+
+      if (editingNoteId) {
+        const note = notes.find(n => n.id === editingNoteId);
+        if (note) {
+          note.title = title;
+          note.content = content;
+        }
+      } else {
+        const newNote = {
+          id: Date.now(),
+          title,
+          content
+        };
+        notes.unshift(newNote);
+      }
+
+      saveToLocalStorage();
+      renderNotes(document.getElementById('search').value);
+      document.getElementById('note-editor').classList.add('hidden');
+    }
+
+    function deleteNote() {
+      if (editingNoteId) {
+        notes = notes.filter(n => n.id !== editingNoteId);
+        saveToLocalStorage();
+        renderNotes(document.getElementById('search').value);
+        document.getElementById('note-editor').classList.add('hidden');
+      }
+    }
+
+    function cancelEdit() {
+      document.getElementById('note-editor').classList.add('hidden');
+    }
+
+    function format(command) {
+      document.execCommand(command, false, null);
+    }
+
+    document.getElementById('search').addEventListener('input', function() {
+      renderNotes(this.value);
+    });
+
+    // Initial load
+    loadFromLocalStorage();
+    renderNotes();
+  </script>
+</body>
+</html>

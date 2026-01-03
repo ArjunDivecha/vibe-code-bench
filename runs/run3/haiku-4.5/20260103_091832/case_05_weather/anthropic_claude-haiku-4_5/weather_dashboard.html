@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background 0.5s ease;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        body.sunny-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body.cloudy-bg {
+            background: linear-gradient(135deg, #a8a8a8 0%, #5a5a5a 100%);
+        }
+
+        body.rainy-bg {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: slideDown 0.6s ease;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .city-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .city-card:nth-child(1) { animation-delay: 0.1s; }
+        .city-card:nth-child(2) { animation-delay: 0.2s; }
+        .city-card:nth-child(3) { animation-delay: 0.3s; }
+        .city-card:nth-child(4) { animation-delay: 0.4s; }
+        .city-card:nth-child(5) { animation-delay: 0.5s; }
+
+        .city-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .city-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+            margin: 15px 0;
+        }
+
+        .temperature {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .condition {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+        }
+
+        .humidity {
+            font-size: 0.9rem;
+            color: #999;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .details-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .details-modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            clear: both;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: #333;
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.6s ease 0.6s forwards;
+            opacity: 0;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 250px;
+            gap: 15px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px 10px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+            min-height: 20px;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .chart-temp {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .cities-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 30px 20px;
+            }
+
+            .chart {
+                height: 200px;
+            }
+
+            .chart-label {
+                bottom: -40px;
+                font-size: 0.8rem;
+            }
+
+            .chart-temp {
+                top: -35px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            header p {
+                font-size: 0.95rem;
+            }
+
+            .city-card {
+                padding: 15px;
+            }
+
+            .city-name {
+                font-size: 1.2rem;
+            }
+
+            .temperature {
+                font-size: 1.5rem;
+            }
+
+            .weather-icon {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="sunny-bg">
+    <div class="container">
+        <header>
+            <h1>🌍 Weather Dashboard</h1>
+            <p>Real-time weather for major cities</p>
+        </header>
+
+        <div class="cities-grid" id="citiesGrid">
+            <!-- Cities will be populated by JavaScript -->
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Temperature Comparison</div>
+            <div class="chart" id="temperatureChart">
+                <!-- Chart bars will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="details-modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="modalCityName"></div>
+                    <div class="modal-icon" id="modalIcon"></div>
+                </div>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock weather data for 5 cities
+        const weatherData = {
+            'New York': {
+                temperature: 72,
+                condition: 'sunny',
+                humidity: 65,
+                windSpeed: 12,
+                feelsLike: 70,
+                uvIndex: 8,
+                visibility: 10,
+                pressure: 1013
+            },
+            'London': {
+                temperature: 59,
+                condition: 'cloudy',
+                humidity: 78,
+                windSpeed: 15,
+                feelsLike: 56,
+                uvIndex: 3,
+                visibility: 8,
+                pressure: 1010
+            },
+            'Tokyo': {
+                temperature: 81,
+                condition: 'sunny',
+                humidity: 72,
+                windSpeed: 8,
+                feelsLike: 82,
+                uvIndex: 9,
+                visibility: 9,
+                pressure: 1015
+            },
+            'Sydney': {
+                temperature: 68,
+                condition: 'rainy',
+                humidity: 85,
+                windSpeed: 18,
+                feelsLike: 65,
+                uvIndex: 6,
+                visibility: 5,
+                pressure: 1008
+            },
+            'Paris': {
+                temperature: 64,
+                condition: 'cloudy',
+                humidity: 70,
+                windSpeed: 10,
+                feelsLike: 62,
+                uvIndex: 4,
+                visibility: 7,
+                pressure: 1012
+            }
+        };
+
+        const weatherIcons = {
+            'sunny': '☀️',
+            'cloudy': '☁️',
+            'rainy': '🌧️'
+        };
+
+        const backgroundClasses = {
+            'sunny': 'sunny-bg',
+            'cloudy': 'cloudy-bg',
+            'rainy': 'rainy-bg'
+        };
+
+        // Initialize the dashboard
+        function initDashboard() {
+            renderCities();
+            renderChart();
+            setBackgroundColor();
+        }
+
+        // Render city cards
+        function renderCities() {
+            const grid = document.getElementById('citiesGrid');
+            grid.innerHTML = '';
+
+            Object.entries(weatherData).forEach(([city, data]) => {
+                const card = document.createElement('div');
+                card.className = 'city-card';
+                card.onclick = () => showDetails(city);
+
+                card.innerHTML = `
+                    <div class="city-name">${city}</div>
+                    <div class="weather-icon">${weatherIcons[data.condition]}</div>
+                    <div class="temperature">${data.temperature}°F</div>
+                    <div class="condition">${data.condition}</div>
+                    <div class="humidity">💧 Humidity: ${data.humidity}%</div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Render temperature chart
+        function renderChart() {
+            const chart = document.getElementById('temperatureChart');
+            chart.innerHTML = '';
+
+            const maxTemp = Math.max(...Object.values(weatherData).map(d => d.temperature));
+            const minTemp = Math.min(...Object.values(weatherData).map(d => d.temperature));
+            const tempRange = maxTemp - minTemp || 1;
+
+            Object.entries(weatherData).forEach(([city, data]) => {
+                const heightPercent = ((data.temperature - minTemp) / tempRange) * 100 + 10;
+
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = heightPercent + '%';
+                bar.innerHTML = `
+                    <div class="chart-temp">${data.temperature}°</div>
+                    <div class="chart-label">${city.split(' ')[0]}</div>
+                `;
+
+                chart.appendChild(bar);
+            });
+        }
+
+        // Show city details modal
+        function showDetails(city) {
+            const data = weatherData[city];
+            const modal = document.getElementById('detailsModal');
+            const modalCityName = document.getElementById('modalCityName');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalDetails = document.getElementById('modalDetails');
+
+            modalCityName.textContent = city;
+            modalIcon.textContent = weatherIcons[data.condition];
+
+            modalDetails.innerHTML = `
+                <div class="detail-item">
+                    <span class="detail-label">Temperature</span>
+                    <span class="detail-value">${data.temperature}°F</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Condition</span>
+                    <span class="detail-value">${data.condition.charAt(0).toUpperCase() + data.condition.slice(1)}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Feels Like</span>
+                    <span class="detail-value">${data.feelsLike}°F</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Humidity</span>
+                    <span class="detail-value">${data.humidity}%</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Wind Speed</span>
+                    <span class="detail-value">${data.windSpeed} mph</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">UV Index</span>
+                    <span class="detail-value">${data.uvIndex}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Visibility</span>
+                    <span class="detail-value">${data.visibility} mi</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Pressure</span>
+                    <span class="detail-value">${data.pressure} mb</span>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('detailsModal');
+            modal.classList.remove('active');
+        }
+
+        // Set background based on most common weather condition
+        function setBackgroundColor() {
+            const conditions = Object.values(weatherData).map(d => d.condition);
+            const conditionCount = {};
+
+            conditions.forEach(condition => {
+                conditionCount[condition] = (conditionCount[condition] || 0) + 1;
+            });
+
+            const mostCommon = Object.keys(conditionCount).reduce((a, b) =>
+                conditionCount[a] > conditionCount[b] ? a : b
+            );
+
+            document.body.className = backgroundClasses[mostCommon];
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailsModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', initDashboard);
+    </script>
+</body>
+</html>

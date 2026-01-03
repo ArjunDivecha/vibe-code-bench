@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Trivia Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            padding: 2rem;
+            text-align: center;
+            transform: scale(0.9);
+            opacity: 0;
+            animation: fadeIn 0.8s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            25% {transform: translateX(-10px);}
+            75% {transform: translateX(10px);}
+        }
+        
+        @keyframes pulse {
+            0% {transform: scale(1);}
+            50% {transform: scale(1.05);}
+            100% {transform: scale(1);}
+        }
+        
+        h1 {
+            color: #5b64e3;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+        
+        h2 {
+            color: #5b64e3;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+        
+        p {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+        
+        .start-screen, .quiz-screen, .results-screen {
+            transition: all 0.5s ease;
+        }
+        
+        .quiz-screen, .results-screen {
+            display: none;
+        }
+        
+        .question {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .options {
+            display: grid;
+            grid-gap: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .option {
+            background-color: #f0f2ff;
+            border: 2px solid #d0d5ff;
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            text-align: left;
+        }
+        
+        .option:hover {
+            background-color: #e1e5ff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option.selected {
+            background-color: #5b64e3;
+            color: white;
+            border-color: #5b64e3;
+        }
+        
+        .option.correct {
+            background-color: #8bc34a;
+            color: white;
+            border-color: #8bc34a;
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        .option.incorrect {
+            background-color: #ff5252;
+            color: white;
+            border-color: #ff5252;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .score-container {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: #5b64e3;
+            font-weight: 600;
+        }
+        
+        button {
+            background-color: #5b64e3;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(91, 100, 227, 0.3);
+            font-weight: 600;
+        }
+        
+        button:hover {
+            background-color: #4a53d2;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .progress {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #5b64e3;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .feedback {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            min-height: 1.5rem;
+        }
+        
+        .correct-feedback {
+            color: #8bc34a;
+        }
+        
+        .incorrect-feedback {
+            color: #ff5252;
+        }
+        
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div class="start-screen">
+            <h1>🎉 Fun Trivia Quiz! 🎉</h1>
+            <p>Test your knowledge with 10 fun questions on random topics. Are you ready to challenge yourself?</p>
+            <button id="start-btn">Begin Quiz</button>
+        </div>
+        
+        <!-- Quiz Screen -->
+        <div class="quiz-screen">
+            <div class="score-container">Score: <span id="score">0</span> / <span id="total">10</span></div>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <h2>Question <span id="question-number">1</span> of 10</h2>
+            <p id="question" class="question">What is the question?</p>
+            <div class="options" id="options">
+                <!-- Options will be added here -->
+            </div>
+            <p id="feedback" class="feedback"></p>
+        </div>
+        
+        <!-- Results Screen -->
+        <div class="results-screen">
+            <h2>🎉 Quiz Complete! 🎉</h2>
+            <p>Your final score: <span id="final-score">0</span> / 10</p>
+            <p id="result-message"></p>
+            <button id="restart-btn">Play Again</button>
+        </div>
+    </div>
+    
+    <div class="celebration" id="celebration"></div>
+    
+    <script>
+        // Quiz questions
+        const questions = [
+            {
+                question: "Which planet is known as the 'Red Planet'?",
+                options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                correct: 1
+            },
+            {
+                question: "What is the capital of Japan?",
+                options: ["Beijing", "Seoul", "Tokyo", "Bangkok"],
+                correct: 2
+            },
+            {
+                question: "Which element has the chemical symbol 'O'?",
+                options: ["Gold", "Oxygen", "Osmium", "Oganesson"],
+                correct: 1
+            },
+            {
+                question: "In which year did the Titanic sink?",
+                options: ["1905", "1912", "1920", "1931"],
+                correct: 1
+            },
+            {
+                question: "What is the largest mammal in the world?",
+                options: ["African Elephant", "Giraffe", "Blue Whale", "Hippopotamus"],
+                correct: 2
+            },
+            {
+                question: "Which artist painted the Mona Lisa?",
+                options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
+                correct: 2
+            },
+            {
+                question: "What is the main ingredient in guacamole?",
+                options: ["Tomato", "Avocado", "Onion", "Pepper"],
+                correct: 1
+            },
+            {
+                question: "Which country is home to the kangaroo?",
+                options: ["New Zealand", "South Africa", "Brazil", "Australia"],
+                correct: 3
+            },
+            {
+                question: "How many Harry Potter books are there?",
+                options: ["5", "6", "7", "8"],
+                correct: 2
+            },
+            {
+                question: "What is the currency of Switzerland?",
+                options: ["Euro", "Pound", "Franc", "Dollar"],
+                correct: 2
+            }
+        ];
+        
+        // DOM elements
+        const startScreen = document.querySelector('.start-screen');
+        const quizScreen = document.querySelector('.quiz-screen');
+        const resultsScreen = document.querySelector('.results-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const questionNumberEl = document.getElementById('question-number');
+        const scoreEl = document.getElementById('score');
+        const totalEl = document.getElementById('total');
+        const progressBarEl = document.getElementById('progress-bar');
+        const feedbackEl = document.getElementById('feedback');
+        const finalScoreEl = document.getElementById('final-score');
+        const resultMessageEl = document.getElementById('result-message');
+        const celebrationEl = document.getElementById('celebration');
+        
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+        
+        // Initialize total
+        totalEl.textContent = questions.length;
+        
+        // Start quiz
+        startBtn.addEventListener('click', startQuiz);
+        
+        // Restart quiz
+        restartBtn.addEventListener('click', startQuiz);
+        
+        function startQuiz() {
+            // Reset variables
+            currentQuestion = 0;
+            score = 0;
+            answered = false;
+            
+            // Update score display
+            scoreEl.textContent = score;
+            
+            // Hide all screens
+            startScreen.style.display = 'none';
+            quizScreen.style.display = 'none';
+            resultsScreen.style.display = 'none';
+            
+            // Show quiz screen
+            quizScreen.style.display = 'block';
+            
+            // Load first question
+            loadQuestion();
+        }
+        
+        function loadQuestion() {
+            // Reset answered state
+            answered = false;
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'feedback';
+            
+            // Update question number
+            questionNumberEl.textContent = currentQuestion + 1;
+            
+            // Update progress bar
+            progressBarEl.style.width = `${(currentQuestion / questions.length) * 100}%`;
+            
+            // Get current question
+            const q = questions[currentQuestion];
+            
+            // Display question
+            questionEl.textContent = q.question;
+            
+            // Clear previous options
+            optionsEl.innerHTML = '';
+            
+            // Create option buttons
+            q.options.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.classList.add('option');
+                optionEl.textContent = option;
+                
+                optionEl.addEventListener('click', () => selectOption(optionEl, index));
+                
+                optionsEl.appendChild(optionEl);
+            });
+        }
+        
+        function selectOption(optionEl, selectedOptionIndex) {
+            // If already answered, do nothing
+            if (answered) return;
+            
+            answered = true;
+            
+            const q = questions[currentQuestion];
+            const options = document.querySelectorAll('.option');
+            
+            // Remove selected class from all options
+            options.forEach(opt => opt.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            optionEl.classList.add('selected');
+            
+            // Check if correct
+            if (selectedOptionIndex === q.correct) {
+                optionEl.classList.add('correct');
+                score++;
+                feedbackEl.textContent = 'Correct! 🎉';
+                feedbackEl.classList.add('correct-feedback');
+                scoreEl.textContent = score;
+            } else {
+                optionEl.classList.add('incorrect');
+                feedbackEl.textContent = `Wrong! The correct answer is ${q.options[q.correct]}.`;
+                feedbackEl.classList.add('incorrect-feedback');
+                
+                // Highlight correct answer
+                options[q.correct].classList.add('correct');
+            }
+            
+            // Move to next question after delay
+            setTimeout(() => {
+                currentQuestion++;
+                
+                if (currentQuestion < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1500);
+        }
+        
+        function showResults() {
+            // Hide quiz screen
+            quizScreen.style.display = 'none';
+            
+            // Show results screen
+            resultsScreen.style.display = 'block';
+            
+            // Update final score
+            finalScoreEl.textContent = score;
+            
+            // Update result message
+            let message = '';
+            if (score === 10) {
+                message = "Perfect score! You're a trivia master! 🏆";
+                createConfetti();
+                celebrationEl.style.opacity = 1;
+                
+                // Hide celebration after a while
+                setTimeout(() => {
+                    celebrationEl.style.opacity = 0;
+                }, 5000);
+            } else if (score >= 8) {
+                message = "Excellent! You really know your stuff! 🌟";
+            } else if (score >= 6) {
+                message = "Good job! You're pretty knowledgeable! 👍";
+            } else if (score >= 4) {
+                message = "Not bad! You got some right! 💪";
+            } else {
+                message = "Keep learning! You'll do better next time! 📚";
+            }
+            
+            resultMessageEl.textContent = message;
+        }
+        
+        function createConfetti() {
+            // Clear previous confetti
+            celebrationEl.innerHTML = '';
+            
+            // Create 100 confetti pieces
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Random position
+                const left = Math.random() * 100;
+                confetti.style.left = `${left}%`;
+                
+                // Random color
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.backgroundColor = color;
+                
+                // Random shape
+                const shapes = ['circle', 'square', 'triangle'];
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                
+                if (shape === 'circle') {
+                    confetti.style.borderRadius = '50%';
+                } else if (shape === 'triangle') {
+                    confetti.style.width = '0';
+                    confetti.style.height = '0';
+                    confetti.style.borderLeft = '5px solid transparent';
+                    confetti.style.borderRight = '5px solid transparent';
+                    confetti.style.borderBottom = `10px solid ${color}`;
+                    confetti.style.backgroundColor = 'transparent';
+                }
+                
+                // Random size
+                const size = Math.random() * 10 + 5;
+                if (shape === 'triangle') {
+                    confetti.style.borderBottomWidth = `${size * 2}px`;
+                    confetti.style.borderLeftWidth = `${size}px`;
+                    confetti.style.borderRightWidth = `${size}px`;
+                } else {
+                    confetti.style.width = `${size}px`;
+                    confetti.style.height = `${size}px`;
+                }
+                
+                // Animation
+                confetti.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+                
+                // Add to celebration
+                celebrationEl.appendChild(confetti);
+                
+                // Add keyframes for this confetti
+                const keyframes = `
+                    @keyframes fall {
+                        0% {
+                            transform: translateY(-10px) rotate(0deg);
+                            opacity: 1;
+                        }
+                        100% {
+                            transform: translateY(${window.innerHeight}px) rotate(360deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                
+                const style = document.createElement('style');
+                style.textContent = keyframes;
+                document.head.appendChild(style);
+                
+                // Remove style after animation completes
+                setTimeout(() => {
+                    document.head.removeChild(style);
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

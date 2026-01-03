@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        :root {
+            --primary-color: #ff6347; /* Tomato */
+            --secondary-color: #ffbdb3;
+            --bg-color: #fdf2f0;
+            --text-color: #333;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--white);
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(255, 99, 71, 0.15);
+            text-align: center;
+            width: 350px;
+            border-top: 10px solid var(--primary-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .status-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .status-badge {
+            background-color: var(--secondary-color);
+            color: #8a2be2; /* Deep violet for contrast or dark red */
+            color: #b92b13;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 1rem 0;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+
+        button {
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: #e5533d;
+        }
+
+        .btn-secondary {
+            background-color: #eee;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background-color: #ddd;
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Session dots visualization */
+        .session-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 50%;
+        }
+
+        .dot.active {
+            background-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Pomodoro</h1>
+        
+        <div class="status-container">
+            <span id="status-text" class="status-badge">Work Session 1</span>
+        </div>
+
+        <div id="timer" class="timer-display">25:00</div>
+
+        <div class="controls">
+            <button id="start-btn" class="btn-primary">Start</button>
+            <button id="pause-btn" class="btn-secondary btn-disabled">Pause</button>
+            <button id="reset-btn" class="btn-secondary">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WORK_TIME = 25 * 60; // 25 minutes in seconds
+        const BREAK_TIME = 5 * 60; // 5 minutes in seconds
+        
+        // State
+        let timeLeft = WORK_TIME;
+        let isRunning = false;
+        let isWorkMode = true;
+        let sessionCount = 1;
+        let timerInterval = null;
+
+        // DOM Elements
+        const timerDisplay = document.getElementById('timer');
+        const statusText = document.getElementById('status-text');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Initialize display
+        updateDisplay();
+
+        // Event Listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            timerDisplay.textContent = timeString;
+            document.title = `${timeString} - Pomodoro`;
+        }
+
+        function updateStatus() {
+            if (isWorkMode) {
+                statusText.textContent = `Work Session ${sessionCount}`;
+                statusText.style.backgroundColor = 'var(--secondary-color)';
+                statusText.style.color = '#b92b13';
+                document.documentElement.style.setProperty('--primary-color', '#ff6347');
+            } else {
+                statusText.textContent = `Break Time`;
+                statusText.style.backgroundColor = '#d0f0c0'; // Light green
+                statusText.style.color = '#2e8b57'; // Sea green
+                document.documentElement.style.setProperty('--primary-color', '#4CAF50'); // Green theme for break
+            }
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startBtn.classList.add('btn-disabled');
+            pauseBtn.classList.remove('btn-disabled');
+            
+            // Audio context must be resumed/created after user interaction
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                // Just creating it to ensure browser permission logic works
+                const ctx = new AudioCtx();
+                ctx.close();
+            }
+
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    handleTimerComplete();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.classList.remove('btn-disabled');
+            pauseBtn.classList.add('btn-disabled');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            // Reset to the beginning of the CURRENT mode
+            timeLeft = isWorkMode ? WORK_TIME : BREAK_TIME;
+            updateDisplay();
+        }
+
+        function handleTimerComplete() {
+            playAlarm();
+            pauseTimer(); // Stop the timer loop
+            
+            // Switch modes
+            if (isWorkMode) {
+                // Switching from Work to Break
+                isWorkMode = false;
+                timeLeft = BREAK_TIME;
+            } else {
+                // Switching from Break to Work
+                isWorkMode = true;
+                sessionCount++;
+                timeLeft = WORK_TIME;
+            }
+            
+            updateStatus();
+            updateDisplay();
+            
+            // Optional: Auto-start next session? 
+            // Usually Pomodoro requires manual start for next session to ensure user is ready.
+            // We will leave it paused but updated.
+            // Let's change the Start button text momentarily or just let user click Start again.
+        }
+
+        function playAlarm() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                
+                const ctx = new AudioCtx();
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+
+                oscillator.type = 'sine';
+                
+                // Play a simple double beep
+                const now = ctx.currentTime;
+                
+                // First beep
+                oscillator.frequency.setValueAtTime(880, now); // A5
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                
+                // Second beep
+                oscillator.frequency.setValueAtTime(880, now + 0.6);
+                gainNode.gain.setValueAtTime(0.1, now + 0.6);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+
+                oscillator.start(now);
+                oscillator.stop(now + 1.2);
+            } catch (e) {
+                console.error("Audio play failed", e);
+            }
+        }
+    </script>
+</body>
+</html>

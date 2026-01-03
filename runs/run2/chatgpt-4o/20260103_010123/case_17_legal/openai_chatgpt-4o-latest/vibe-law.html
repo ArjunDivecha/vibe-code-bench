@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vibe-Law - Legal Case Search</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1e1e2f;
+      color: #e0e0e0;
+    }
+    header {
+      background-color: #12121c;
+      padding: 1em;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8em;
+      color: #00bcd4;
+    }
+    #search-bar {
+      width: 60%;
+      padding: 0.5em;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      background-color: #2e2e3e;
+      color: #e0e0e0;
+      margin-top: 1em;
+    }
+    #results {
+      padding: 1em;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+    }
+    .case {
+      background-color: #2a2a3a;
+      padding: 1em;
+      margin-bottom: 0.7em;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .case:hover {
+      background-color: #3a3a4a;
+    }
+    .case-title {
+      font-weight: bold;
+      color: #00bcd4;
+    }
+    .case-meta {
+      font-size: 0.9em;
+      color: #aaa;
+      margin: 0.2em 0;
+    }
+    .case-snippet {
+      font-size: 0.95em;
+      color: #ccc;
+    }
+    #detail-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 15, 25, 0.95);
+      display: none;
+      flex-direction: row;
+      z-index: 1000;
+    }
+    #detail-content {
+      flex: 3;
+      padding: 1em;
+      overflow-y: auto;
+    }
+    #notes-pane {
+      flex: 1;
+      background: #1a1a2a;
+      border-left: 1px solid #333;
+      padding: 1em;
+      overflow-y: auto;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #444;
+      margin-bottom: 1em;
+    }
+    .tab {
+      padding: 0.5em 1em;
+      cursor: pointer;
+      background: #2a2a3a;
+      margin-right: 0.5em;
+      border-radius: 5px 5px 0 0;
+    }
+    .tab.active {
+      background: #00bcd4;
+      color: #000;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    button {
+      background: #00bcd4;
+      border: none;
+      color: #000;
+      padding: 0.5em 1em;
+      margin-top: 1em;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .highlight {
+      background-color: #ffeb3b;
+      color: #000;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .note-snippet {
+      background: #2e2e3e;
+      margin: 0.5em 0;
+      padding: 0.5em;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .close-btn {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      background: #444;
+      color: #fff;
+      border: none;
+      font-size: 1.2em;
+      padding: 0.2em 0.6em;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vibe-Law - Legal Case Search</h1>
+    <input type="text" id="search-bar" placeholder="Search case law...">
+  </header>
+  <div id="results"></div>
+
+  <div id="detail-modal">
+    <div id="detail-content">
+      <button class="close-btn" onclick="closeDetail()">×</button>
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('summary')">Summary</div>
+        <div class="tab" onclick="showTab('fulltext')">Full Text</div>
+      </div>
+      <div id="summary" class="tab-content active"></div>
+      <div id="fulltext" class="tab-content"></div>
+      <button onclick="extractEntities()">Extract Entities</button>
+    </div>
+    <div id="notes-pane">
+      <h3>Notes</h3>
+      <div id="note-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const cases = [
+      { id: 1, title: "Smith v. Jones", court: "Supreme Court", date: "2020-04-15", summary: "Dispute over property boundaries.", fulltext: "In the case of Smith v. Jones, heard on April 15, 2020, the Supreme Court...", snippet: "Boundary dispute escalates to Supreme Court in Smith v. Jones." },
+      { id: 2, title: "People v. Allen", court: "Court of Appeals", date: "2019-11-22", summary: "Criminal appeal regarding evidence admissibility.", fulltext: "On November 22, 2019, the Court of Appeals reviewed People v. Allen...", snippet: "Court examines evidence rules in People v. Allen." },
+      { id: 3, title: "Johnson v. Metro Transit", court: "District Court", date: "2021-01-10", summary: "Slip and fall injury claim on public transit.", fulltext: "Johnson filed suit against Metro Transit on January 10, 2021...", snippet: "Public injury lawsuit proceeds in Johnson v. Metro Transit." },
+      { id: 4, title: "Anderson v. TechCorp", court: "Circuit Court", date: "2022-06-05", summary: "Employment discrimination allegations.", fulltext: "The Circuit Court heard Anderson v. TechCorp on June 5, 2022...", snippet: "TechCorp faces employment suit in Anderson case." },
+      { id: 5, title: "Williams v. City of Gotham", court: "Supreme Court", date: "2018-08-30", summary: "Civil rights case involving police conduct.", fulltext: "Williams brought a civil rights case on August 30, 2018...", snippet: "Supreme Court hears police conduct case." },
+      { id: 6, title: "Davis v. Green Energy Inc.", court: "Appellate Court", date: "2021-12-01", summary: "Environmental impact litigation.", fulltext: "Litigation over Green Energy's impact began on December 1, 2021...", snippet: "Environmental concerns at center of Davis litigation." },
+      { id: 7, title: "State v. Ramirez", court: "Criminal Court", date: "2020-03-18", summary: "Robbery conviction appeal.", fulltext: "Ramirez appealed a robbery conviction from March 18, 2020...", snippet: "State defends robbery conviction in Ramirez case." },
+      { id: 8, title: "Baker v. Insurance Co.", court: "District Court", date: "2022-09-14", summary: "Insurance claim denial dispute.", fulltext: "Baker sued Insurance Co. on September 14, 2022...", snippet: "Claim denial challenged in Baker v. Insurance Co." },
+      { id: 9, title: "Nguyen v. Housing Authority", court: "Housing Court", date: "2019-05-07", summary: "Tenant eviction challenge.", fulltext: "Nguyen challenged an eviction notice on May 7, 2019...", snippet: "Tenant fights eviction in Nguyen housing case." },
+      { id: 10, title: "Lee v. FastBank", court: "Financial Court", date: "2020-10-12", summary: "Fraudulent loan practices alleged.", fulltext: "Lee alleges fraud by FastBank in case dated October 12, 2020...", snippet: "Loan fraud allegations in Lee v. FastBank." }
+    ];
+
+    const resultsDiv = document.getElementById('results');
+    const searchBar = document.getElementById('search-bar');
+
+    function renderResults(data) {
+      resultsDiv.innerHTML = '';
+      data.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'case';
+        div.onclick = () => openDetail(c.id);
+        div.innerHTML = `
+          <div class="case-title">${c.title}</div>
+          <div class="case-meta">${c.court} | ${c.date}</div>
+          <div class="case-snippet">${c.snippet}</div>
+        `;
+        resultsDiv.appendChild(div);
+      });
+    }
+
+    searchBar.addEventListener('input', () => {
+      const q = searchBar.value.toLowerCase();
+      const filtered = cases.filter(c =>
+        c.title.toLowerCase().includes(q) ||
+        c.summary.toLowerCase().includes(q) ||
+        c.snippet.toLowerCase().includes(q)
+      );
+      renderResults(filtered);
+    });
+
+    renderResults(cases);
+
+    function openDetail(id) {
+      const c = cases.find(x => x.id === id);
+      document.getElementById('summary').innerText = c.summary;
+      document.getElementById('fulltext').innerText = c.fulltext;
+      document.getElementById('detail-modal').style.display = 'flex';
+      loadNotes(id);
+      currentCaseId = id;
+    }
+
+    function closeDetail() {
+      document.getElementById('detail-modal').style.display = 'none';
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function extractEntities() {
+      const full = document.getElementById('fulltext');
+      const text = full.innerText;
+      const highlighted = text
+        .replace(/\b([A-Z][a-z]+ [A-Z][a-z]+)\b/g, '<span class="highlight">$1</span>')
+        .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b/g, '<span class="highlight">$&</span>');
+      full.innerHTML = highlighted;
+
+      full.querySelectorAll('.highlight').forEach(span => {
+        span.addEventListener('click', () => saveSnippet(span.innerText));
+      });
+    }
+
+    let currentCaseId = null;
+
+    function saveSnippet(text) {
+      const key = `notes_${currentCaseId}`;
+      const notes = JSON.parse(localStorage.getItem(key)) || [];
+      notes.push(text);
+      localStorage.setItem(key, JSON.stringify(notes));
+      loadNotes(currentCaseId);
+    }
+
+    function loadNotes(caseId) {
+      const key = `notes_${caseId}`;
+      const notes = JSON.parse(localStorage.getItem(key)) || [];
+      const noteList = document.getElementById('note-list');
+      noteList.innerHTML = '';
+      notes.forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'note-snippet';
+        div.textContent = n;
+        noteList.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

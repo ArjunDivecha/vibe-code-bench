@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #dddddd;
+            --accent-color: #4a90d9;
+            --code-bg: #f4f4f4;
+            --blockquote-border: #4a90d9;
+            --blockquote-bg: #f0f7ff;
+        }
+
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #444444;
+            --accent-color: #6ab0f3;
+            --code-bg: #2d2d2d;
+            --blockquote-border: #6ab0f3;
+            --blockquote-bg: #252530;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toolbar h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .toolbar-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .editor-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            padding: 10px 20px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .divider {
+            width: 4px;
+            background-color: var(--border-color);
+            cursor: col-resize;
+            transition: background-color 0.2s;
+        }
+
+        .divider:hover {
+            background-color: var(--accent-color);
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        #markdown-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-primary);
+            line-height: 1.7;
+        }
+
+        /* Preview Styles */
+        #preview h1 {
+            font-size: 2rem;
+            margin: 0.5em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #preview h2 {
+            font-size: 1.5rem;
+            margin: 0.5em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #preview h3 {
+            font-size: 1.25rem;
+            margin: 0.5em 0;
+        }
+
+        #preview h4 {
+            font-size: 1rem;
+            margin: 0.5em 0;
+        }
+
+        #preview h5 {
+            font-size: 0.875rem;
+            margin: 0.5em 0;
+        }
+
+        #preview h6 {
+            font-size: 0.85rem;
+            margin: 0.5em 0;
+            color: var(--text-secondary);
+        }
+
+        #preview p {
+            margin: 1em 0;
+        }
+
+        #preview strong {
+            font-weight: 600;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview ul, #preview ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        #preview li {
+            margin: 0.5em 0;
+        }
+
+        #preview code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        #preview pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            background-color: var(--blockquote-bg);
+            padding: 12px 20px;
+            margin: 1em 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        #preview blockquote p {
+            margin: 0.5em 0;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 2em 0;
+        }
+
+        .status-bar {
+            padding: 8px 20px;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .icon {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+
+            .divider {
+                width: 100%;
+                height: 4px;
+                cursor: row-resize;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .toolbar-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>📝 Markdown Editor</h1>
+        <div class="toolbar-buttons">
+            <button class="btn btn-secondary" id="clear-btn">
+                <span class="icon">🗑️</span> Clear
+            </button>
+            <button class="btn btn-secondary" id="dark-mode-btn">
+                <span class="icon">🌙</span> Dark Mode
+            </button>
+            <button class="btn btn-primary" id="export-btn">
+                <span class="icon">💾</span> Export HTML
+            </button>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="markdown-input" placeholder="Type your markdown here...
+
+# Heading 1
+## Heading 2
+### Heading 3
+
+**Bold text** and *italic text*
+
+- List item 1
+- List item 2
+
+1. Numbered item
+2. Another item
+
+[Link text](https://example.com)
+
+> Blockquote
+
+\`inline code\`
+
+\`\`\`
+code block
+\`\`\`"></textarea>
+        </div>
+        <div class="divider" id="divider"></div>
+        <div class="pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="char-count">0 characters</span>
+        <span id="save-status">Auto-saved</span>
+    </div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        const darkModeBtn = document.getElementById('dark-mode-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const charCount = document.getElementById('char-count');
+        const saveStatus = document.getElementById('save-status');
+        const divider = document.getElementById('divider');
+
+        // Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+
+            // Escape HTML to prevent XSS
+            html = html.replace(/&/g, '&amp;')
+                       .replace(/</g, '&lt;')
+                       .replace(/>/g, '&gt;');
+
+            // Code blocks (must be processed first to avoid conflicts)
+            html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold and Italic
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Images
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;">');
+
+            // Horizontal rules
+            html = html.replace(/^(?:---|\*\*\*|___)$/gm, '<hr>');
+
+            // Blockquotes
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+            // Merge consecutive blockquotes
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+
+            // Unordered lists
+            html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)(\n<li>)/g, '$1$2');
+            html = html.replace(/(?:^|\n)(<li>[\s\S]*?<\/li>)(?=\n(?!<li>)|$)/g, '\n<ul>$1</ul>');
+
+            // Ordered lists
+            html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
+            html = html.replace(/(<oli>.*<\/oli>)(\n<oli>)/g, '$1$2');
+            html = html.replace(/(?:^|\n)(<oli>[\s\S]*?<\/oli>)(?=\n(?!<oli>)|$)/g, '\n<ol>$1</ol>');
+            html = html.replace(/<oli>/g, '<li>');
+            html = html.replace(/<\/oli>/g, '</li>');
+
+            // Paragraphs
+            const lines = html.split('\n');
+            let result = [];
+            let inParagraph = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const isBlock = line.startsWith('<h') || 
+                               line.startsWith('<ul') || 
+                               line.startsWith('<ol') || 
+                               line.startsWith('<li') || 
+                               line.startsWith('<blockquote') || 
+                               line.startsWith('<pre') || 
+                               line.startsWith('<hr') ||
+                               line.startsWith('</ul') ||
+                               line.startsWith('</ol') ||
+                               line.startsWith('</blockquote') ||
+                               line.startsWith('</pre') ||
+                               line === '';
+
+                if (isBlock) {
+                    if (inParagraph) {
+                        result.push('</p>');
+                        inParagraph = false;
+                    }
+                    if (line !== '') {
+                        result.push(line);
+                    }
+                } else {
+                    if (!inParagraph) {
+                        result.push('<p>');
+                        inParagraph = true;
+                    }
+                    result.push(line);
+                }
+            }
+
+            if (inParagraph) {
+                result.push('</p>');
+            }
+
+            return result.join('\n');
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdown = markdownInput.value;
+            preview.innerHTML = parseMarkdown(markdown);
+            charCount.textContent = `${markdown.length} characters`;
+            saveToLocalStorage();
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('markdown-content', markdownInput.value);
+            saveStatus.textContent = 'Auto-saved';
+            setTimeout(() => {
+                saveStatus.textContent = '';
+            }, 2000);
+        }
+
+        // Load from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('markdown-content');
+            if (saved) {
+                markdownInput.value = saved;
+                updatePreview();
+            }
+
+            const darkMode = localStorage.getItem('dark-mode');
+            if (darkMode === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeBtn.innerHTML = '<span class="icon">☀️</span> Light Mode';
+            }
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDark);
+            darkModeBtn.innerHTML = isDark 
+                ? '<span class="icon">☀️</span> Light Mode' 
+                : '<span class="icon">🌙</span> Dark Mode';
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const styles = `
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                    max-width: 800px; 
+                    margin: 40px auto; 
+                    padding: 20px; 
+                    line-height: 1.7;
+                    background: ${isDark ? '#1e1e1e' : '#fff'};
+                    color: ${isDark ? '#e0e0e0' : '#333'};
+                }
+                h1, h2 { border-bottom: 1px solid ${isDark ? '#444' : '#ddd'}; padding-bottom: 0.3em; }
+                h1 { font-size: 2rem; }
+                h2 { font-size: 1.5rem; }
+                h3 { font-size: 1.25rem; }
+                a { color: ${isDark ? '#6ab0f3' : '#4a90d9'}; }
+                code { background: ${isDark ? '#2d2d2d' : '#f4f4f4'}; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+                pre { background: ${isDark ? '#2d2d2d' : '#f4f4f4'}; padding: 16px; border-radius: 8px; overflow-x: auto; }
+                pre code { background: none; padding: 0; }
+                blockquote { border-left: 4px solid ${isDark ? '#6ab0f3' : '#4a90d9'}; background: ${isDark ? '#252530' : '#f0f7ff'}; padding: 12px 20px; margin: 1em 0; border-radius: 0 8px 8px 0; }
+                ul, ol { padding-left: 2em; }
+                li { margin: 0.5em 0; }
+                hr { border: none; border-top: 2px solid ${isDark ? '#444' : '#ddd'}; margin: 2em 0; }
+            `;
+
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>${styles}</style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear editor
+        function clearEditor() {
+            if (confirm('Are you sure you want to clear the editor?')) {
+                markdownInput.value = '';
+                updatePreview();
+            }
+        }
+
+        // Resizable divider
+        let isResizing = false;
+
+        divider.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const container = document.querySelector('.editor-container');
+            const containerRect = container.getBoundingClientRect();
+            const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+            if (percentage > 20 && percentage < 80) {
+                const panes = document.querySelectorAll('.pane');
+                panes[0].style.flex = `0 0 ${percentage}%`;
+                panes[1].style.flex = `0 0 ${100 - percentage}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+
+        // Event listeners
+        markdownInput.addEventListener('input', updatePreview);
+        darkModeBtn.addEventListener('click', toggleDarkMode);
+        exportBtn.addEventListener('click', exportHTML);
+        clearBtn.addEventListener('click', clearEditor);
+
+        // Tab key support in textarea
+        markdownInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = markdownInput.selectionStart;
+                const end = markdownInput.selectionEnd;
+                markdownInput.value = markdownInput.value.substring(0, start) + '    ' + markdownInput.value.substring(end);
+                markdownInput.selectionStart = markdownInput.selectionEnd = start + 4;
+                updatePreview();
+            }
+        });
+
+        // Initialize
+        loadFromLocalStorage();
+        updatePreview();
+    </script>
+</body>
+</html>

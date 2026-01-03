@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Notes App</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 1em;
+      text-align: center;
+    }
+    #main {
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      margin: auto;
+      padding: 1em;
+    }
+    #search {
+      padding: 0.5em;
+      margin-bottom: 1em;
+      width: 100%;
+      font-size: 1em;
+    }
+    #note-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      margin-bottom: 1em;
+    }
+    #note-form input, #note-form textarea {
+      padding: 0.5em;
+      font-size: 1em;
+      width: 100%;
+    }
+    #note-form button {
+      padding: 0.5em;
+      background: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    #notes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1em;
+    }
+    .note {
+      background: #fff;
+      padding: 1em;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      cursor: pointer;
+      position: relative;
+    }
+    .note h3 {
+      margin-top: 0;
+    }
+    .note .delete {
+      position: absolute;
+      top: 0.5em;
+      right: 0.5em;
+      background: red;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #editor-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    #editor {
+      background: #fff;
+      padding: 1em;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+    }
+    #editor input, #editor textarea {
+      padding: 0.5em;
+      font-size: 1em;
+      width: 100%;
+    }
+    #editor .actions {
+      display: flex;
+      justify-content: space-between;
+    }
+    #editor .actions button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    textarea {
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Notes</h1>
+  </header>
+  <div id="main">
+    <input type="text" id="search" placeholder="Search notes...">
+
+    <form id="note-form">
+      <input type="text" id="new-title" placeholder="Note Title" required>
+      <textarea id="new-content" placeholder="Note Content" rows="4" required></textarea>
+      <button type="submit">Add Note</button>
+    </form>
+
+    <div id="notes"></div>
+  </div>
+
+  <div id="editor-modal">
+    <div id="editor">
+      <input type="text" id="edit-title">
+      <textarea id="edit-content" rows="6"></textarea>
+      <div class="actions">
+        <button id="save-edit">Save</button>
+        <button id="cancel-edit">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let notes = [];
+    let editingNoteId = null;
+
+    function saveNotes() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    function loadNotes() {
+      const saved = localStorage.getItem('notes');
+      notes = saved ? JSON.parse(saved) : [];
+    }
+
+    function renderNotes(filter = '') {
+      const container = document.getElementById('notes');
+      container.innerHTML = '';
+      const filtered = notes.filter(note =>
+        note.title.toLowerCase().includes(filter.toLowerCase()) ||
+        note.content.toLowerCase().includes(filter.toLowerCase())
+      );
+      for (const note of filtered) {
+        const div = document.createElement('div');
+        div.className = 'note';
+        div.innerHTML = \`
+          <button class="delete" data-id="\${note.id}">&times;</button>
+          <h3>\${note.title}</h3>
+          <div>\${formatText(note.content)}</div>
+        \`;
+        div.addEventListener('click', (e) => {
+          if (e.target.classList.contains('delete')) return;
+          openEditor(note.id);
+        });
+        div.querySelector('.delete').addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteNote(note.id);
+        });
+        container.appendChild(div);
+      }
+    }
+
+    function formatText(text) {
+      // Simple formatting: *bold*, _italic_
+      return text
+        .replace(/\\*(.*?)\\*/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        .replace(/\\n/g, '<br>');
+    }
+
+    function addNote(title, content) {
+      const note = {
+        id: Date.now(),
+        title,
+        content
+      };
+      notes.unshift(note);
+      saveNotes();
+      renderNotes(document.getElementById('search').value);
+    }
+
+    function deleteNote(id) {
+      notes = notes.filter(n => n.id !== id);
+      saveNotes();
+      renderNotes(document.getElementById('search').value);
+    }
+
+    function openEditor(id) {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+      editingNoteId = id;
+      document.getElementById('edit-title').value = note.title;
+      document.getElementById('edit-content').value = note.content;
+      document.getElementById('editor-modal').style.display = 'flex';
+    }
+
+    function closeEditor() {
+      editingNoteId = null;
+      document.getElementById('editor-modal').style.display = 'none';
+    }
+
+    function saveEdit() {
+      const title = document.getElementById('edit-title').value;
+      const content = document.getElementById('edit-content').value;
+      const note = notes.find(n => n.id === editingNoteId);
+      if (note) {
+        note.title = title;
+        note.content = content;
+        saveNotes();
+        renderNotes(document.getElementById('search').value);
+      }
+      closeEditor();
+    }
+
+    document.getElementById('note-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const title = document.getElementById('new-title').value;
+      const content = document.getElementById('new-content').value;
+      addNote(title, content);
+      e.target.reset();
+    });
+
+    document.getElementById('search').addEventListener('input', e => {
+      renderNotes(e.target.value);
+    });
+
+    document.getElementById('cancel-edit').addEventListener('click', e => {
+      closeEditor();
+    });
+
+    document.getElementById('save-edit').addEventListener('click', e => {
+      saveEdit();
+    });
+
+    // Init
+    loadNotes();
+    renderNotes();
+  </script>
+</body>
+</html>

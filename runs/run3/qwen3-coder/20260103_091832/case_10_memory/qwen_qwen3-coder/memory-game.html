@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Card Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 20px;
+        }
+        
+        .game-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-item {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        .stat-value {
+            color: #2575fc;
+            font-size: 1.4rem;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 20px auto;
+            perspective: 1000px;
+        }
+        
+        .card {
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .card.matched {
+            transform: rotateY(180deg);
+            cursor: default;
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-front {
+            background: linear-gradient(45deg, #ff6b6b, #ffa502);
+            transform: rotateY(180deg);
+            font-size: 2.5rem;
+        }
+        
+        .card-back {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+            font-size: 1.8rem;
+            color: white;
+        }
+        
+        .card-back::after {
+            content: "?";
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(to right, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .win-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .win-screen.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .win-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            transform: scale(0.8);
+            transition: transform 0.5s;
+        }
+        
+        .win-screen.show .win-content {
+            transform: scale(1);
+        }
+        
+        .win-content h2 {
+            font-size: 2.5rem;
+            color: #4361ee;
+            margin-bottom: 20px;
+        }
+        
+        .win-stats {
+            font-size: 1.3rem;
+            margin: 15px 0;
+            color: #333;
+        }
+        
+        .win-stats span {
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .bounce {
+            animation: bounce 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Memory Match</h1>
+        
+        <div class="stats">
+            <div class="stat-item">
+                Moves: <span id="moves" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                Time: <span id="timer" class="stat-value">0s</span>
+            </div>
+        </div>
+        
+        <div class="game-board" id="game-board"></div>
+        
+        <div class="controls">
+            <button id="restart">Restart Game</button>
+        </div>
+    </div>
+    
+    <div class="win-screen" id="win-screen">
+        <div class="win-content">
+            <h2>Congratulations! 🎉</h2>
+            <div class="win-stats">You found all pairs in <span id="win-moves">0</span> moves!</div>
+            <div class="win-stats">Time: <span id="win-time">0</span> seconds</div>
+            <button id="play-again">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game elements
+            const gameBoard = document.getElementById('game-board');
+            const movesDisplay = document.getElementById('moves');
+            const timerDisplay = document.getElementById('timer');
+            const restartButton = document.getElementById('restart');
+            const winScreen = document.getElementById('win-screen');
+            const winMoves = document.getElementById('win-moves');
+            const winTime = document.getElementById('win-time');
+            const playAgainButton = document.getElementById('play-again');
+            
+            // Game variables
+            let cards = [];
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let moves = 0;
+            let timer = 0;
+            let timerInterval;
+            let canFlip = true;
+            
+            // Emoji symbols for card faces
+            const symbols = ['🍎', '🍌', '🍒', '🍇', '🍊', '🍑', '🍓', '🍉'];
+            
+            // Initialize game
+            function initGame() {
+                // Reset game state
+                gameBoard.innerHTML = '';
+                flippedCards = [];
+                matchedPairs = 0;
+                moves = 0;
+                timer = 0;
+                canFlip = true;
+                movesDisplay.textContent = moves;
+                timerDisplay.textContent = `${timer}s`;
+                
+                // Clear timer if running
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                
+                // Create card pairs
+                let gameSymbols = [...symbols, ...symbols];
+                shuffleArray(gameSymbols);
+                
+                // Create cards
+                cards = [];
+                gameSymbols.forEach((symbol, index) => {
+                    const card = document.createElement('div');
+                    card.classList.add('card');
+                    card.innerHTML = `
+                        <div class="card-front">${symbol}</div>
+                        <div class="card-back"></div>
+                    `;
+                    card.dataset.symbol = symbol;
+                    card.addEventListener('click', () => flipCard(card));
+                    gameBoard.appendChild(card);
+                    cards.push(card);
+                });
+            }
+            
+            // Fisher-Yates shuffle algorithm
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            
+            // Flip card function
+            function flipCard(card) {
+                // Don't flip if already flipped or matched
+                if (!canFlip || card.classList.contains('flipped') || card.classList.contains('matched')) {
+                    return;
+                }
+                
+                // Start timer on first move
+                if (moves === 0) {
+                    startTimer();
+                }
+                
+                // Flip the card
+                card.classList.add('flipped');
+                flippedCards.push(card);
+                moves++;
+                movesDisplay.textContent = moves;
+                
+                // Check for match when two cards are flipped
+                if (flippedCards.length === 2) {
+                    canFlip = false;
+                    checkForMatch();
+                }
+            }
+            
+            // Check if flipped cards match
+            function checkForMatch() {
+                const card1 = flippedCards[0];
+                const card2 = flippedCards[1];
+                
+                if (card1.dataset.symbol === card2.dataset.symbol) {
+                    // Match found
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                    matchedPairs++;
+                    flippedCards = [];
+                    canFlip = true;
+                    
+                    // Add bounce animation to matched cards
+                    card1.classList.add('bounce');
+                    card2.classList.add('bounce');
+                    setTimeout(() => {
+                        card1.classList.remove('bounce');
+                        card2.classList.remove('bounce');
+                    }, 500);
+                    
+                    // Check for win
+                    if (matchedPairs === symbols.length) {
+                        endGame();
+                    }
+                } else {
+                    // No match - flip cards back after delay
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        flippedCards = [];
+                        canFlip = true;
+                    }, 1000);
+                }
+            }
+            
+            // Start game timer
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    timer++;
+                    timerDisplay.textContent = `${timer}s`;
+                }, 1000);
+            }
+            
+            // End game
+            function endGame() {
+                clearInterval(timerInterval);
+                winMoves.textContent = moves;
+                winTime.textContent = timer;
+                
+                // Show win screen with delay
+                setTimeout(() => {
+                    winScreen.classList.add('show');
+                }, 1000);
+            }
+            
+            // Event listeners
+            restartButton.addEventListener('click', initGame);
+            playAgainButton.addEventListener('click', () => {
+                winScreen.classList.remove('show');
+                initGame();
+            });
+            
+            // Start the game
+            initGame();
+        });
+    </script>
+</body>
+</html>

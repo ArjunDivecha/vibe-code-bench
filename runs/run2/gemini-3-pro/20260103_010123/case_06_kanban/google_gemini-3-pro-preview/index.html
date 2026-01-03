@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Kanban Board</title>
+    <style>
+        :root {
+            --bg-color: #0079bf;
+            --column-bg: #ebecf0;
+            --card-bg: #ffffff;
+            --text-color: #172b4d;
+            --priority-urgent: #eb5a46;
+            --priority-medium: #f2d600;
+            --priority-low: #61bd4f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: white;
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        .board {
+            display: flex;
+            gap: 20px;
+            height: calc(100% - 60px);
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        .column {
+            background-color: var(--column-bg);
+            border-radius: 8px;
+            width: 300px;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+
+        .column-header {
+            padding: 10px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-list {
+            padding: 0 10px 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 100px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+            cursor: pointer;
+            position: relative;
+            border-left: 5px solid transparent;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .card:hover {
+            background-color: #f4f5f7;
+        }
+
+        .card:active {
+            transform: rotate(1deg);
+        }
+
+        /* Priority Colors */
+        .card.urgent { border-left-color: var(--priority-urgent); }
+        .card.medium { border-left-color: var(--priority-medium); }
+        .card.low { border-left-color: var(--priority-low); }
+
+        .card-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+
+        .add-btn {
+            background-color: transparent;
+            border: none;
+            color: #5e6c84;
+            padding: 10px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 0 0 8px 8px;
+            transition: background 0.2s;
+            margin: 0 10px 10px 10px;
+        }
+
+        .add-btn:hover {
+            background-color: rgba(9, 30, 66, 0.08);
+            color: var(--text-color);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dfe1e6;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #0079bf;
+            color: white;
+        }
+        
+        .btn-primary:hover { background-color: #026aa7; }
+
+        .btn-danger {
+            background-color: #eb5a46;
+            color: white;
+        }
+
+        .btn-danger:hover { background-color: #cf513d; }
+
+        .btn-secondary {
+            background-color: #ebecf0;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover { background-color: #dfe1e6; }
+
+        .dragging {
+            opacity: 0.5;
+        }
+
+        /* Helper to show drop target */
+        .task-list.drag-over {
+            background-color: rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Kanban Board</h1>
+
+    <div class="board">
+        <!-- To Do Column -->
+        <div class="column" id="todo-column">
+            <div class="column-header">To Do <span id="count-todo">0</span></div>
+            <div class="task-list" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <!-- Cards go here -->
+            </div>
+            <button class="add-btn" onclick="openAddModal('todo')">+ Add a card</button>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="column" id="inprogress-column">
+            <div class="column-header">In Progress <span id="count-inprogress">0</span></div>
+            <div class="task-list" id="inprogress" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <!-- Cards go here -->
+            </div>
+            <button class="add-btn" onclick="openAddModal('inprogress')">+ Add a card</button>
+        </div>
+
+        <!-- Done Column -->
+        <div class="column" id="done-column">
+            <div class="column-header">Done <span id="count-done">0</span></div>
+            <div class="task-list" id="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
+                <!-- Cards go here -->
+            </div>
+            <button class="add-btn" onclick="openAddModal('done')">+ Add a card</button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="cardModal">
+        <div class="modal">
+            <div class="modal-header" id="modalTitle">Add Card</div>
+            <input type="hidden" id="cardId">
+            <input type="hidden" id="cardColumn">
+            
+            <div class="form-group">
+                <label for="titleInput">Title</label>
+                <input type="text" id="titleInput" placeholder="Enter card title..." autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="priorityInput">Priority</label>
+                <select id="priorityInput">
+                    <option value="low">Low (Green)</option>
+                    <option value="medium">Medium (Yellow)</option>
+                    <option value="urgent">Urgent (Red)</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-danger" id="deleteBtn" style="display: none;" onclick="deleteCard()">Delete</button>
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn-primary" onclick="saveCard()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let cards = [];
+        const STORAGE_KEY = 'kanban_data';
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            renderBoard();
+        });
+
+        function loadData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                cards = JSON.parse(data);
+            } else {
+                // Default data if empty
+                cards = [
+                    { id: '1', title: 'Welcome to Kanban!', column: 'todo', priority: 'low' },
+                    { id: '2', title: 'Drag me to In Progress', column: 'todo', priority: 'medium' },
+                    { id: '3', title: 'Click me to edit', column: 'inprogress', priority: 'urgent' }
+                ];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+            updateCounts();
+        }
+
+        function renderBoard() {
+            // Clear all columns
+            document.getElementById('todo').innerHTML = '';
+            document.getElementById('inprogress').innerHTML = '';
+            document.getElementById('done').innerHTML = '';
+
+            // Render cards
+            cards.forEach(card => {
+                const cardEl = createCardElement(card);
+                const columnEl = document.getElementById(card.column);
+                if (columnEl) {
+                    columnEl.appendChild(cardEl);
+                }
+            });
+
+            updateCounts();
+        }
+
+        function createCardElement(card) {
+            const el = document.createElement('div');
+            el.className = `card ${card.priority}`;
+            el.draggable = true;
+            el.id = card.id;
+            
+            el.innerHTML = `<div class="card-title">${escapeHtml(card.title)}</div>`;
+            
+            // Drag events
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', card.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => el.classList.add('dragging'), 0);
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                // Remove drag-over styling from all columns
+                document.querySelectorAll('.task-list').forEach(col => col.classList.remove('drag-over'));
+            });
+
+            // Click to edit
+            el.addEventListener('click', () => {
+                openEditModal(card.id);
+            });
+
+            return el;
+        }
+
+        function updateCounts() {
+            const counts = { todo: 0, inprogress: 0, done: 0 };
+            cards.forEach(c => {
+                if(counts[c.column] !== undefined) counts[c.column]++;
+            });
+            document.getElementById('count-todo').textContent = counts.todo;
+            document.getElementById('count-inprogress').textContent = counts.inprogress;
+            document.getElementById('count-done').textContent = counts.done;
+        }
+
+        // --- Drag and Drop Logic ---
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function dragEnter(e) {
+            e.preventDefault();
+            // Highlight drop zone
+            if (e.target.classList.contains('task-list')) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function dragLeave(e) {
+            if (e.target.classList.contains('task-list')) {
+                e.target.classList.remove('drag-over');
+            }
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            
+            // Find the closest task-list (column)
+            let target = e.target;
+            while (target && !target.classList.contains('task-list')) {
+                target = target.parentElement;
+            }
+            
+            if (!target) return;
+
+            target.classList.remove('drag-over');
+
+            const cardId = e.dataTransfer.getData('text/plain');
+            const newColumn = target.id;
+
+            // Update data model
+            const cardIndex = cards.findIndex(c => c.id === cardId);
+            if (cardIndex > -1 && cards[cardIndex].column !== newColumn) {
+                cards[cardIndex].column = newColumn;
+                saveData();
+                renderBoard(); // Re-render to sort/place correctly
+            }
+        }
+
+        // --- Modal Logic ---
+
+        const modalOverlay = document.getElementById('cardModal');
+        const titleInput = document.getElementById('titleInput');
+        const priorityInput = document.getElementById('priorityInput');
+        const cardIdInput = document.getElementById('cardId');
+        const cardColumnInput = document.getElementById('cardColumn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const modalTitle = document.getElementById('modalTitle');
+
+        function openAddModal(column) {
+            modalTitle.textContent = 'Add Card';
+            cardIdInput.value = '';
+            cardColumnInput.value = column;
+            titleInput.value = '';
+            priorityInput.value = 'low';
+            deleteBtn.style.display = 'none';
+            
+            modalOverlay.style.display = 'flex';
+            titleInput.focus();
+        }
+
+        function openEditModal(id) {
+            const card = cards.find(c => c.id === id);
+            if (!card) return;
+
+            modalTitle.textContent = 'Edit Card';
+            cardIdInput.value = card.id;
+            cardColumnInput.value = card.column;
+            titleInput.value = card.title;
+            priorityInput.value = card.priority;
+            deleteBtn.style.display = 'block';
+
+            modalOverlay.style.display = 'flex';
+            titleInput.focus();
+        }
+
+        function closeModal() {
+            modalOverlay.style.display = 'none';
+        }
+
+        function saveCard() {
+            const id = cardIdInput.value;
+            const title = titleInput.value.trim();
+            const priority = priorityInput.value;
+            const column = cardColumnInput.value;
+
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+
+            if (id) {
+                // Edit existing
+                const index = cards.findIndex(c => c.id === id);
+                if (index > -1) {
+                    cards[index].title = title;
+                    cards[index].priority = priority;
+                }
+            } else {
+                // Add new
+                const newCard = {
+                    id: Date.now().toString(),
+                    title: title,
+                    priority: priority,
+                    column: column
+                };
+                cards.push(newCard);
+            }
+
+            saveData();
+            renderBoard();
+            closeModal();
+        }
+
+        function deleteCard() {
+            const id = cardIdInput.value;
+            if (id && confirm('Are you sure you want to delete this card?')) {
+                cards = cards.filter(c => c.id !== id);
+                saveData();
+                renderBoard();
+                closeModal();
+            }
+        }
+
+        // Close modal when clicking outside
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+
+        // Helper
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

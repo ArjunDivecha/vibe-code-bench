@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test</title>
+    <style>
+        * { font-family: Arial, sans-serif; }
+        body { background-color: #f0f0f0; }
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; background-color: #fff; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .text-box { width: 100%; padding: 10px; font-size: 18px; }
+        .stats { margin-top: 20px; }
+        .timer { font-size: 24px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+        <div>
+            <p id="text-to-type"></p>
+            <input type="text" id="typed-text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="stats">
+            <span id="wpm">WPM: 0</span>
+            <span id="accuracy">Accuracy: 0%</span>
+            <span id="timer">Time: 00:00</span>
+        </div>
+        <button id="submit-btn">Submit</button>
+        <button id="reset-btn">Try Again</button>
+    </div>
+
+    <script>
+        let texts = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Python is a popular programming language.",
+            "JavaScript is used for client-side scripting.",
+            "Typing speed is measured in words per minute.",
+            "Accuracy is the percentage of correct keystrokes.",
+            "The timer counts up or fixed duration.",
+            "Real-time highlighting shows correct/incorrect chars.",
+            "WPM shows the words typed per minute.",
+            "The final stats show typing speed and accuracy.",
+            "Try again with different text to improve skills."
+        ];
+
+        let currentTextIndex = 0;
+        let startTime = 0;
+        let elapsedTime = 0;
+        let typedText = "";
+        let correctChars = 0;
+        let totalChars = 0;
+
+        document.getElementById("text-to-type").innerText = texts[currentTextIndex];
+
+        document.getElementById("typed-text").addEventListener("input", (e) => {
+            typedText = e.target.value;
+            totalChars = e.target.value.length;
+            correctChars = 0;
+            for (let i = 0; i < typedText.length; i++) {
+                if (typedText[i] === texts[currentTextIndex][i]) {
+                    correctChars++;
+                }
+            }
+            let accuracy = (correctChars / totalChars) * 100;
+            document.getElementById("wpm").innerText = `WPM: ${Math.floor((totalChars / 5) / (elapsedTime / 60))}`;
+            document.getElementById("accuracy").innerText = `Accuracy: ${accuracy.toFixed(2)}%`;
+        });
+
+        document.getElementById("submit-btn").addEventListener("click", () => {
+            elapsedTime = Date.now() - startTime;
+            let wpm = Math.floor((totalChars / 5) / (elapsedTime / 60));
+            let accuracy = (correctChars / totalChars) * 100;
+            alert(`Final Stats:\nWPM: ${wpm}\nAccuracy: ${accuracy.toFixed(2)}%`);
+            startTime = Date.now();
+            typedText = "";
+            document.getElementById("typed-text").value = "";
+            correctChars = 0;
+            totalChars = 0;
+            document.getElementById("wpm").innerText = "WPM: 0";
+            document.getElementById("accuracy").innerText = "Accuracy: 0%";
+            document.getElementById("timer").innerText = "Time: 00:00";
+        });
+
+        document.getElementById("reset-btn").addEventListener("click", () => {
+            typedText = "";
+            document.getElementById("typed-text").value = "";
+            correctChars = 0;
+            totalChars = 0;
+            document.getElementById("wpm").innerText = "WPM: 0";
+            document.getElementById("accuracy").innerText = "Accuracy: 0%";
+            document.getElementById("timer").innerText = "Time: 00:00";
+            currentTextIndex = (currentTextIndex + 1) % texts.length;
+            document.getElementById("text-to-type").innerText = texts[currentTextIndex];
+        });
+
+        document.getElementById("submit-btn").addEventListener("click", () => {
+            startTime = Date.now();
+        });
+
+        setInterval(() => {
+            elapsedTime = Date.now() - startTime;
+            document.getElementById("timer").innerText = `Time: ${Math.floor(elapsedTime / 1000 / 60)}:${Math.floor((elapsedTime / 1000) % 60).toString().padStart(2, '0')}`;
+        }, 1000);
+    </script>
+</body>
+</html>

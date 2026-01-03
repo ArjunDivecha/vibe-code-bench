@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .text-display {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .char {
+            position: relative;
+        }
+        .correct {
+            color: #27ae60;
+        }
+        .incorrect {
+            color: #e74c3c;
+            text-decoration: underline;
+        }
+        .current {
+            background-color: #e8f4fd;
+            border-radius: 2px;
+        }
+        .input-area {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            height: 100px;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .stat {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .timer {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .end-screen {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: none;
+        }
+        .final-stats {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .final-stat {
+            display: inline-block;
+            margin: 0 15px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .highlight {
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+        
+        <div class="timer">Time: <span id="timer">60</span>s</div>
+        
+        <div class="stats">
+            <div class="stat">
+                WPM: <span id="wpm">0</span>
+            </div>
+            <div class="stat">
+                Accuracy: <span id="accuracy">0</span>%
+            </div>
+            <div class="stat">
+                Characters: <span id="characters">0</span>
+            </div>
+        </div>
+        
+        <div id="text-display" class="text-display"></div>
+        
+        <div class="input-area">
+            <textarea id="typing-input" placeholder="Start typing here..." autofocus></textarea>
+        </div>
+        
+        <button id="reset-button">Try Again</button>
+        
+        <div id="end-screen" class="end-screen">
+            <h2>Test Complete!</h2>
+            <div class="final-stats">
+                <div class="final-stat">WPM: <span class="highlight" id="final-wpm">0</span></div>
+                <div class="final-stat">Accuracy: <span class="highlight" id="final-accuracy">0</span>%</div>
+                <div class="final-stat">Time: <span class="highlight" id="final-time">60</span>s</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const texts = [
+            "The quick brown fox jumps over the lazy dog. This pangram contains all the letters of the English alphabet and is often used for touch-typing practice. It is also a great way to test typing speed and accuracy.",
+            "Programming is the process of creating a set of instructions that tell a computer how to perform a task. Programming can be done using a variety of computer programming languages.",
+            "The Internet is a global network of billions of computers and other electronic devices. With the Internet, it's possible to access almost any information, communicate with anyone else in the world, and do much more.",
+            "Reading is essential for a healthy mind. It improves concentration, memory, empathy, and communication skills. Reading also reduces stress and can help you sleep better.",
+            "Artificial intelligence is intelligence demonstrated by machines, in contrast to the natural intelligence displayed by humans and animals. Leading AI textbooks define the field as the study of intelligent agents.",
+            "Climate change refers to long-term shifts in temperatures and weather patterns. These shifts may be natural, but since the 1800s, human activities have been the main driver of climate change, primarily due to burning fossil fuels.",
+            "Music is an art form and cultural activity whose medium is sound organized in time. The common elements of music are pitch, rhythm, dynamics, and the sonic qualities of timbre and texture.",
+            "Exercise is any bodily activity that enhances or maintains physical fitness and overall health. Regular physical activity can improve your brain health, help manage weight, and reduce the risk of disease.",
+            "Cooking is the art, science, and craft of using heat to prepare food for consumption. It combines technical skills and creativity, and it can be both a necessity and a pleasure.",
+            "Photography is the art, application, and practice of creating images by recording light. This can be done electronically using an image sensor or chemically using light-sensitive materials."
+        ];
+
+        // DOM elements
+        const textDisplay = document.getElementById('text-display');
+        const typingInput = document.getElementById('typing-input');
+        const timerDisplay = document.getElementById('timer');
+        const wpmDisplay = document.getElementById('wpm');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const charactersDisplay = document.getElementById('characters');
+        const resetButton = document.getElementById('reset-button');
+        const endScreen = document.getElementById('end-screen');
+        const finalWpm = document.getElementById('final-wpm');
+        const finalAccuracy = document.getElementById('final-accuracy');
+        const finalTime = document.getElementById('final-time');
+
+        // Game state
+        let currentText = '';
+        let timer = 60;
+        let isTimeUp = false;
+        let startTime = null;
+        let timerInterval = null;
+
+        // Initialize the game
+        function initGame() {
+            // Reset game state
+            isTimeUp = false;
+            timer = 60;
+            typingInput.value = '';
+            startTime = null;
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Hide end screen
+            endScreen.style.display = 'none';
+            
+            // Update timer display
+            timerDisplay.textContent = timer;
+            
+            // Reset stats
+            wpmDisplay.textContent = '0';
+            accuracyDisplay.textContent = '0';
+            charactersDisplay.textContent = '0';
+            
+            // Select random text
+            currentText = texts[Math.floor(Math.random() * texts.length)];
+            
+            // Display text with each character in a span
+            textDisplay.innerHTML = '';
+            for (let i = 0; i < currentText.length; i++) {
+                const charSpan = document.createElement('span');
+                charSpan.classList.add('char');
+                charSpan.textContent = currentText[i];
+                textDisplay.appendChild(charSpan);
+            }
+            
+            // Focus on input
+            typingInput.focus();
+            
+            // Start timer when user starts typing
+            typingInput.oninput = startTimer;
+        }
+
+        // Start the timer
+        function startTimer() {
+            if (!startTime) {
+                startTime = new Date().getTime();
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+        }
+
+        // Update the timer
+        function updateTimer() {
+            timer--;
+            timerDisplay.textContent = timer;
+            
+            // Update stats
+            updateStats();
+            
+            if (timer <= 0) {
+                clearInterval(timerInterval);
+                endGame();
+            }
+        }
+
+        // Update stats in real-time
+        function updateStats() {
+            const inputText = typingInput.value;
+            const timeElapsed = (new Date().getTime() - startTime) / 1000 / 60; // in minutes
+            
+            // Calculate WPM
+            const wordCount = inputText.length / 5; // Standard measure: 5 chars = 1 word
+            const wpm = timeElapsed > 0 ? Math.round(wordCount / timeElapsed) : 0;
+            wpmDisplay.textContent = wpm;
+            
+            // Calculate accuracy
+            let correctChars = 0;
+            for (let i = 0; i < inputText.length; i++) {
+                if (inputText[i] === currentText[i]) {
+                    correctChars++;
+                }
+            }
+            const accuracy = inputText.length > 0 ? Math.round((correctChars / inputText.length) * 100) : 0;
+            accuracyDisplay.textContent = accuracy;
+            
+            // Update characters count
+            charactersDisplay.textContent = inputText.length;
+            
+            // Highlight text
+            const textChars = textDisplay.querySelectorAll('.char');
+            textChars.forEach((char, index) => {
+                char.classList.remove('correct', 'incorrect', 'current');
+                if (index === inputText.length) {
+                    char.classList.add('current');
+                }
+                if (index < inputText.length) {
+                    if (inputText[index] === currentText[index]) {
+                        char.classList.add('correct');
+                    } else {
+                        char.classList.add('incorrect');
+                    }
+                }
+            });
+        }
+
+        // End the game
+        function endGame() {
+            isTimeUp = true;
+            typingInput.disabled = true;
+            
+            // Final stats
+            const inputText = typingInput.value;
+            const timeInMinutes = 60 / 60; // 60 seconds = 1 minute
+            const wordCount = inputText.length / 5;
+            const wpm = Math.round(wordCount / timeInMinutes);
+            finalWpm.textContent = wpm;
+            
+            let correctChars = 0;
+            for (let i = 0; i < inputText.length; i++) {
+                if (inputText[i] === currentText[i]) {
+                    correctChars++;
+                }
+            }
+            const accuracy = inputText.length > 0 ? Math.round((correctChars / inputText.length) * 100) : 0;
+            finalAccuracy.textContent = accuracy;
+            
+            finalTime.textContent = '60';
+            
+            // Show end screen
+            endScreen.style.display = 'block';
+        }
+
+        // Event listeners
+        typingInput.addEventListener('input', function() {
+            if (!isTimeUp) {
+                updateStats();
+                
+                // Check if user has completed the text
+                if (typingInput.value.length === currentText.length && !isTimeUp) {
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                    }
+                    endGame();
+                }
+            }
+        });
+
+        resetButton.addEventListener('click', function() {
+            typingInput.disabled = false;
+            typingInput.value = '';
+            initGame();
+        });
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>

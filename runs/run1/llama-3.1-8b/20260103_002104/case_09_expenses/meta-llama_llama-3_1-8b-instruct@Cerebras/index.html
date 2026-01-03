@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        #container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            height: 30px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        select {
+            width: 100%;
+            height: 30px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        button {
+            width: 100%;
+            height: 30px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #3e8e41;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        li:hover {
+            background-color: #f0f0f0;
+        }
+        
+        #chart {
+            width: 300px;
+            height: 200px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Expense Tracker</h2>
+        <form id="add-expense">
+            <label for="amount">Amount:</label>
+            <input type="text" id="amount" required>
+            <br>
+            <label for="category">Category:</label>
+            <select id="category" required>
+                <option value="">Select a category</option>
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Bills">Bills</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Other">Other</option>
+            </select>
+            <br>
+            <label for="description">Description:</label>
+            <input type="text" id="description" required>
+            <br>
+            <label for="date">Date:</label>
+            <input type="date" id="date" required>
+            <br>
+            <button id="submit-expense">Add Expense</button>
+        </form>
+        <button id="filter-expenses">Filter Expenses</button>
+        <button id="clear-expenses">Clear Expenses</button>
+        <h2>Expenses:</h2>
+        <ul id="expense-list"></ul>
+        <div id="chart"></div>
+    </div>
+    <script>
+        const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        
+        function addExpense(amount, category, description, date) {
+            const expense = { amount, category, description, date };
+            expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+        }
+        
+        function renderExpenses() {
+            const expenseList = document.getElementById('expense-list');
+            expenseList.innerHTML = '';
+            let total = 0;
+            const categoryBreakdown = {};
+            for (const expense of expenses) {
+                const li = document.createElement('li');
+                li.textContent = `${expense.date}: ${expense.amount} - ${expense.category} (${expense.description})`;
+                expenseList.appendChild(li);
+                total += parseFloat(expense.amount);
+                if (categoryBreakdown[expense.category]) {
+                    categoryBreakdown[expense.category] += parseFloat(expense.amount);
+                } else {
+                    categoryBreakdown[expense.category] = parseFloat(expense.amount);
+                }
+            }
+            document.getElementById('total-spent').textContent = `Total spent: $${total.toFixed(2)}`;
+            const chart = document.getElementById('chart');
+            chart.innerHTML = '';
+            for (const category in categoryBreakdown) {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', 0);
+                rect.setAttribute('y', 0);
+                rect.setAttribute('width', categoryBreakdown[category] / total * 200);
+                rect.setAttribute('height', 20);
+                rect.setAttribute('fill', getRandomColor());
+                chart.appendChild(rect);
+            }
+        }
+        
+        function filterExpenses() {
+            const category = document.getElementById('category-filter').value;
+            const startDate = document.getElementById('start-date-filter').value;
+            const endDate = document.getElementById('end-date-filter').value;
+            const filteredExpenses = expenses.filter(expense => {
+                if (category && expense.category !== category) return false;
+                if (startDate && expense.date < startDate) return false;
+                if (endDate && expense.date > endDate) return false;
+                return true;
+            });
+            renderExpenses(filteredExpenses);
+        }
+        
+        function clearExpenses() {
+            localStorage.removeItem('expenses');
+            renderExpenses();
+        }
+        
+        document.getElementById('submit-expense').addEventListener('click', (e) => {
+            e.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const category = document.getElementById('category').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            addExpense(amount, category, description, date);
+            document.getElementById('amount').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('date').value = '';
+        });
+        
+        document.getElementById('filter-expenses').addEventListener('click', () => {
+            const category = document.getElementById('category-filter').value;
+            const startDate = document.getElementById('start-date-filter').value;
+            const endDate = document.getElementById('end-date-filter').value;
+            const filteredExpenses = expenses.filter(expense => {
+                if (category && expense.category !== category) return false;
+                if (startDate && expense.date < startDate) return false;
+                if (endDate && expense.date > endDate) return false;
+                return true;
+            });
+            renderExpenses(filteredExpenses);
+        });
+        
+        document.getElementById('clear-expenses').addEventListener('click', clearExpenses);
+        
+        renderExpenses();
+    </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Dashboard</title>
+<style>
+    :root{
+        --sunny:#ffe066;
+        --cloudy:#b0c4de;
+        --rainy:#a3cef1;
+        --text:#1d1d1f;
+    }
+    *{box-sizing:border-box;}
+    body{
+        margin:0;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color:var(--text);
+        transition:background 0.4s ease;
+        background: linear-gradient(135deg, #f2f6ff, #e8edff);
+        min-height:100vh;
+        display:flex;
+        flex-direction:column;
+    }
+    header{
+        padding:20px 24px 10px;
+        text-align:center;
+    }
+    header h1{margin:0;font-size:clamp(24px,5vw,32px);}
+    header p{margin:8px 0 0;color:#4b5563;}
+    .dashboard{
+        padding:10px 16px 24px;
+        width:100%;
+        max-width:1100px;
+        margin:0 auto;
+        display:grid;
+        grid-template-columns: 2fr 1fr;
+        gap:18px;
+    }
+    .city-grid{
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+        gap:12px;
+    }
+    .card{
+        background:rgba(255,255,255,0.9);
+        border-radius:14px;
+        padding:14px;
+        box-shadow:0 10px 25px rgba(0,0,0,0.06);
+        cursor:pointer;
+        transition:transform 0.12s ease, box-shadow 0.12s ease;
+        border:2px solid transparent;
+    }
+    .card:hover{
+        transform:translateY(-3px);
+        box-shadow:0 14px 30px rgba(0,0,0,0.12);
+    }
+    .card.active{
+        border-color:#2563eb;
+        box-shadow:0 16px 40px rgba(37,99,235,0.2);
+    }
+    .card .top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+    .city-name{font-weight:700;font-size:16px;}
+    .temp{
+        font-size:30px;
+        font-weight:700;
+    }
+    .condition{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin-top:8px;
+        font-size:14px;
+        color:#374151;
+    }
+    .humidity{
+        margin-top:4px;
+        font-size:13px;
+        color:#6b7280;
+    }
+    .details{
+        background:rgba(255,255,255,0.92);
+        border-radius:16px;
+        padding:16px 18px 20px;
+        box-shadow:0 12px 28px rgba(0,0,0,0.1);
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+    }
+    .details h2{margin:0;font-size:18px;}
+    .details .emoji{
+        font-size:36px;
+    }
+    .row{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:8px;
+    }
+    canvas{width:100%;max-width:100%;height:240px;}
+    @media(max-width:800px){
+        .dashboard{grid-template-columns:1fr;}
+        .details{order:-1;}
+    }
+    footer{
+        text-align:center;
+        padding:12px;
+        font-size:12px;
+        color:#6b7280;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>City Weather Dashboard</h1>
+    <p>Quick glance at current conditions around the globe</p>
+</header>
+
+<div class="dashboard">
+    <div>
+        <div class="city-grid" id="cityGrid"></div>
+    </div>
+    <div class="details" id="detailsPanel">
+        <div class="row">
+            <div>
+                <p style="margin:0;color:#6b7280;font-size:13px;">Selected City</p>
+                <h2 id="detailCity"></h2>
+                <div class="condition" id="detailCondition"></div>
+            </div>
+            <div class="emoji" id="detailEmoji"></div>
+        </div>
+        <div class="row">
+            <div>
+                <p style="margin:0;color:#6b7280;font-size:13px;">Temperature</p>
+                <div class="temp" id="detailTemp"></div>
+            </div>
+            <div>
+                <p style="margin:0;color:#6b7280;font-size:13px;">Humidity</p>
+                <div class="humidity" id="detailHumidity"></div>
+            </div>
+        </div>
+        <div>
+            <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Temps Across Cities</p>
+            <canvas id="chart" width="360" height="240"></canvas>
+        </div>
+    </div>
+</div>
+<footer>
+    Mock data only • Responsive layout • Click a card for details
+</footer>
+
+<script>
+const weatherData = [
+    {city:"New York", temp:26, condition:"sunny", humidity:55, summary:"Warm with clear skies"},
+    {city:"London", temp:18, condition:"cloudy", humidity:70, summary:"Overcast but dry"},
+    {city:"Tokyo", temp:23, condition:"rainy", humidity:80, summary:"Light showers expected"},
+    {city:"Sydney", temp:20, condition:"sunny", humidity:50, summary:"Mild and bright"},
+    {city:"Paris", temp:21, condition:"cloudy", humidity:65, summary:"Clouds with sunny breaks"},
+];
+const conditionEmoji = {sunny:"☀️", cloudy:"☁️", rainy:"🌧️"};
+
+const grid = document.getElementById("cityGrid");
+const detailCity = document.getElementById("detailCity");
+const detailTemp = document.getElementById("detailTemp");
+const detailHumidity = document.getElementById("detailHumidity");
+const detailCondition = document.getElementById("detailCondition");
+const detailEmoji = document.getElementById("detailEmoji");
+let activeCity = null;
+
+function setBackground(condition){
+    const body = document.body;
+    if(condition === "sunny"){
+        body.style.background = "linear-gradient(135deg, #fff7d6, #ffe8a3)";
+    }else if(condition === "cloudy"){
+        body.style.background = "linear-gradient(135deg, #eef2f7, #dce3f1)";
+    }else{
+        body.style.background = "linear-gradient(135deg, #dce7f7, #c0d7f0)";
+    }
+}
+
+function renderCards(){
+    grid.innerHTML = "";
+    weatherData.forEach((item, idx)=>{
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+            <div class="top">
+                <div class="city-name">${item.city}</div>
+                <div class="temp">${item.temp}°</div>
+            </div>
+            <div class="condition">
+                <span>${conditionEmoji[item.condition] || "ℹ️"}</span>
+                <span style="text-transform:capitalize;">${item.condition}</span>
+            </div>
+            <div class="humidity">Humidity: ${item.humidity}%</div>
+        `;
+        card.addEventListener("click", ()=>selectCity(idx, card));
+        grid.appendChild(card);
+    });
+}
+function selectCity(index, cardEl){
+    activeCity = index;
+    document.querySelectorAll(".card").forEach(c=>c.classList.remove("active"));
+    cardEl.classList.add("active");
+    const data = weatherData[index];
+    detailCity.textContent = data.city;
+    detailTemp.textContent = `${data.temp}°C`;
+    detailHumidity.textContent = `${data.humidity}%`;
+    detailCondition.innerHTML = `<span>${conditionEmoji[data.condition]}</span><span style="margin-left:6px;text-transform:capitalize;">${data.condition}</span><span style="color:#6b7280;margin-left:6px;">${data.summary}</span>`;
+    detailEmoji.textContent = conditionEmoji[data.condition];
+    setBackground(data.condition);
+    drawChart();
+}
+
+function drawChart(){
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    const padding = 30;
+    const barWidth = (w - padding*2)/weatherData.length - 12;
+    const temps = weatherData.map(d=>d.temp);
+    const maxTemp = Math.max(...temps)+5;
+    const minTemp = Math.min(...temps)-5;
+    // axes
+    ctx.strokeStyle="#cbd5e1";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding/2);
+    ctx.lineTo(padding, h-padding);
+    ctx.lineTo(w-padding/4, h-padding);
+    ctx.stroke();
+    ctx.font="12px sans-serif";
+    ctx.fillStyle="#6b7280";
+    ctx.fillText("°C", padding-22, padding/2+4);
+    // bars
+    weatherData.forEach((d,i)=>{
+        const x = padding + i*(barWidth+12) + 8;
+        const norm = (d.temp - minTemp)/(maxTemp - minTemp);
+        const bh = norm*(h - padding*1.5);
+        const y = h - padding - bh;
+        const color = d.condition==="sunny"?"#f59e0b": d.condition==="cloudy"?"#94a3b8":"#3b82f6";
+        ctx.fillStyle=color;
+        ctx.beginPath();
+        const radius = 6;
+        ctx.moveTo(x, y+radius);
+        ctx.arcTo(x, y, x+radius, y, radius);
+        ctx.arcTo(x+barWidth, y, x+barWidth, y+radius, radius);
+        ctx.lineTo(x+barWidth, y+bh);
+        ctx.lineTo(x, y+bh);
+        ctx.closePath();
+        ctx.fill();
+        // labels
+        ctx.fillStyle="#0f172a";
+        ctx.font="12px sans-serif";
+        ctx.fillText(d.temp+"°", x+barWidth/2-10, y-6);
+        ctx.fillStyle="#475569";
+        ctx.save();
+        ctx.translate(x+barWidth/2, h-padding+14);
+        ctx.rotate(-Math.PI/18);
+        ctx.fillText(d.city, -ctx.measureText(d.city).width/2, 0);
+        ctx.restore();
+    });
+}
+
+renderCards();
+selectCity(0, grid.firstChild);
+window.addEventListener("resize", drawChart);
+</script>
+</body>
+</html>

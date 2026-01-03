@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #cccccc;
+            --accent-color: #007acc;
+            --accent-hover: #005a9e;
+            --code-bg: #f4f4f4;
+            --blockquote-bg: #f9f9f9;
+            --blockquote-border: #4a90d9;
+        }
+
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #3e3e42;
+            --text-primary: #d4d4d4;
+            --text-secondary: #a0a0a0;
+            --border-color: #444444;
+            --accent-color: #4fc1ff;
+            --accent-hover: #3794cc;
+            --code-bg: #2d2d2d;
+            --blockquote-bg: #2d2d30;
+            --blockquote-border: #6eb4ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        button:hover {
+            background-color: var(--border-color);
+        }
+
+        button.primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        button.primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            min-width: 0;
+        }
+
+        .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            background-color: var(--bg-secondary);
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-textarea {
+            flex: 1;
+            width: 100%;
+            border: none;
+            resize: none;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-primary);
+        }
+
+        /* Preview Styles */
+        .preview-content h1 {
+            font-size: 2em;
+            margin: 0.67em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview-content h2 {
+            font-size: 1.5em;
+            margin: 0.83em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview-content h3 {
+            font-size: 1.17em;
+            margin: 1em 0;
+        }
+
+        .preview-content h4 {
+            font-size: 1em;
+            margin: 1.33em 0;
+        }
+
+        .preview-content h5 {
+            font-size: 0.83em;
+            margin: 1.67em 0;
+        }
+
+        .preview-content h6 {
+            font-size: 0.67em;
+            margin: 2.33em 0;
+        }
+
+        .preview-content p {
+            margin: 1em 0;
+            line-height: 1.6;
+        }
+
+        .preview-content ul, .preview-content ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        .preview-content li {
+            margin: 0.5em 0;
+        }
+
+        .preview-content ul {
+            list-style-type: disc;
+        }
+
+        .preview-content ol {
+            list-style-type: decimal;
+        }
+
+        .preview-content ul ul {
+            list-style-type: circle;
+        }
+
+        .preview-content ul ul ul {
+            list-style-type: square;
+        }
+
+        .preview-content a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .preview-content a:hover {
+            text-decoration: underline;
+        }
+
+        .preview-content strong {
+            font-weight: bold;
+        }
+
+        .preview-content em {
+            font-style: italic;
+        }
+
+        .preview-content code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .preview-content pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        .preview-content pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .preview-content blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            background-color: var(--blockquote-bg);
+            padding: 10px 20px;
+            margin: 1em 0;
+            color: var(--text-secondary);
+        }
+
+        .preview-content blockquote p {
+            margin: 0;
+        }
+
+        .preview-content hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2em 0;
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .editor-pane {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                height: 50%;
+            }
+
+            .preview-pane {
+                height: 50%;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            button {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>✏️ Markdown Editor</h1>
+        <div class="header-controls">
+            <button onclick="toggleDarkMode()" id="darkModeBtn">🌙 Dark Mode</button>
+            <button onclick="exportHTML()" class="primary">📥 Export HTML</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="editor-pane">
+            <div class="pane-header">Markdown Input</div>
+            <textarea 
+                id="editor" 
+                class="editor-textarea" 
+                placeholder="Start writing your markdown here..."
+                oninput="updatePreview()"
+            ></textarea>
+        </div>
+        <div class="preview-pane">
+            <div class="pane-header">Live Preview</div>
+            <div id="preview" class="preview-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const darkModeBtn = document.getElementById('darkModeBtn');
+
+        // Load saved content and dark mode preference
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedContent = localStorage.getItem('markdown-content');
+            if (savedContent) {
+                editor.value = savedContent;
+            } else {
+                // Default content
+                editor.value = `# Welcome to Markdown Editor!
+
+This is a **split-pane** editor with *live preview*.
+
+## Features
+
+- Headers (H1-H6)
+- **Bold** and *italic* text
+- Ordered and unordered lists
+- [Links](https://example.com)
+- Code blocks
+- Blockquotes
+
+### Code Example
+
+\`\`\`javascript
+function greet(name) {
+    console.log("Hello, " + name + "!");
+}
+greet("World");
+\`\`\`
+
+### Blockquote
+
+> This is a blockquote.
+> It can span multiple lines.
+
+### Lists
+
+Unordered:
+- Item 1
+- Item 2
+  - Nested item
+- Item 3
+
+Ordered:
+1. First item
+2. Second item
+3. Third item
+
+---
+
+Happy writing! ✨`;
+            }
+
+            const darkMode = localStorage.getItem('dark-mode') === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+                darkModeBtn.textContent = '☀️ Light Mode';
+            }
+
+            updatePreview();
+        });
+
+        // Save to localStorage on input
+        function updatePreview() {
+            const markdown = editor.value;
+            localStorage.setItem('markdown-content', markdown);
+            preview.innerHTML = parseMarkdown(markdown);
+        }
+
+        // Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+
+            // Escape HTML special characters first (but not our own tags)
+            html = html.replace(/&/g, '&amp;');
+            html = html.replace(/</g, '&lt;');
+            html = html.replace(/>/g, '&gt;');
+
+            // Code blocks (```code```) - must be done before other parsing
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                return '<pre><code>' + code.trim() + '</code></pre>';
+            });
+
+            // Inline code (`code`)
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Horizontal rule
+            html = html.replace(/^---$/gm, '<hr>');
+            html = html.replace(/^\*\*\*$/gm, '<hr>');
+
+            // Bold and Italic combinations
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+            // Links [text](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Blockquotes
+            html = html.replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+            // Merge consecutive blockquotes
+            html = html.replace(/<\/blockquote>\n<blockquote><p>/g, '<p>');
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '');
+
+            // Unordered lists
+            html = parseLists(html);
+
+            // Paragraphs (lines that aren't already wrapped)
+            let lines = html.split('\n');
+            let result = [];
+            let inParagraph = false;
+
+            for (let line of lines) {
+                line = line.trim();
+                
+                // Skip empty lines and block elements
+                if (!line) {
+                    if (inParagraph) {
+                        result.push('</p>');
+                        inParagraph = false;
+                    }
+                    continue;
+                }
+
+                // Check if line is a block element
+                if (line.match(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr)/)) {
+                    if (inParagraph) {
+                        result.push('</p>');
+                        inParagraph = false;
+                    }
+                    result.push(line);
+                } else if (!line.match(/^<\/(ul|ol|li|pre|blockquote)/)) {
+                    if (!inParagraph) {
+                        result.push('<p>');
+                        inParagraph = true;
+                    }
+                    result.push(line + ' ');
+                } else {
+                    result.push(line);
+                }
+            }
+
+            if (inParagraph) {
+                result.push('</p>');
+            }
+
+            return result.join('\n');
+        }
+
+        // Parse lists (both ordered and unordered)
+        function parseLists(html) {
+            const lines = html.split('\n');
+            let result = [];
+            let inUl = false;
+            let inOl = false;
+            let ulStack = [];
+            let olStack = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const ulMatch = line.match(/^(\s*)- (.+)$/);
+                const olMatch = line.match(/^(\s*)\d+\. (.+)$/);
+
+                if (ulMatch) {
+                    const spaces = ulMatch[1];
+                    const content = ulMatch[2];
+                    const depth = spaces.length;
+
+                    // Close ordered list if open
+                    while (inOl && olStack.length > 0) {
+                        result.push('</li>');
+                        olStack.pop();
+                        if (olStack.length === 0) {
+                            result.push('</ol>');
+                            inOl = false;
+                        }
+                    }
+
+                    // Adjust unordered list depth
+                    while (ulStack.length > 0 && ulStack[ulStack.length - 1] > depth) {
+                        result.push('</li>');
+                        ulStack.pop();
+                        if (ulStack.length === 0) {
+                            result.push('</ul>');
+                            inUl = false;
+                        }
+                    }
+
+                    // Start new unordered list or nested list
+                    if (!inUl || ulStack.length === 0 || ulStack[ulStack.length - 1] < depth) {
+                        if (inUl) {
+                            result.push('<li>');
+                        }
+                        result.push('<ul>');
+                        inUl = true;
+                        ulStack.push(depth);
+                    } else {
+                        result.push('</li>');
+                    }
+
+                    result.push('<li>' + content);
+                } else if (olMatch) {
+                    const spaces = olMatch[1];
+                    const content = olMatch[2];
+                    const depth = spaces.length;
+
+                    // Close unordered list if open
+                    while (inUl && ulStack.length > 0) {
+                        result.push('</li>');
+                        ulStack.pop();
+                        if (ulStack.length === 0) {
+                            result.push('</ul>');
+                            inUl = false;
+                        }
+                    }
+
+                    // Adjust ordered list depth
+                    while (olStack.length > 0 && olStack[olStack.length - 1] > depth) {
+                        result.push('</li>');
+                        olStack.pop();
+                        if (olStack.length === 0) {
+                            result.push('</ol>');
+                            inOl = false;
+                        }
+                    }
+
+                    // Start new ordered list or nested list
+                    if (!inOl || olStack.length === 0 || olStack[olStack.length - 1] < depth) {
+                        if (inOl) {
+                            result.push('<li>');
+                        }
+                        result.push('<ol>');
+                        inOl = true;
+                        olStack.push(depth);
+                    } else {
+                        result.push('</li>');
+                    }
+
+                    result.push('<li>' + content);
+                } else {
+                    // Close any open lists
+                    while (ulStack.length > 0) {
+                        result.push('</li>');
+                        ulStack.pop();
+                        if (ulStack.length === 0) {
+                            result.push('</ul>');
+                            inUl = false;
+                        }
+                    }
+                    while (olStack.length > 0) {
+                        result.push('</li>');
+                        olStack.pop();
+                        if (olStack.length === 0) {
+                            result.push('</ol>');
+                            inOl = false;
+                        }
+                    }
+                    result.push(line);
+                }
+            }
+
+            // Close any remaining lists
+            while (ulStack.length > 0) {
+                result.push('</li>');
+                ulStack.pop();
+                if (ulStack.length === 0) {
+                    result.push('</ul>');
+                }
+            }
+            while (olStack.length > 0) {
+                result.push('</li>');
+                olStack.pop();
+                if (olStack.length === 0) {
+                    result.push('</ol>');
+                }
+            }
+
+            return result.join('\n');
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            darkModeBtn.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('dark-mode', isDark);
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const markdown = editor.value;
+            const htmlContent = parseMarkdown(markdown);
+            
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+        h1, h2 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3em;
+        }
+        p {
+            margin: 1em 0;
+        }
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        li {
+            margin: 0.25em 0;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, monospace;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #4a90d9;
+            background: #f9f9f9;
+            padding: 10px 20px;
+            margin: 1em 0;
+            color: #666;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 2em 0;
+        }
+    </style>
+</head>
+<body>
+${htmlContent}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exported-document.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

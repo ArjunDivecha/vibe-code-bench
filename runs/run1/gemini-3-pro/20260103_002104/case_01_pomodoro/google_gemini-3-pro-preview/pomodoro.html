@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        :root {
+            --tomato-primary: #FF6347; /* Tomato */
+            --tomato-dark: #CD4F39;
+            --leaf-green: #4CAF50;
+            --white: #FFFFFF;
+            --off-white: #F5F5F5;
+            --text-color: #333333;
+        }
+
+        body {
+            background-color: var(--tomato-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            background-color: var(--white);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 320px;
+            position: relative;
+        }
+
+        /* Decorative leaf on top */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background-color: var(--leaf-green);
+            border-radius: 20px 20px 0 0;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: var(--tomato-dark);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: var(--off-white);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 10px 0 30px 0;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-start {
+            background-color: var(--leaf-green);
+            color: white;
+        }
+
+        .btn-pause {
+            background-color: #FFC107;
+            color: #333;
+        }
+
+        .btn-reset {
+            background-color: #E0E0E0;
+            color: #333;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mode-indicator {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Pomodoro</h1>
+    
+    <div class="status-badge" id="session-status">Work Session 1</div>
+    
+    <div class="timer-display" id="timer">25:00</div>
+    
+    <div class="controls">
+        <button id="start-btn" class="btn-start" onclick="startTimer()">Start</button>
+        <button id="pause-btn" class="btn-pause" onclick="pauseTimer()" style="display:none;">Pause</button>
+        <button id="reset-btn" class="btn-reset" onclick="resetTimer()">Reset</button>
+    </div>
+
+    <div class="mode-indicator" id="next-mode">Next: Break (5 min)</div>
+</div>
+
+<script>
+    // Configuration
+    const WORK_TIME = 25 * 60; // 25 minutes in seconds
+    const BREAK_TIME = 5 * 60; // 5 minutes in seconds
+
+    // State
+    let timeLeft = WORK_TIME;
+    let timerId = null;
+    let isWorkMode = true;
+    let sessionCount = 1;
+    let isRunning = false;
+
+    // DOM Elements
+    const timerDisplay = document.getElementById('timer');
+    const statusDisplay = document.getElementById('session-status');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const nextModeDisplay = document.getElementById('next-mode');
+
+    // Initialize display
+    updateDisplay();
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+        timerDisplay.textContent = formatTime(timeLeft);
+        document.title = `${formatTime(timeLeft)} - Pomodoro`;
+    }
+
+    function updateStatus() {
+        if (isWorkMode) {
+            statusDisplay.textContent = `Work Session ${sessionCount}`;
+            nextModeDisplay.textContent = "Next: Break (5 min)";
+            document.body.style.backgroundColor = "var(--tomato-primary)";
+        } else {
+            statusDisplay.textContent = `Break Session ${sessionCount}`;
+            nextModeDisplay.textContent = "Next: Work (25 min)";
+            document.body.style.backgroundColor = "#4CAF50"; // Green for break
+        }
+    }
+
+    function startTimer() {
+        if (isRunning) return;
+
+        // Initialize Audio Context on first user interaction to comply with browser policies
+        initAudio();
+
+        isRunning = true;
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = 'inline-block';
+
+        timerId = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                handleTimerComplete();
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        if (!isRunning) return;
+        
+        clearInterval(timerId);
+        isRunning = false;
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        // Reset to the beginning of the CURRENT mode
+        timeLeft = isWorkMode ? WORK_TIME : BREAK_TIME;
+        updateDisplay();
+    }
+
+    function handleTimerComplete() {
+        pauseTimer(); // Stop the interval
+        playAlarm();
+        
+        // Switch modes
+        if (isWorkMode) {
+            isWorkMode = false;
+            timeLeft = BREAK_TIME;
+        } else {
+            isWorkMode = true;
+            sessionCount++; // Only increment session count after a full cycle (Work -> Break -> Work)
+            timeLeft = WORK_TIME;
+        }
+        
+        updateStatus();
+        updateDisplay();
+        
+        // Optional: Auto-start next session? 
+        // For this implementation, we wait for user to click start, 
+        // but the visual state has changed to the next phase.
+    }
+
+    // Audio Logic
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playAlarm() {
+        if (!audioCtx) initAudio();
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        // Beep sequence: High - Low - High
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        oscillator.frequency.setValueAtTime(440, audioCtx.currentTime + 0.5); // A4
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 1.0); // A5
+
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1.5);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 1.5);
+    }
+</script>
+
+</body>
+</html>

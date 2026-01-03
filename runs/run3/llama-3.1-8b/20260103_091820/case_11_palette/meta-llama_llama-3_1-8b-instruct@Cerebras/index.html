@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .color {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .color.locked {
+            background-color: #333;
+            border: 2px solid #fff;
+        }
+        .color:hover {
+            transform: scale(1.1);
+        }
+        #palette .color {
+            transition: background-color 0.2s ease;
+        }
+        #palette .color.locked {
+            transition: none;
+        }
+        #color-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #color-info h2 {
+            margin-top: 0;
+        }
+        #save-palette {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #save-palette:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div id="palette">
+        <div class="color" id="color-0" style="background-color: #ff0000;"></div>
+        <div class="color" id="color-1" style="background-color: #00ff00;"></div>
+        <div class="color" id="color-2" style="background-color: #0000ff;"></div>
+        <div class="color" id="color-3" style="background-color: #ffff00;"></div>
+        <div class="color" id="color-4" style="background-color: #ff00ff;"></div>
+    </div>
+    <div id="color-info">
+        <h2>Hex: #</h2>
+        <h2>RGB: (, , )</h2>
+        <h2>Name: </h2>
+    </div>
+    <button id="save-palette">Save Palette</button>
+
+    <script>
+        const palette = document.getElementById('palette');
+        const colorInfo = document.getElementById('color-info');
+        const saveButton = document.getElementById('save-palette');
+
+        let colors = [];
+        let lockedColors = [];
+        let paletteName = '';
+
+        const generatePalette = () => {
+            for (let i = 0; i < palette.children.length; i++) {
+                const color = palette.children[i];
+                color.style.backgroundColor = getRandomColor();
+                color.id = `color-${i}`;
+            }
+        };
+
+        const getRandomColor = () => {
+            return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+        };
+
+        const updateColorInfo = (color) => {
+            const hex = color.style.backgroundColor;
+            const rgb = hexToRgb(hex);
+            const name = suggestName(hex);
+            colorInfo.children[0].textContent = `Hex: ${hex}`;
+            colorInfo.children[1].textContent = `RGB: (${rgb.r}, ${rgb.g}, ${rgb.b})`;
+            colorInfo.children[2].textContent = `Name: ${name}`;
+        };
+
+        const hexToRgb = (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        };
+
+        const suggestName = (hex) => {
+            const rgb = hexToRgb(hex);
+            switch (true) {
+                case rgb.r > 200 && rgb.g > 200 && rgb.b > 200:
+                    return 'White';
+                case rgb.r < 128 && rgb.g < 128 && rgb.b < 128:
+                    return 'Black';
+                case rgb.r > 128 && rgb.g > 128 && rgb.b > 128:
+                    return 'Gray';
+                case rgb.r > 200:
+                    return 'Red';
+                case rgb.g > 200:
+                    return 'Green';
+                case rgb.b > 200:
+                    return 'Blue';
+                default:
+                    return 'Unknown';
+            }
+        };
+
+        const lockColor = (color) => {
+            color.classList.add('locked');
+            lockedColors.push(color);
+        };
+
+        const unlockColor = (color) => {
+            color.classList.remove('locked');
+            lockedColors = lockedColors.filter(c => c !== color);
+        };
+
+        const savePalette = () => {
+            const palette = {
+                colors: lockedColors.map(color => color.style.backgroundColor),
+                name: paletteName
+            };
+            localStorage.setItem('palette', JSON.stringify(palette));
+        };
+
+        const loadPalette = () => {
+            const storedPalette = localStorage.getItem('palette');
+            if (storedPalette) {
+                const palette = JSON.parse(storedPalette);
+                lockedColors = palette.colors.map(color => {
+                    const colorElement = palette.querySelector(`#color-${colors.indexOf(color)}`);
+                    colorElement.style.backgroundColor = color;
+                    return colorElement;
+                });
+                paletteName = palette.name;
+            }
+        };
+
+        generatePalette();
+        loadPalette();
+
+        palette.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color')) {
+                updateColorInfo(e.target);
+                if (e.target.classList.contains('locked')) {
+                    unlockColor(e.target);
+                } else {
+                    lockColor(e.target);
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                generatePalette();
+            }
+        });
+
+        saveButton.addEventListener('click', savePalette);
+    </script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Color Palette Generator</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #111;
+      color: white;
+      overflow: hidden;
+    }
+    .palette {
+      display: flex;
+      height: 100vh;
+      transition: all 0.5s ease;
+    }
+    .color {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.5s ease;
+      position: relative;
+    }
+    .info {
+      text-align: center;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+    .info p {
+      margin: 5px 0;
+    }
+    .lock-btn {
+      background: rgba(0,0,0,0.4);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .lock-btn.locked {
+      background: rgba(255,255,255,0.6);
+      color: black;
+    }
+    .favorite-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.3);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #saved-palettes {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+    #saved-palettes select {
+      padding: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+    .copied {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+      font-size: 18px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .copied.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="saved-palettes">
+    <select id="palette-select">
+      <option value="">Load saved palette</option>
+    </select>
+  </div>
+  <div class="palette" id="palette">
+    <!-- color columns go here -->
+  </div>
+  <div class="copied" id="copied-msg">Copied!</div>
+  <script>
+    const paletteEl = document.getElementById('palette');
+    const copiedMsg = document.getElementById('copied-msg');
+    const savedSelect = document.getElementById('palette-select');
+    const NUM_COLORS = 5;
+
+    const colorNames = {
+      // Color name suggestions (basic mapping)
+      "ff0000": "Red",
+      "00ff00": "Lime",
+      "0000ff": "Blue",
+      "ffff00": "Yellow",
+      "ff00ff": "Magenta",
+      "00ffff": "Cyan",
+      "ffffff": "White",
+      "000000": "Black",
+    };
+
+    let colors = [];
+
+    function randomHex() {
+      return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+    }
+
+    function hexToRgb(hex) {
+      const bigint = parseInt(hex.slice(1), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function getColorName(hex) {
+      const simple = hex.replace('#','').toLowerCase();
+      return colorNames[simple] || '';
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        copiedMsg.classList.add('show');
+        setTimeout(() => copiedMsg.classList.remove('show'), 1000);
+      });
+    }
+
+    function generatePalette() {
+      colors = colors.map(c => {
+        if (c.locked) return c;
+        const hex = randomHex();
+        return { hex, locked: false };
+      });
+      renderPalette();
+    }
+
+    function renderPalette() {
+      paletteEl.innerHTML = '';
+      colors.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'color';
+        div.style.backgroundColor = c.hex;
+
+        const info = document.createElement('div');
+        info.className = 'info';
+        const hexEl = document.createElement('p');
+        hexEl.textContent = c.hex.toUpperCase();
+        const rgbEl = document.createElement('p');
+        rgbEl.textContent = hexToRgb(c.hex);
+        const name = getColorName(c.hex);
+        if (name) {
+          const nameEl = document.createElement('p');
+          nameEl.textContent = name;
+          info.appendChild(nameEl);
+        }
+
+        info.appendChild(hexEl);
+        info.appendChild(rgbEl);
+
+        const lockBtn = document.createElement('button');
+        lockBtn.className = 'lock-btn';
+        if (c.locked) lockBtn.classList.add('locked');
+        lockBtn.textContent = c.locked ? 'Unlock' : 'Lock';
+        lockBtn.onclick = (e) => {
+          e.stopPropagation();
+          colors[i].locked = !colors[i].locked;
+          renderPalette();
+        };
+
+        const favBtn = document.createElement('button');
+        favBtn.className = 'favorite-btn';
+        favBtn.textContent = '★';
+        favBtn.title = 'Save to favorites';
+        favBtn.onclick = (e) => {
+          e.stopPropagation();
+          savePalette(colors.map(c => c.hex));
+        };
+
+        div.onclick = () => copyToClipboard(c.hex);
+        div.appendChild(info);
+        div.appendChild(lockBtn);
+        div.appendChild(favBtn);
+        paletteEl.appendChild(div);
+      });
+    }
+
+    function savePalette(palette) {
+      const saved = JSON.parse(localStorage.getItem('savedPalettes') || '[]');
+      saved.push(palette);
+      localStorage.setItem('savedPalettes', JSON.stringify(saved));
+      updatePaletteDropdown();
+    }
+
+    function updatePaletteDropdown() {
+      const saved = JSON.parse(localStorage.getItem('savedPalettes') || '[]');
+      savedSelect.innerHTML = '<option value="">Load saved palette</option>';
+      saved.forEach((pal, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `Palette ${idx + 1}`;
+        savedSelect.appendChild(opt);
+      });
+    }
+
+    savedSelect.onchange = () => {
+      const idx = savedSelect.value;
+      if (idx === "") return;
+      const saved = JSON.parse(localStorage.getItem('savedPalettes') || '[]');
+      const pal = saved[idx];
+      if (pal) {
+        colors = pal.map(hex => ({ hex, locked: false }));
+        renderPalette();
+      }
+    };
+
+    function init() {
+      colors = [];
+      for (let i = 0; i < NUM_COLORS; i++) {
+        colors.push({ hex: randomHex(), locked: false });
+      }
+      renderPalette();
+      updatePaletteDropdown();
+    }
+
+    document.body.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        generatePalette();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law Legal Case Search</title>
+    <style>
+        :root {
+            --primary-dark: #0a192f;
+            --secondary-dark: #112240;
+            --accent-blue: #5d8aa8;
+            --accent-light: #a8d0e6;
+            --text-primary: #e6f1ff;
+            --text-secondary: #8892b0;
+            --highlight: #64ffda;
+            --border: #233554;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+
+        .logo span {
+            color: var(--highlight);
+        }
+
+        .search-container {
+            margin-bottom: 25px;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 12px 20px;
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .results-container {
+            flex: 1;
+            background-color: var(--secondary-dark);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        .result-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .result-item:hover {
+            background-color: rgba(93, 138, 168, 0.1);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--accent-light);
+        }
+
+        .result-meta {
+            display: flex;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .result-court {
+            margin-right: 15px;
+        }
+
+        .result-snippet {
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+        }
+
+        .detail-view {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--secondary-dark);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .detail-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--accent-light);
+        }
+
+        .detail-meta {
+            display: flex;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            background-color: var(--primary-dark);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tab.active {
+            background-color: var(--accent-blue);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .summary-content, .full-text-content {
+            line-height: 1.6;
+        }
+
+        .summary-content {
+            font-size: 16px;
+        }
+
+        .full-text-content {
+            font-size: 15px;
+            white-space: pre-wrap;
+        }
+
+        .highlight {
+            background-color: rgba(100, 255, 218, 0.2);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .detail-actions {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background-color: var(--accent-blue);
+            color: var(--primary-dark);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #7aa7c7;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .notes-sidebar {
+            width: 300px;
+            background-color: var(--primary-dark);
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .notes-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .note-item {
+            padding: 10px;
+            background-color: var(--secondary-dark);
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .note-text {
+            margin-bottom: 8px;
+        }
+
+        .note-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .note-delete:hover {
+            color: #ff6b6b;
+        }
+
+        .no-notes {
+            color: var(--text-secondary);
+            font-style: italic;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .entity-highlight {
+            background-color: rgba(100, 255, 218, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .date-highlight {
+            background-color: rgba(93, 138, 168, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Vibe-<span>Law</span></div>
+        </header>
+
+        <div class="search-container">
+            <input type="text" class="search-bar" id="searchInput" placeholder="Search case law by keyword, court, or date...">
+        </div>
+
+        <div class="main-content">
+            <div class="results-container" id="resultsContainer">
+                <!-- Search results will be populated here -->
+            </div>
+
+            <div class="detail-view hidden" id="detailView">
+                <div class="detail-header">
+                    <div class="detail-title" id="detailTitle">Case Title</div>
+                    <div class="detail-meta">
+                        <span class="result-court" id="detailCourt">Court Name</span>
+                        <span id="detailDate">Date</span>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" data-tab="summary">Summary</div>
+                    <div class="tab" data-tab="full-text">Full Text</div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="tab-pane active" id="summaryPane">
+                        <div class="summary-content" id="summaryContent">
+                            Case summary will appear here...
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="fullTextPane">
+                        <div class="full-text-content" id="fullTextContent">
+                            Full case text will appear here...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    <button class="btn" id="extractEntitiesBtn">Extract Entities</button>
+                    <button class="btn btn-secondary" id="saveNoteBtn">Save Selected Text as Note</button>
+                </div>
+            </div>
+
+            <div class="notes-sidebar hidden" id="notesSidebar">
+                <div class="notes-header">
+                    <div class="notes-title">Saved Notes</div>
+                    <button class="btn btn-secondary" id="clearNotesBtn">Clear All</button>
+                </div>
+                <div class="notes-list" id="notesList">
+                    <!-- Notes will be populated here -->
+                </div>
+                <div class="no-notes" id="noNotesMessage">No notes saved yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock legal cases data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson",
+                court: "Supreme Court of California",
+                date: "2023-05-15",
+                snippet: "This case addresses the liability of property owners for injuries sustained by trespassers on their land.",
+                summary: "The Supreme Court of California ruled on the duty of care owed by property owners to individuals who enter their land without permission. The court established a new standard for determining when a property owner can be held liable for injuries to trespassers, balancing the rights of property owners with the safety of individuals.",
+                fullText: `SUPREME COURT OF CALIFORNIA
+
+Smith v. Johnson, No. S234567
+
+Argued: March 10, 2023
+Decided: May 15, 2023
+
+OPINION
+
+CHIEF JUSTICE CORRIGAN delivered the opinion of the court.
+
+This case presents the question of what duty, if any, a property owner owes to a person who enters the owner's land without permission. Plaintiffs Robert Smith and his minor daughter, Emily Smith, appeal from a judgment of nonsuit entered in favor of defendant property owner, William Johnson.
+
+I. FACTS AND PROCEDURAL HISTORY
+
+On the evening of January 15, 2022, Robert Smith and his 12-year-old daughter, Emily, were walking home from a friend's house when they decided to take a shortcut through what they believed was an abandoned lot. In reality, the lot was owned by defendant William Johnson, who had purchased it the previous year with plans to build a residential development.
+
+As the Smiths crossed the lot, Emily fell into an uncovered excavation approximately four feet deep. She sustained a broken arm and required hospitalization. The excavation had been dug months earlier by a contractor hired by Johnson to prepare the site for construction. Johnson had been told the excavation would be covered, but the contractor had failed to do so.
+
+The Smiths filed suit, alleging that Johnson had negligently failed to maintain his property in a reasonably safe condition. The trial court granted Johnson's motion for nonsuit, finding that he owed no duty to the trespassing Smiths. The Court of Appeal affirmed, and we granted review.
+
+II. DISCUSSION
+
+A. Duty of Care to Trespassers
+
+The question before us is whether a property owner owes a duty of care to persons who enter the owner's land without permission. For over a century, California law has followed the common law rule that property owners generally owe no duty to trespassers...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 2,
+                title: "State v. Rodriguez",
+                court: "Ninth Circuit Court of Appeals",
+                date: "2023-03-22",
+                snippet: "The court examined the application of the Fourth Amendment to border patrol searches conducted within 100 miles of the U.S. border.",
+                summary: "The Ninth Circuit Court of Appeals reviewed a district court's denial of a motion to suppress evidence obtained during a border patrol checkpoint operation. The court analyzed the constitutionality of interior checkpoint operations under the Fourth Amendment, ultimately concluding that the search did not violate the defendant's constitutional rights.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE NINTH CIRCUIT
+
+United States of America, Plaintiff-Appellee,
+v.
+Carlos Rodriguez, Defendant-Appellant.
+
+No. 21-50342
+
+Appeal from the United States District Court
+for the Central District of California
+D.C. No. 2:20-cr-00123-AB-1
+
+Argued and Submitted: November 5, 2021
+Filed: March 22, 2023
+
+Before: KOZINSKI, TASHIMA, and McKEOWN, Circuit Judges.
+
+OPINION
+
+McKEOWN, Circuit Judge:
+
+Carlos Rodriguez appeals his conviction for illegal re-entry after deportation, challenging the district court's denial of his motion to suppress evidence obtained at an interior border checkpoint. We affirm.
+
+I. BACKGROUND
+
+On May 15, 2020, Rodriguez was driving east on Interstate 8 in San Diego County when he encountered a U.S. Border Patrol checkpoint located approximately 85 miles from the Mexican border. Rodriguez was driving a vehicle registered to his brother and was unable to produce a valid driver's license...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 3,
+                title: "Anderson v. City of Portland",
+                court: "Oregon Supreme Court",
+                date: "2023-01-30",
+                snippet: "This case determined whether a city's ordinance requiring permits for public demonstrations violated the First Amendment.",
+                summary: "The Oregon Supreme Court held that a municipal ordinance requiring advance permits for public demonstrations was facially constitutional, but that the city's application of the ordinance to deny a permit for a spontaneous demonstration violated the First Amendment.",
+                fullText: `SUPREME COURT OF OREGON
+
+Anderson v. City of Portland
+
+(S067890)
+
+Argued: November 15, 2022
+Decided: January 30, 2023
+
+Before: LINDER, BALMER, and DE MUNIZ, Justices.
+
+BALMER, J.
+
+This case requires us to determine the constitutionality of a municipal ordinance requiring permits for public demonstrations and the city's denial of a permit for a spontaneous demonstration. We conclude that the ordinance is facially constitutional but that, as applied to the facts of this case, it violated plaintiffs' First Amendment rights.
+
+I. FACTUAL AND PROCEDURAL BACKGROUND
+
+Plaintiff Mark Anderson and several other individuals planned to hold a demonstration in downtown Portland on July 4, 2021, to protest the city's handling of homelessness. The demonstration was planned after learning on July 2 of a city council vote that morning to approve a new homeless services policy...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 4,
+                title: "Morrison v. TechCorp",
+                court: "Southern District of New York",
+                date: "2022-11-12",
+                snippet: "The court addressed the enforceability of non-disclosure agreements in employment contracts in the technology sector.",
+                summary: "In this employment dispute, the Southern District of New York examined whether a non-disclosure agreement signed by a former employee was enforceable. The court considered the reasonableness of the agreement's restrictions and ultimately found in favor of the employer.",
+                fullText: `UNITED STATES DISTRICT COURT
+SOUTHERN DISTRICT OF NEW YORK
+
+Sarah Morrison, Plaintiff,
+v.
+TechCorp International, Inc., Defendant.
+
+19 Civ. 8745 (LAK)
+
+OPINION AND ORDER
+
+CASTEL, District Judge:
+
+This is an action for breach of contract and declaratory judgment brought by former employee Sarah Morrison against her former employer, TechCorp International, Inc. The dispute centers on the enforceability of a non-disclosure agreement (NDA) that Morrison signed as a condition of her employment...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 5,
+                title: "Commonwealth v. Williams",
+                court: "Massachusetts Supreme Judicial Court",
+                date: "2022-09-08",
+                snippet: "The court examined the admissibility of digital evidence obtained through remote access to a defendant's computer.",
+                summary: "The Massachusetts Supreme Judicial Court addressed the admissibility of evidence obtained through remotely accessed digital devices. The court ruled on the application of the Fourth Amendment and state privacy laws to digital searches conducted without physical access to the device.",
+                fullText: `SUPREME JUDICIAL COURT OF MASSACHUSETTS
+
+Suffolk County
+
+Commonwealth of Massachusetts, Plaintiff,
+v.
+David Williams, Defendant.
+
+SJC-13145
+
+Argued: May 17, 2022
+Decided: September 8, 2022
+
+Present: Gants, C.J., Gaziano, Lowy, Cypher, & Kafker, JJ.
+
+CYPER, J.
+
+This case requires us to determine whether evidence obtained by remotely accessing the defendant's computer without a warrant is admissible in a criminal prosecution. We conclude that such remote access violates the Fourth Amendment and Article 14 of the Massachusetts Declaration of Rights...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 6,
+                title: "Estate of Johnson v. Medical Center",
+                court: "Texas Supreme Court",
+                date: "2022-07-19",
+                snippet: "This wrongful death case examined the standard of care required in emergency room treatment and hospital liability.",
+                summary: "The Texas Supreme Court addressed the standard of care applicable to emergency room physicians and the extent of hospital liability for emergency department treatment. The court clarified the application of the Emergency Medical Treatment and Labor Act (EMTALA) in state wrongful death actions.",
+                fullText: `SUPREME COURT OF TEXAS
+
+Estate of Patricia Johnson, Deceased,
+Individually and as Representative of the Estate of Patricia Johnson,
+Plaintiff/Respondent,
+v.
+Houston General Medical Center,
+Defendant/Petitioner.
+
+No. 20-0891
+
+Argued: March 15, 2022
+Decided: July 19, 2022
+
+Justice Boyd delivered the opinion of the Court.
+
+We are asked to determine the standard of care applicable to emergency room physicians and the extent of hospital liability for emergency department treatment. After reviewing the relevant statutes and case law, we hold that hospitals are not vicariously liable for the medical malpractice of emergency room physicians who are independent contractors...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 7,
+                title: "Green v. Education Board",
+                court: "Seventh Circuit Court of Appeals",
+                date: "2022-04-05",
+                snippet: "The court examined the procedural due process rights of students in disciplinary proceedings under Title IX.",
+                summary: "The Seventh Circuit Court of Appeals reviewed a district court's decision in a Title IX student discipline case. The court analyzed the requirements of procedural due process in educational disciplinary proceedings and the adequacy of the school's notice and hearing procedures.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE SEVENTH CIRCUIT
+
+James Green, Plaintiff-Appellant,
+v.
+Board of Education of Chicago Public Schools,
+Defendant-Appellee.
+
+No. 21-2345
+
+Argued: November 10, 2021
+Decided: April 5, 2022
+
+Before: EASTERBROOK, RIPPLE, and SCUDDER, Circuit Judges.
+
+SCUDDER, Circuit Judge.
+
+James Green appeals the district court's grant of summary judgment in favor of the Board of Education of Chicago Public Schools in his Title IX lawsuit. Green alleges that the Board failed to provide him with adequate notice and a meaningful opportunity to be heard before expelling him from high school...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            },
+            {
+                id: 8,
+                title: "Rivera v. National Bank",
+                court: "Eleventh Circuit Court of Appeals",
+                date: "2022-02-18",
+                snippet: "This case addressed the liability of financial institutions under the Fair Housing Act for discriminatory lending practices.",
+                summary: "The Eleventh Circuit Court of Appeals examined the liability of a national bank under the Fair Housing Act for alleged discriminatory lending practices. The court analyzed the elements of a disparate impact claim and the bank's affirmative defense based on business necessity.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE ELEVENTH CIRCUIT
+
+Maria Rivera, individually and on behalf of all others similarly situated,
+Plaintiff-Appellant,
+v.
+National Bank & Trust Company,
+Defendant-Appellee.
+
+No. 20-13567
+
+Appeal from the United States District Court
+for the Southern District of Florida
+
+Before: WILSON, JORDAN, and NEWSOM, Circuit Judges.
+
+NEWSOM, Circuit Judge.
+
+This appeal requires us to determine whether National Bank & Trust Company's mortgage-lending practices violated the Fair Housing Act. The district court granted summary judgment in favor of the Bank, concluding that Plaintiffs failed to establish a prima facie case of disparate impact...
+
+[Opinion continues with detailed legal analysis and conclusion]`
+            }
+        ];
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const detailView = document.getElementById('detailView');
+        const notesSidebar = document.getElementById('notesSidebar');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCourt = document.getElementById('detailCourt');
+        const detailDate = document.getElementById('detailDate');
+        const summaryContent = document.getElementById('summaryContent');
+        const fullTextContent = document.getElementById('fullTextContent');
+        const extractEntitiesBtn = document.getElementById('extractEntitiesBtn');
+        const saveNoteBtn = document.getElementById('saveNoteBtn');
+        const notesList = document.getElementById('notesList');
+        const noNotesMessage = document.getElementById('noNotesMessage');
+        const clearNotesBtn = document.getElementById('clearNotesBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+
+        // State
+        let currentCase = null;
+        let notes = JSON.parse(localStorage.getItem('legalNotes')) || [];
+        let entitiesExtracted = false;
+
+        // Initialize the application
+        function init() {
+            renderResults(mockCases);
+            setupEventListeners();
+            renderNotes();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            searchInput.addEventListener('input', handleSearch);
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            extractEntitiesBtn.addEventListener('click', extractEntities);
+            saveNoteBtn.addEventListener('click', saveNote);
+            clearNotesBtn.addEventListener('click', clearNotes);
+        }
+
+        // Handle search input
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase();
+            if (query.length === 0) {
+                renderResults(mockCases);
+                return;
+            }
+            
+            const filteredCases = mockCases.filter(caseItem => 
+                caseItem.title.toLowerCase().includes(query) ||
+                caseItem.court.toLowerCase().includes(query) ||
+                caseItem.date.includes(query) ||
+                caseItem.snippet.toLowerCase().includes(query) ||
+                caseItem.summary.toLowerCase().includes(query)
+            );
+            
+            renderResults(filteredCases);
+        }
+
+        // Render search results
+        function renderResults(cases) {
+            resultsContainer.innerHTML = '';
+            
+            if (cases.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">No cases found matching your search.</div>';
+                return;
+            }
+            
+            cases.forEach(caseItem => {
+                const resultElement = document.createElement('div');
+                resultElement.className = 'result-item';
+                resultElement.innerHTML = `
+                    <div class="result-title">${caseItem.title}</div>
+                    <div class="result-meta">
+                        <span class="result-court">${caseItem.court}</span>
+                        <span>${caseItem.date}</span>
+                    </div>
+                    <div class="result-snippet">${caseItem.snippet}</div>
+                `;
+                
+                resultElement.addEventListener('click', () => showCaseDetail(caseItem));
+                resultsContainer.appendChild(resultElement);
+            });
+        }
+
+        // Show case detail view
+        function showCaseDetail(caseItem) {
+            currentCase = caseItem;
+            entitiesExtracted = false;
+            
+            detailTitle.textContent = caseItem.title;
+            detailCourt.textContent = caseItem.court;
+            detailDate.textContent = caseItem.date;
+            summaryContent.textContent = caseItem.summary;
+            fullTextContent.textContent = caseItem.fullText;
+            
+            detailView.classList.remove('hidden');
+            notesSidebar.classList.remove('hidden');
+            
+            // Reset to summary tab
+            switchTab('summary');
+        }
+
+        // Switch between tabs
+        function switchTab(tabName) {
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            tabPanes.forEach(pane => {
+                if (pane.id === `${tabName}Pane`) {
+                    pane.classList.add('active');
+                } else {
+                    pane.classList.remove('active');
+                }
+            });
+        }
+
+        // Extract entities from text
+        function extractEntities() {
+            if (!currentCase || entitiesExtracted) return;
+            
+            // Simulate entity extraction by highlighting names and dates
+            const names = ['Smith', 'Johnson', 'Rodriguez', 'Anderson', 'Morrison', 'Williams', 'Green', 'Rivera', 'Patricia Johnson', 'David Williams', 'Carlos Rodriguez', 'Mark Anderson', 'Sarah Morrison', 'James Green', 'Maria Rivera'];
+            const dates = ['2023-05-15', '2023-03-22', '2023-01-30', '2022-11-12', '2022-09-08', '2022-07-19', '2022-04-05', '2022-02-18', 'May 15, 2020', 'July 4, 2021', 'January 15, 2022'];
+            
+            let fullText = fullTextContent.textContent;
+            
+            // Highlight names
+            names.forEach(name => {
+                const regex = new RegExp(`\\b${name}\\b`, 'gi');
+                fullText = fullText.replace(regex, `<span class="entity-highlight">${name}</span>`);
+            });
+            
+            // Highlight dates
+            dates.forEach(date => {
+                const regex = new RegExp(`\\b${date}\\b`, 'g');
+                fullText = fullText.replace(regex, `<span class="date-highlight">${date}</span>`);
+            });
+            
+            fullTextContent.innerHTML = fullText;
+            entitiesExtracted = true;
+            
+            // Update button state
+            extractEntitiesBtn.textContent = 'Entities Extracted';
+            extractEntitiesBtn.disabled = true;
+        }
+
+        // Save selected text as note
+        function saveNote() {
+            const activeTab = document.querySelector('.tab-pane.active');
+            const selectedText = window.getSelection().toString().trim();
+            
+            if (!selectedText) {
+                alert('Please select some text to save as a note.');
+                return;
+            }
+            
+            const note = {
+                id: Date.now(),
+                text: selectedText,
+                caseTitle: currentCase ? currentCase.title : 'Unknown Case',
+                date: new Date().toLocaleString()
+            };
+            
+            notes.push(note);
+            localStorage.setItem('legalNotes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        // Render saved notes
+        function renderNotes() {
+            notesList.innerHTML = '';
+            
+            if (notes.length === 0) {
+                noNotesMessage.classList.remove('hidden');
+                return;
+            }
+            
+            noNotesMessage.classList.add('hidden');
+            
+            notes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-item';
+                noteElement.innerHTML = `
+                    <button class="note-delete" data-id="${note.id}">✕</button>
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-meta">From: ${note.caseTitle} | ${note.date}</div>
+                `;
+                
+                notesList.appendChild(noteElement);
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.note-delete').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(button.dataset.id);
+                    deleteNote(id);
+                });
+            });
+        }
+
+        // Delete a note
+        function deleteNote(id) {
+            notes = notes.filter(note => note.id !== id);
+            localStorage.setItem('legalNotes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        // Clear all notes
+        function clearNotes() {
+            if (confirm('Are you sure you want to delete all notes?')) {
+                notes = [];
+                localStorage.removeItem('legalNotes');
+                renderNotes();
+            }
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

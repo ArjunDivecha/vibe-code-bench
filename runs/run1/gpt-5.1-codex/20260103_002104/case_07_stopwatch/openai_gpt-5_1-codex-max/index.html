@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stopwatch & Timer</title>
+<style>
+    :root {
+        --bg: #111;
+        --accent: #00ff9d;
+        --accent-dim: #0f8;
+        --panel: #1a1a1a;
+        --text: #e6ffe6;
+        --shadow: 0 0 18px rgba(0,255,157,0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at top, #1a1a1a, #0b0b0b 60%);
+        font-family: "Courier New", monospace;
+        color: var(--text);
+    }
+    .container {
+        width: 90%;
+        max-width: 680px;
+        background: linear-gradient(145deg, #0f0f0f, #161616);
+        border: 1px solid #1f1f1f;
+        border-radius: 18px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.45), inset 0 0 18px rgba(0,255,157,0.05);
+        padding: 24px;
+    }
+    .mode-toggle {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .mode-toggle button {
+        flex: 1;
+        padding: 12px;
+        background: #0f0f0f;
+        border: 1px solid #222;
+        border-radius: 10px;
+        color: var(--text);
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all .2s ease;
+    }
+    .mode-toggle button.active {
+        background: var(--accent);
+        color: #02140c;
+        border-color: #0c9;
+        box-shadow: var(--shadow);
+        font-weight: bold;
+    }
+    .display {
+        background: #020202;
+        border: 1px solid #0b0b0b;
+        box-shadow: inset 0 0 18px rgba(0,0,0,0.6), 0 0 18px rgba(0,255,157,0.2);
+        padding: 20px;
+        margin-bottom: 18px;
+        border-radius: 12px;
+        text-align: center;
+    }
+    .time {
+        font-size: 3.2rem;
+        letter-spacing: 4px;
+        color: var(--accent);
+        text-shadow: 0 0 12px rgba(0,255,157,0.7);
+    }
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .controls button {
+        flex: 1;
+        min-width: 120px;
+        padding: 12px;
+        background: #141414;
+        border: 1px solid #222;
+        border-radius: 10px;
+        color: var(--text);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease, background .2s;
+    }
+    .controls button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0,255,157,0.2);
+    }
+    .controls button.primary {
+        background: var(--accent);
+        color: #03140c;
+        border-color: #0c9;
+        box-shadow: var(--shadow);
+    }
+    .controls button.danger {
+        background: #380000;
+        border-color: #550000;
+        color: #fdd;
+    }
+    .inputs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .inputs label {
+        flex: 1;
+        min-width: 100px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: #9cf3cf;
+        font-size: 0.9rem;
+    }
+    .inputs input {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #1f1f1f;
+        background: #0c0c0c;
+        color: var(--text);
+        font-size: 1.2rem;
+        text-align: center;
+    }
+    .hidden { display: none; }
+    .laps {
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1px solid #1f1f1f;
+        border-radius: 10px;
+        padding: 10px;
+        background: #0c0c0c;
+        box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+    }
+    .lap-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dashed #1f1f1f;
+        color: #bdf7d8;
+    }
+    .lap-item:last-child { border-bottom: none; }
+    .message {
+        text-align: center;
+        margin-top: 8px;
+        color: #f9e79f;
+        min-height: 22px;
+        letter-spacing: 1px;
+    }
+    .flash {
+        animation: flash 0.4s ease-in-out 6;
+    }
+    @keyframes flash {
+        0%, 100% { color: #f9e79f; text-shadow: none; }
+        50% { color: #ff4d4f; text-shadow: 0 0 10px rgba(255,77,79,0.8); }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="mode-toggle">
+        <button id="tab-stopwatch" class="active">Stopwatch</button>
+        <button id="tab-timer">Timer</button>
+    </div>
+
+    <div id="stopwatch-section">
+        <div class="display">
+            <div id="stopwatch-display" class="time">00:00:00.00</div>
+        </div>
+        <div class="controls">
+            <button id="sw-start" class="primary">Start</button>
+            <button id="sw-stop">Stop</button>
+            <button id="sw-lap">Lap</button>
+            <button id="sw-reset" class="danger">Reset</button>
+        </div>
+        <div class="laps" id="laps-list" aria-label="Lap times">
+            <div style="text-align:center; color:#5f8; opacity:0.8;">No laps yet</div>
+        </div>
+    </div>
+
+    <div id="timer-section" class="hidden">
+        <div class="display">
+            <div id="timer-display" class="time">00:00:00.00</div>
+        </div>
+        <div class="inputs">
+            <label>Hours
+                <input type="number" id="t-hours" min="0" max="99" value="0">
+            </label>
+            <label>Minutes
+                <input type="number" id="t-mins" min="0" max="59" value="0">
+            </label>
+            <label>Seconds
+                <input type="number" id="t-secs" min="0" max="59" value="0">
+            </label>
+        </div>
+        <div class="controls">
+            <button id="t-start" class="primary">Start</button>
+            <button id="t-pause">Pause</button>
+            <button id="t-reset" class="danger">Reset</button>
+        </div>
+        <div class="message" id="timer-message"></div>
+    </div>
+</div>
+
+<script>
+(function(){
+    // Utilities
+    function pad(num, size=2){ return String(num).padStart(size,'0'); }
+    function formatTime(ms){
+        ms = Math.max(ms,0);
+        const totalSeconds = Math.floor(ms/1000);
+        const hours = Math.floor(totalSeconds/3600);
+        const minutes = Math.floor((totalSeconds%3600)/60);
+        const seconds = totalSeconds%60;
+        const centiseconds = Math.floor((ms%1000)/10);
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+    }
+    function beep(){
+        try{
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.6);
+        }catch(e){
+            console.warn("Audio not supported", e);
+        }
+    }
+
+    // Mode toggle
+    const tabStopwatch = document.getElementById('tab-stopwatch');
+    const tabTimer = document.getElementById('tab-timer');
+    const swSection = document.getElementById('stopwatch-section');
+    const tSection = document.getElementById('timer-section');
+
+    tabStopwatch.onclick = () => {
+        tabStopwatch.classList.add('active');
+        tabTimer.classList.remove('active');
+        swSection.classList.remove('hidden');
+        tSection.classList.add('hidden');
+    };
+    tabTimer.onclick = () => {
+        tabTimer.classList.add('active');
+        tabStopwatch.classList.remove('active');
+        tSection.classList.remove('hidden');
+        swSection.classList.add('hidden');
+    };
+
+    // Stopwatch logic
+    const swDisplay = document.getElementById('stopwatch-display');
+    const lapsList = document.getElementById('laps-list');
+    let swRunning = false;
+    let swStart = 0;
+    let swAccum = 0;
+    let swInterval = null;
+    let lapCount = 0;
+
+    function updateSW(){
+        const now = Date.now();
+        const elapsed = swAccum + (swRunning ? now - swStart : 0);
+        swDisplay.textContent = formatTime(elapsed);
+    }
+
+    function addLap(ms){
+        lapCount += 1;
+        if(lapCount === 1){
+            lapsList.innerHTML = "";
+        }
+        const div = document.createElement('div');
+        div.className = "lap-item";
+        div.innerHTML = `<span>Lap ${lapCount}</span><span>${formatTime(ms)}</span>`;
+        lapsList.prepend(div);
+    }
+
+    document.getElementById('sw-start').onclick = () => {
+        if(swRunning) return;
+        swRunning = true;
+        swStart = Date.now();
+        swInterval = setInterval(updateSW, 40);
+    };
+
+    document.getElementById('sw-stop').onclick = () => {
+        if(!swRunning) return;
+        swAccum += Date.now() - swStart;
+        swRunning = false;
+        clearInterval(swInterval);
+        updateSW();
+    };
+
+    document.getElementById('sw-lap').onclick = () => {
+        if(!swRunning) return;
+        const now = Date.now();
+        const elapsed = swAccum + (now - swStart);
+        addLap(elapsed);
+    };
+
+    document.getElementById('sw-reset').onclick = () => {
+        swRunning = false;
+        swAccum = 0;
+        clearInterval(swInterval);
+        lapCount = 0;
+        lapsList.innerHTML = '<div style="text-align:center; color:#5f8; opacity:0.8;">No laps yet</div>';
+        updateSW();
+    };
+
+    // Timer logic
+    const tDisplay = document.getElementById('timer-display');
+    const tHours = document.getElementById('t-hours');
+    const tMins = document.getElementById('t-mins');
+    const tSecs = document.getElementById('t-secs');
+    const tMessage = document.getElementById('timer-message');
+    let timerDuration = 0;
+    let timerRemaining = 0;
+    let timerRunning = false;
+    let timerStart = 0;
+    let timerInterval = null;
+
+    function readDuration(){
+        const h = parseInt(tHours.value, 10) || 0;
+        const m = parseInt(tMins.value, 10) || 0;
+        const s = parseInt(tSecs.value, 10) || 0;
+        return (h*3600 + m*60 + s) * 1000;
+    }
+
+    function updateTimerDisplay(ms){
+        tDisplay.textContent = formatTime(ms);
+    }
+
+    function stopTimerInterval(){
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    function timerTick(){
+        const elapsed = Date.now() - timerStart;
+        const remaining = timerRemaining - elapsed;
+        if(remaining <= 0){
+            timerRemaining = 0;
+            updateTimerDisplay(0);
+            timerRunning = false;
+            stopTimerInterval();
+            tMessage.textContent = "Time's up!";
+            tMessage.classList.add('flash');
+            beep();
+            return;
+        }
+        updateTimerDisplay(remaining);
+    }
+
+    document.getElementById('t-start').onclick = () => {
+        if(timerRunning) return;
+        if(timerDuration === 0 || timerRemaining === 0){
+            timerDuration = readDuration();
+            timerRemaining = timerDuration;
+        }
+        if(timerRemaining <= 0){
+            tMessage.textContent = "Please set a time greater than zero.";
+            return;
+        }
+        timerRunning = true;
+        timerStart = Date.now();
+        tMessage.textContent = "";
+        tMessage.classList.remove('flash');
+        timerInterval = setInterval(timerTick, 40);
+    };
+
+    document.getElementById('t-pause').onclick = () => {
+        if(!timerRunning){
+            // resume if there is time left
+            if(timerRemaining > 0){
+                timerRunning = true;
+                timerStart = Date.now();
+                tMessage.textContent = "";
+                tMessage.classList.remove('flash');
+                timerInterval = setInterval(timerTick, 40);
+            }
+            return;
+        }
+        // pause
+        timerRemaining -= Date.now() - timerStart;
+        timerRunning = false;
+        stopTimerInterval();
+        updateTimerDisplay(timerRemaining);
+    };
+
+    document.getElementById('t-reset').onclick = () => {
+        timerRunning = false;
+        stopTimerInterval();
+        timerDuration = readDuration();
+        timerRemaining = timerDuration;
+        updateTimerDisplay(timerRemaining);
+        tMessage.textContent = "";
+        tMessage.classList.remove('flash');
+    };
+
+    // Initialize displays
+    updateSW();
+    updateTimerDisplay(0);
+})();
+</script>
+</body>
+</html>

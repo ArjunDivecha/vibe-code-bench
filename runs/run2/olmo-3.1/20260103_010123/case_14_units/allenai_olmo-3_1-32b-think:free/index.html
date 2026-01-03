@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Unit Converter</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        input[type="number"], select { width: 200px; padding: 5px; }
+        .result { font-weight: bold; }
+        .formula { margin-top: 10px; }
+        .quick-buttons { margin: 20px 0; }
+        @media (max-width: 600px) {
+            input[type="number"], select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Unit Converter</h1>
+        <div class="form-group">
+            <select id="categorySelect">
+                <option value="length">Length</option>
+                <option value="weight">Weight</option>
+                <option value="temperature">Temperature</option>
+                <option value="volume">Volume</option>
+                <option value="time">Time</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <select id="fromUnit"></select>
+            <label>From:</label>
+        </div>
+        <div class="form-group">
+            <select id="toUnit"></select>
+            <label>To:</label>
+        </div>
+        <div class="form-group">
+            <input type="number" id="valueInput" value="1">
+        </div>
+        <div class="form-group">
+            <button id="swapButton">Swap</button>
+            <span id="result">0</span>
+        </div>
+        <div id="formula">Formula will appear here</div>
+        <div class="quick-buttons">
+            <button onclick="quickConvert('length', 'km', 'miles')">1 km to miles</button>
+            <button onclick="quickConvert('length', 'miles', 'km')">1 miles to km</button>
+            <button onclick="quickConvert('weight', 'kg', 'lb')">1 kg to lb</button>
+            <button onclick="quickConvert('weight', 'lb', 'kg')">1 lb to kg</button>
+            <button onclick="quickConvert('temperature', 'C', 'F')">0°C to °F</button>
+            <button onclick="quickConvert('temperature', 'F', 'C')">32°F to °C</button>
+        </div>
+    </div>
+    <script>
+        const categoryUnits = {
+            length: ['km', 'm', 'cm', 'mm', 'miles', 'feet', 'inches'],
+            weight: ['kg', 'g', 'lb', 'oz'],
+            temperature: ['C', 'F', 'K'],
+            volume: ['L', 'mL', 'gallons', 'cups'],
+            time: ['hours', 'minutes', 'seconds']
+        };
+
+        const unitFactors = {
+            length: {
+                km: 1000,
+                m: 1,
+                cm: 0.01,
+                mm: 0.001,
+                miles: 1609.34,
+                feet: 0.3048,
+                inches: 0.0254
+            },
+            weight: {
+                kg: 1,
+                g: 0.001,
+                lb: 0.453592,
+                oz: 0.0283495
+            },
+            volume: {
+                L: 1,
+                mL: 0.001,
+                gallons: 3.78541,
+                cups: 0.236588
+            },
+            time: {
+                hours: 3600,
+                minutes: 60,
+                seconds: 1
+            }
+        };
+
+        let currentCategory = 'length';
+        let currentFromUnit = 'm';
+        let currentToUnit = 'km';
+        let currentValue = 1;
+
+        function updateUnits(category) {
+            const selectFrom = document.getElementById('fromUnit');
+            const selectTo = document.getElementById('toUnit');
+            selectFrom.innerHTML = '';
+            selectTo.innerHTML = '';
+            const units = categoryUnits[category];
+            if (!units) return;
+            units.forEach(unit => {
+                const opt = document.createElement('option');
+                opt.value = unit;
+                opt.textContent = unit;
+                selectFrom.appendChild(opt);
+                selectTo.appendChild(opt);
+            });
+            if (currentFromUnit && units.includes(currentFromUnit)) {
+                selectFrom.selectedIndex = units.indexOf(currentFromUnit);
+            }
+            if (currentToUnit && units.includes(currentToUnit)) {
+                selectTo.selectedIndex = units.indexOf(currentToUnit);
+            }
+        }
+
+        function handleCategoryChange(event) {
+            currentCategory = event.target.value;
+            const units = categoryUnits[currentCategory];
+            if (units) {
+                currentFromUnit = units[0];
+                currentToUnit = units.length > 1 ? units[1] : units[0];
+            } else {
+                currentFromUnit = '';
+                currentToUnit = '';
+            }
+            updateUnits(currentCategory);
+            document.getElementById('valueInput').value = currentValue;
+            calculateAndDisplay();
+            updateFormula();
+        }
+
+        function handleFromUnitChange(event) {
+            currentFromUnit = event.target.value;
+            updateFormula();
+            calculateAndDisplay();
+        }
+
+        function handleToUnitChange(event) {
+            currentToUnit = event.target.value;
+            updateFormula();
+            calculateAndDisplay();
+        }
+
+        function handleValueChange(event) {
+            currentValue = parseFloat(event.target.value) || 0;
+            calculateAndDisplay();
+        }
+
+        function calculateAndDisplay() {
+            if (isNaN(currentValue)) return;
+            let result;
+            if (currentCategory === 'temperature') {
+                result = convertTemperature(currentValue, currentFromUnit, currentToUnit);
+            } else {
+                const factors = unitFactors[currentCategory];
+                const factorFrom = factors[currentFromUnit];
+                const factorTo = factors[currentToUnit];
+                result = (currentValue * factorFrom) / factorTo;
+            }
+            if (!isNaN(result)) {
+                document.getElementById('result').textContent = result.toFixed(4);
+            } else {
+                document.getElementById('result').textContent = 'Invalid units';
+            }
+        }
+
+        function convertTemperature(value, fromUnit, toUnit) {
+            if (fromUnit === toUnit) return value;
+            if (fromUnit === 'C') {
+                if (toUnit === 'F') return (value * 9/5) + 32;
+                if (toUnit === 'K') return value + 273.15;
+            } else if (fromUnit === 'F') {
+                if (toUnit === 'C') return (value - 32) * 5/9;
+                if (toUnit === 'K') return (value - 32) * 5/9 + 273.15;
+            } else if (fromUnit === 'K') {
+                if (toUnit === 'C') return value - 273.15;
+                if (toUnit === 'F') return (value - 273.15) * 9/5 + 32;
+            }
+            return NaN;
+        }
+
+        function updateFormula() {
+            let formula = '';
+            if (currentCategory === 'temperature') {
+                if (currentFromUnit === currentToUnit) {
+                    formula = `${currentValue} ${currentFromUnit} = ${currentValue} ${currentToUnit}`;
+                } else {
+                    const result = convertTemperature(currentValue, currentFromUnit, currentToUnit);
+                    if (isNaN(result)) return;
+                    if (currentFromUnit === 'C') {
+                        if (currentToUnit === 'F') {
+                            formula = `${currentValue}°C × 9/5 + 32 = ${result.toFixed(4)}°F`;
+                        } else if (currentToUnit === 'K') {
+                            formula = `${currentValue}°C + 273.15 = ${result.toFixed(4)} K`;
+                        }
+                    } else if (currentFromUnit === 'F') {
+                        if (currentToUnit === 'C') {
+                            formula = `(${currentValue}°F − 32) × 5/9 = ${result.toFixed(4)}°C`;
+                        } else if (currentToUnit === 'K') {
+                            formula = `(${currentValue}°F − 32) × 5/9 + 273.15 = ${result.toFixed(4)} K`;
+                        }
+                    } else if (currentFromUnit === 'K') {
+                        if (currentToUnit === 'C') {
+                            formula = `${currentValue} K − 273.15 = ${result.toFixed(4)}°C`;
+                        } else if (currentToUnit === 'F') {
+                            formula = `(${currentValue} K − 273.15) × 9/5 + 32 = ${result.toFixed(4)}°F`;
+                        }
+                    }
+                }
+            } else {
+                const factors = unitFactors[currentCategory];
+                const factorFrom = factors[currentFromUnit];
+                const factorTo = factors[currentToUnit];
+                const result = (currentValue * factorFrom) / factorTo;
+                if (isNaN(result)) {
+                    formula = 'Invalid units';
+                } else {
+                    formula = `${currentValue} ${currentFromUnit} × ${factorFrom} / ${factorTo} = ${result.toFixed(4)} ${currentToUnit}`;
+                }
+            }
+            document.getElementById('formula').textContent = formula;
+        }
+
+        function quickConvert(cat, fromUnit, toUnit) {
+            currentCategory = cat;
+            currentFromUnit = fromUnit;
+            currentToUnit = toUnit;
+            currentValue = 1;
+            document.getElementById('valueInput').value = currentValue;
+            document.getElementById('categorySelect').value = cat;
+            const fromSelect = document.getElementById('fromUnit');
+            const toSelect = document.getElementById('toUnit');
+            fromSelect.value = fromUnit;
+            toSelect.value = toUnit;
+            updateUnits(cat);
+            calculateAndDisplay();
+            updateFormula();
+        }
+
+        function handleSwap() {
+            const temp = currentFromUnit;
+            currentFromUnit = currentToUnit;
+            currentToUnit = temp;
+            document.getElementById('fromUnit').value = currentFromUnit;
+            document.getElementById('toUnit').value = currentToUnit;
+            calculateAndDisplay();
+            updateFormula();
+        }
+
+        document.getElementById('categorySelect').addEventListener('change', handleCategoryChange);
+        document.getElementById('fromUnit').addEventListener('change', handleFromUnitChange);
+        document.getElementById('toUnit').addEventListener('change', handleToUnitChange);
+        document.getElementById('valueInput').addEventListener('input', handleValueChange);
+        document.getElementById('swapButton').addEventListener('click', handleSwap);
+
+        updateUnits(currentCategory);
+        calculateAndDisplay();
+        updateFormula();
+    </script>
+</body>
+</html>

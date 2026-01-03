@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: #fff;
+        }
+        
+        .search-bar {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            width: 50%;
+            font-size: 16px;
+        }
+        
+        .results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .results-list li {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .results-list li:hover {
+            background-color: #555;
+        }
+        
+        .detail-view {
+            display: none;
+            padding: 20px;
+            border: 1px solid #444;
+            width: 80%;
+            margin: 20px auto;
+        }
+        
+        .detail-view.show {
+            display: block;
+        }
+        
+        .detail-view .tabs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .detail-view .tabs button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        
+        .detail-view .tabs button:hover {
+            background-color: #444;
+        }
+        
+        .detail-view .full-text {
+            padding: 20px;
+            border: 1px solid #444;
+            margin-bottom: 20px;
+        }
+        
+        .detail-view .entities {
+            padding: 20px;
+            border: 1px solid #444;
+            margin-bottom: 20px;
+        }
+        
+        .notes-sidebar {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            background-color: #333;
+            padding: 20px;
+            width: 300px;
+            height: 100vh;
+            overflow-y: scroll;
+        }
+        
+        .notes-sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .notes-sidebar li {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .notes-sidebar li:hover {
+            background-color: #555;
+        }
+        
+        .notes-sidebar button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        
+        .notes-sidebar button:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <input type="search" class="search-bar" placeholder="Search case law">
+    <ul class="results-list" id="results-list"></ul>
+    <div class="detail-view" id="detail-view">
+        <div class="tabs">
+            <button class="active" id="summary-tab">Summary</button>
+            <button id="full-text-tab">Full Text</button>
+        </div>
+        <div class="summary" id="summary">
+            <p id="summary-text"></p>
+        </div>
+        <div class="full-text" id="full-text">
+            <p id="full-text-text"></p>
+        </div>
+        <div class="entities" id="entities">
+            <h2>Entities:</h2>
+            <ul id="entities-list"></ul>
+        </div>
+        <div class="notes-sidebar" id="notes-sidebar">
+            <h2>Notes:</h2>
+            <ul id="notes-list"></ul>
+            <button id="add-note-btn">Add Note</button>
+        </div>
+    </div>
+    <script>
+        const cases = [
+            {
+                title: "Case 1",
+                court: "Supreme Court",
+                date: "2022-01-01",
+                summary: "This is a summary of case 1.",
+                fullText: "This is the full text of case 1.",
+                entities: ["John Doe", "Jane Doe"]
+            },
+            {
+                title: "Case 2",
+                court: "Federal Court",
+                date: "2022-02-01",
+                summary: "This is a summary of case 2.",
+                fullText: "This is the full text of case 2.",
+                entities: ["Bob Smith", "Alice Johnson"]
+            },
+            // Add more cases here...
+        ];
+
+        let selectedCase = null;
+
+        const searchInput = document.querySelector(".search-bar");
+        const resultsList = document.querySelector("#results-list");
+
+        searchInput.addEventListener("input", () => {
+            const query = searchInput.value.toLowerCase();
+            resultsList.innerHTML = "";
+            cases.forEach((case_) => {
+                if (case_.title.toLowerCase().includes(query) || case_.summary.toLowerCase().includes(query) || case_.fullText.toLowerCase().includes(query)) {
+                    const listItem = document.createElement("LI");
+                    listItem.textContent = `${case_.title} (${case_.court}) - ${case_.date}`;
+                    listItem.addEventListener("click", () => {
+                        selectedCase = case_;
+                        document.querySelector("#detail-view").classList.add("show");
+                        document.querySelector("#summary-tab").classList.add("active");
+                        document.querySelector("#summary").textContent = case_.summary;
+                        document.querySelector("#full-text-tab").classList.remove("active");
+                        document.querySelector("#full-text").textContent = case_.fullText;
+                        document.querySelector("#entities").innerHTML = "";
+                        case_.entities.forEach(entity => {
+                            const entityListItem = document.createElement("LI");
+                            entityListItem.textContent = entity;
+                            document.querySelector("#entities-list").appendChild(entityListItem);
+                        });
+                        document.querySelector("#notes-list").innerHTML = "";
+                        localStorage.setItem("notes", JSON.stringify([]));
+                        document.querySelector("#add-note-btn").addEventListener("click", () => {
+                            const note = prompt("Enter note:");
+                            if (note) {
+                                const notes = JSON.parse(localStorage.getItem("notes"));
+                                notes.push(note);
+                                localStorage.setItem("notes", JSON.stringify(notes));
+                                const noteListItem = document.createElement("LI");
+                                noteListItem.textContent = note;
+                                document.querySelector("#notes-list").appendChild(noteListItem);
+                            }
+                        });
+                    });
+                    resultsList.appendChild(listItem);
+                }
+            });
+        });
+
+        document.querySelector("#summary-tab").addEventListener("click", () => {
+            document.querySelector("#summary-tab").classList.add("active");
+            document.querySelector("#full-text-tab").classList.remove("active");
+            document.querySelector("#summary").textContent = selectedCase.summary;
+            document.querySelector("#full-text").textContent = "";
+        });
+
+        document.querySelector("#full-text-tab").addEventListener("click", () => {
+            document.querySelector("#summary-tab").classList.remove("active");
+            document.querySelector("#full-text-tab").classList.add("active");
+            document.querySelector("#summary").textContent = "";
+            document.querySelector("#full-text").textContent = selectedCase.fullText;
+        });
+
+        document.querySelector("#entities-list").addEventListener("click", () => {
+            // Highlight entities in full text
+            const entities = selectedCase.entities;
+            entities.forEach(entity => {
+                const index = selectedCase.fullText.indexOf(entity);
+                if (index !== -1) {
+                    selectedCase.fullText = selectedCase.fullText.substring(0, index) + `<span style="background-color: yellow;">${entity}</span>` + selectedCase.fullText.substring(index + entity.length);
+                }
+            });
+            document.querySelector("#full-text-text").textContent = selectedCase.fullText;
+        });
+    </script>
+</body>
+</html>

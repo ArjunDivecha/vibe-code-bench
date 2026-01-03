@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Codebase Fingerprint</title>
+<style>
+:root {
+    --bg: #0b1021;
+    --panel: #131b33;
+    --glow: #1f2a4d;
+    --text: #e6e8f0;
+    --muted: #9aa0b8;
+    --accent: #7dd3fc;
+    --accent-2: #ff6bcb;
+    --accent-3: #9d4edd;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    padding: 28px;
+    background: radial-gradient(circle at 20% 20%, rgba(79,70,229,0.12), transparent 25%),
+                radial-gradient(circle at 80% 0%, rgba(13,148,136,0.14), transparent 30%),
+                var(--bg);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+}
+h1 {
+    letter-spacing: 1px;
+    margin: 0 0 6px 0;
+    font-weight: 800;
+}
+.subtitle {
+    color: var(--muted);
+    margin-bottom: 24px;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+}
+.card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+}
+.card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.06), transparent 30%);
+    opacity: 0.4;
+    pointer-events: none;
+}
+.card h2 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #f4f5fb;
+}
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+.kpi {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    padding: 12px 14px;
+    border-radius: 12px;
+}
+.kpi .label { color: var(--muted); font-size: 13px; }
+.kpi .value { font-size: 26px; font-weight: 700; }
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.charts {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 14px;
+}
+@media(max-width: 900px){
+    .charts { grid-template-columns: 1fr; }
+}
+.chart-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.legend {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.02);
+}
+.legend-label { font-weight: 600; color: #f8f9ff; }
+.legend-sub { font-size: 12px; color: var(--muted); }
+svg { width: 100%; height: auto; }
+.pie-svg {
+    max-width: 320px;
+    filter: drop-shadow(0 10px 25px rgba(0,0,0,0.35));
+}
+.bar-svg text { fill: var(--muted); font-size: 12px; }
+.bar-svg .bar-label { fill: var(--muted); font-size: 12px; }
+.bar-svg .bar-value { fill: #fff; font-size: 11px; }
+.bar-svg line.axis { stroke: rgba(255,255,255,0.08); }
+.file-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+.file-row .file-name { color: #f4f5fb; overflow-wrap: anywhere; }
+.file-row .file-size { color: var(--muted); font-variant-numeric: tabular-nums; }
+.badge {
+    padding: 4px 8px;
+    background: rgba(125,211,252,0.12);
+    border: 1px solid rgba(125,211,252,0.4);
+    color: #7dd3fc;
+    border-radius: 8px;
+    font-size: 12px;
+}
+.depth-bar {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    height: 14px;
+    overflow: hidden;
+    position: relative;
+}
+.depth-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7dd3fc, #9d4edd);
+    width: 0;
+}
+footer {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+}
+</style>
+</head>
+<body>
+<header>
+    <div class="pill">Codebase Fingerprint</div>
+    <h1>Codebase Fingerprint</h1>
+    <div class="subtitle">An at-a-glance fingerprint of this repository's structure and scale.</div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Snapshot</h2>
+        <div class="kpi-row">
+            <div class="kpi">
+                <div class="label">Total Files</div>
+                <div class="value">1</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Lines of Code</div>
+                <div class="value">475</div>
+            </div>
+            <div class="kpi">
+                <div class="label">File Types</div>
+                <div class="value">1</div>
+            </div>
+            <div class="kpi">
+                <div class="label">Max Depth</div>
+                <div class="value">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>File Type Footprint</h2>
+        <div class="charts">
+            <div class="chart-area">
+                <svg class="pie-svg" viewBox="0 0 280 280" role="img" aria-label="File type distribution pie chart">
+                    <path d="M 140,140 L 140.0,30.0 A 110,110 0 1 1 139.99999999999997,30.0 Z" fill="#f94144"><title>.py: 1 file(s) (100.0%)</title></path>
+                </svg>
+            </div>
+            <div>
+                <div class="legend">
+                    <div class="legend-item"><span class="dot" style="background:#f94144"></span><div><div class="legend-label">.py</div><div class="legend-sub">1 file(s) • 100.0%</div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Line Density</h2>
+        <p style="color:var(--muted); margin-top:-6px; margin-bottom:8px;">Top extensions by line count</p>
+        <svg class="bar-svg" viewBox="0 0 560 280" role="img" aria-label="Line counts per extension">
+            <line class="axis" x1="32" y1="240" x2="540" y2="240" />
+            <g class="bar"><rect x="123.6" y="40.0" width="272.8" height="180.0" fill="#f94144"></rect><text x="260.0" y="240.0" text-anchor="middle" class="bar-label">.py</text><text x="260.0" y="32.0" text-anchor="middle" class="bar-value">475</text></g>
+        </svg>
+    </div>
+
+    <div class="card">
+        <h2>Largest Files</h2>
+        <div class="file-row"><div class="file-name">generate_stats.py</div><div class="file-size">14.3 KB</div></div>
+    </div>
+
+    <div class="card">
+        <h2>Structure</h2>
+        <p style="color:var(--muted);">Maximum directory nesting depth observed in this scan.</p>
+        <div class="depth-bar">
+            <div class="depth-fill" style="width:8.0%;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; color:var(--muted);">
+            <span>Shallow</span><span>0 levels</span><span>Deep</span>
+        </div>
+    </div>
+</div>
+
+<footer>
+    Generated by Git Stats Infographic Generator — 1 files parsed.
+</footer>
+</body>
+</html>

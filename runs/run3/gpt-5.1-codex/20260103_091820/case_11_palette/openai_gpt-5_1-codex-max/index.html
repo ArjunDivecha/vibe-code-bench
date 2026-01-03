@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Color Palette Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #0f111a;
+  --card-bg: rgba(255,255,255,0.06);
+  --text: #f6f7fb;
+  --muted: #a8b0c1;
+  --accent: #6c7bff;
+  --radius: 16px;
+  --shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(120% 160% at 20% 20%, rgba(108,123,255,0.08), transparent),
+              radial-gradient(140% 160% at 80% 0%, rgba(253,121,168,0.08), transparent),
+              var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 28px 7vw 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title h1 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  padding: 12px 16px;
+  background: linear-gradient(120deg, #6c7bff, #8f68ff);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 10px 30px rgba(108,123,255,0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+button.secondary {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+button:hover { transform: translateY(-2px); }
+button:active { transform: translateY(0); opacity: 0.85; }
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px,1fr));
+  gap: 16px;
+  padding: 10px 7vw 20px;
+}
+
+.card {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 220px;
+  box-shadow: var(--shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 28px 60px rgba(0,0,0,0.32);
+}
+
+.swatch {
+  position: absolute;
+  inset: 0;
+  transition: background 0.4s ease;
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55));
+}
+
+.codes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.code-pill {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+.name {
+  color: #fefefe;
+  font-weight: 600;
+  font-size: 15px;
+  opacity: 0.95;
+}
+.rgb {
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+}
+
+.card-top {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px;
+  pointer-events: none;
+}
+.card-top .top-btn {
+  pointer-events: auto;
+  border: none;
+  background: rgba(0,0,0,0.35);
+  color: white;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.top-btn:hover { background: rgba(0,0,0,0.48); transform: translateY(-2px);}
+.top-btn.locked { background: rgba(0,0,0,0.65); }
+
+.copy-bubble {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20,24,36,0.85);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10;
+}
+
+.favs {
+  padding: 12px 7vw 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.favs h3 { margin: 0; color: var(--muted); font-weight: 700; letter-spacing: 0.3px; }
+.fav-list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); }
+.fav-item {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.2s ease;
+}
+.fav-item:hover { transform: translateY(-2px); }
+.fav-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+.fav-swatches span {
+  display: block;
+  height: 38px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+.fav-actions {
+  display: flex;
+  gap: 8px;
+}
+.small-btn {
+  padding: 8px 10px;
+  font-size: 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+.small-btn.danger { background: rgba(255,66,114,0.15); color: #ff9fb7; }
+
+.note {
+  font-size: 13px;
+  color: #9da6bb;
+  margin: 0 7vw 20px;
+}
+
+@media (max-width: 680px) {
+  .palette { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+  <div class="toast" id="toast">Copied!</div>
+
+  <header>
+    <div class="title">
+      <div style="width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#6c7bff,#8f68ff,#fd79a8);box-shadow:var(--shadow);"></div>
+      <div>
+        <h1>Color Palette Generator</h1>
+        <p class="subtitle">Press Space to remix. Click to copy. Lock what you love.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="saveBtn">Save Palette</button>
+      <button class="secondary" id="randomBtn">Generate</button>
+    </div>
+  </header>
+
+  <section class="palette" id="palette">
+    <!-- Cards will be inserted via JS -->
+  </section>
+
+  <p class="note">Tip: Click a color to copy its HEX. Press <strong>Spacebar</strong> to generate new palette. Locks keep colors when remixing.</p>
+
+  <section class="favs">
+    <h3>Saved palettes</h3>
+    <div class="fav-list" id="favList"></div>
+  </section>
+
+<script>
+const paletteEl = document.getElementById('palette');
+const randomBtn = document.getElementById('randomBtn');
+const saveBtn = document.getElementById('saveBtn');
+const toast = document.getElementById('toast');
+const favList = document.getElementById('favList');
+const NUM = 5;
+
+const namedColors = [
+  {name:'White', hex:'#ffffff'},
+  {name:'Black', hex:'#000000'},
+  {name:'Red', hex:'#ff0000'},
+  {name:'Green', hex:'#00ff00'},
+  {name:'Blue', hex:'#0000ff'},
+  {name:'Yellow', hex:'#ffff00'},
+  {name:'Cyan', hex:'#00ffff'},
+  {name:'Magenta', hex:'#ff00ff'},
+  {name:'Orange', hex:'#ff8800'},
+  {name:'Pink', hex:'#ff6b9d'},
+  {name:'Purple', hex:'#8e44ad'},
+  {name:'Indigo', hex:'#3f51b5'},
+  {name:'Teal', hex:'#009688'},
+  {name:'Lime', hex:'#cddc39'},
+  {name:'Amber', hex:'#ffc107'},
+  {name:'Deep Orange', hex:'#ff5722'},
+  {name:'Brown', hex:'#795548'},
+  {name:'Gray', hex:'#9e9e9e'},
+  {name:'Slate', hex:'#607d8b'},
+  {name:'Sky', hex:'#74b9ff'},
+  {name:'Mint', hex:'#00b894'},
+  {name:'Peach', hex:'#ffb894'},
+  {name:'Coral', hex:'#ff6f61'},
+  {name:'Lavender', hex:'#b97aff'},
+  {name:'Navy', hex:'#0f2346'},
+  {name:'Forest', hex:'#1b5e20'},
+  {name:'Rose', hex:'#e91e63'},
+  {name:'Sunset', hex:'#fd9644'},
+  {name:'Sea', hex:'#1abc9c'},
+  {name:'Denim', hex:'#3b5998'}
+];
+
+const state = { colors: [], locked: Array(NUM).fill(false) };
+
+function randomColor() {
+  return '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6,'0');
+}
+
+function hexToRgb(hex) {
+  const v = hex.replace('#','');
+  return [
+    parseInt(v.substring(0,2),16),
+    parseInt(v.substring(2,4),16),
+    parseInt(v.substring(4,6),16)
+  ];
+}
+
+function rgbToString(rgb) { return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`; }
+
+function colorDistance(c1, c2) {
+  return Math.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 + (c1[2]-c2[2])**2);
+}
+
+function nearestName(hex) {
+  const rgb = hexToRgb(hex);
+  let best = {name:'', dist: Infinity};
+  for (const entry of namedColors) {
+    const d = colorDistance(rgb, hexToRgb(entry.hex));
+    if (d < best.dist) best = {name: entry.name, dist: d};
+  }
+  return best.name || '—';
+}
+
+function showToast(msg='Copied!') {
+  toast.textContent = msg;
+  toast.style.opacity = 1;
+  toast.style.transform = 'translate(-50%, 10px)';
+  setTimeout(()=> {
+    toast.style.opacity = 0;
+    toast.style.transform = 'translate(-50%, 0px)';
+  }, 1300);
+}
+
+function createCard(index) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.index = index;
+  const swatch = document.createElement('div');
+  swatch.className = 'swatch';
+
+  const cardTop = document.createElement('div');
+  cardTop.className = 'card-top';
+  const lockBtn = document.createElement('button');
+  lockBtn.className = 'top-btn lock';
+  lockBtn.innerHTML = '<span class="icon">🔓</span><span>Lock</span>';
+  lockBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLock(index);
+  });
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'top-btn copy';
+  copyBtn.innerHTML = 'Copy';
+  copyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyColor(index);
+  });
+
+  cardTop.append(lockBtn, copyBtn);
+
+  const content = document.createElement('div');
+  content.className = 'card-content';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'name';
+  nameEl.textContent = 'Color';
+
+  const codes = document.createElement('div');
+  codes.className = 'codes';
+  const hexEl = document.createElement('span');
+  hexEl.className = 'code-pill hex';
+  const rgbEl = document.createElement('span');
+  rgbEl.className = 'code-pill rgb-pill';
+  codes.append(hexEl, rgbEl);
+
+  const rgbText = document.createElement('div');
+  rgbText.className = 'rgb';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'copy-bubble';
+  bubble.textContent = 'Copied';
+
+  content.append(nameEl, codes, rgbText);
+  card.append(swatch, cardTop, content, bubble);
+
+  card.addEventListener('click', () => copyColor(index));
+
+  return card;
+}
+
+function updateCard(index, color) {
+  const card = paletteEl.querySelector(`.card[data-index="${index}"]`);
+  if (!card) return;
+  const swatch = card.querySelector('.swatch');
+  swatch.style.background = color;
+  card.dataset.color = color;
+  card.querySelector('.hex').textContent = color.toUpperCase();
+  const rgbArr = hexToRgb(color);
+  card.querySelector('.rgb-pill').textContent = `RGB ${rgbArr.join(',')}`;
+  card.querySelector('.rgb').textContent = rgbToString(rgbArr);
+  card.querySelector('.name').textContent = nearestName(color);
+}
+
+function generatePalette() {
+  for (let i=0;i<NUM;i++) {
+    if (state.locked[i] && state.colors[i]) continue;
+    const c = randomColor();
+    state.colors[i] = c;
+    updateCard(i, c);
+  }
+}
+
+function toggleLock(index) {
+  state.locked[index] = !state.locked[index];
+  const card = paletteEl.querySelector(`.card[data-index="${index}"]`);
+  const btn = card.querySelector('.lock');
+  if (state.locked[index]) {
+    btn.classList.add('locked');
+    btn.innerHTML = '<span class="icon">🔒</span><span>Locked</span>';
+  } else {
+    btn.classList.remove('locked');
+    btn.innerHTML = '<span class="icon">🔓</span><span>Lock</span>';
+  }
+}
+
+function copyColor(index) {
+  const color = state.colors[index];
+  if (!color) return;
+  navigator.clipboard.writeText(color).then(()=>{
+    const card = paletteEl.querySelector(`.card[data-index="${index}"]`);
+    const bubble = card.querySelector('.copy-bubble');
+    bubble.style.opacity = 1;
+    bubble.style.transform = 'translateY(0px)';
+    setTimeout(()=>{
+      bubble.style.opacity = 0;
+      bubble.style.transform = 'translateY(6px)';
+    }, 800);
+    showToast('HEX copied ' + color.toUpperCase());
+  }).catch(()=>{ showToast('Copy failed'); });
+}
+
+function savePalette() {
+  const palette = state.colors.slice();
+  if (palette.length !== NUM || palette.some(c=>!c)) { showToast('Generate palette first'); return; }
+  const list = loadPalettes();
+  list.unshift(palette);
+  localStorage.setItem('palettes', JSON.stringify(list.slice(0,30)));
+  renderFavs();
+  showToast('Palette saved');
+}
+
+function loadPalettes() {
+  try {
+    const arr = JSON.parse(localStorage.getItem('palettes') || '[]');
+    if (Array.isArray(arr)) return arr;
+  } catch(e){}
+  return [];
+}
+
+function deletePalette(idx) {
+  const arr = loadPalettes();
+  arr.splice(idx,1);
+  localStorage.setItem('palettes', JSON.stringify(arr));
+  renderFavs();
+}
+
+function renderFavs() {
+  const arr = loadPalettes();
+  favList.innerHTML = '';
+  if (!arr.length) {
+    const p = document.createElement('p');
+    p.style.color = 'var(--muted)';
+    p.style.margin = '4px 0';
+    p.textContent = 'No saved palettes yet. Hit "Save Palette" to store one.';
+    favList.appendChild(p);
+    return;
+  }
+  arr.forEach((palette, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'fav-item';
+    const swGroup = document.createElement('div');
+    swGroup.className = 'fav-swatches';
+    palette.forEach(col=>{
+      const s = document.createElement('span');
+      s.style.background = col;
+      swGroup.appendChild(s);
+    });
+    const actions = document.createElement('div');
+    actions.className = 'fav-actions';
+    const useBtn = document.createElement('button');
+    useBtn.className = 'small-btn';
+    useBtn.textContent = 'Use';
+    useBtn.onclick = ()=> applyPalette(palette);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'small-btn danger';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = ()=> deletePalette(idx);
+    actions.append(useBtn, delBtn);
+    item.append(swGroup, actions);
+    favList.appendChild(item);
+  });
+}
+
+function applyPalette(palette) {
+  palette.forEach((c,i)=>{
+    state.colors[i] = c;
+    updateCard(i,c);
+  });
+  showToast('Palette loaded');
+}
+
+function setup() {
+  for (let i=0;i<NUM;i++) {
+    const card = createCard(i);
+    paletteEl.appendChild(card);
+    state.colors.push(randomColor());
+  }
+  state.colors = state.colors.slice(0,NUM);
+  generatePalette();
+  renderFavs();
+}
+
+randomBtn.addEventListener('click', generatePalette);
+saveBtn.addEventListener('click', savePalette);
+
+document.addEventListener('keydown', (e)=>{
+  if (e.code === 'Space') {
+    e.preventDefault();
+    generatePalette();
+  }
+});
+
+setup();
+</script>
+</body>
+</html>

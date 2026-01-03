@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        form input, form select {
+            flex: 1 1 150px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        form button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .filters {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters select,
+        .filters input {
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .summary {
+            margin-top: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        canvas {
+            max-width: 400px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            form, .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+
+        <form id="expense-form">
+            <input type="number" id="amount" placeholder="Amount" required>
+            <select id="category" required>
+                <option value="">Category</option>
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Entertainment</option>
+                <option>Bills</option>
+                <option>Shopping</option>
+                <option>Other</option>
+            </select>
+            <input type="text" id="description" placeholder="Description">
+            <input type="date" id="date" required>
+            <button type="submit">Add Expense</button>
+        </form>
+
+        <div class="filters">
+            <select id="filter-category">
+                <option value="">All Categories</option>
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Entertainment</option>
+                <option>Bills</option>
+                <option>Shopping</option>
+                <option>Other</option>
+            </select>
+            <input type="date" id="start-date">
+            <input type="date" id="end-date">
+            <button onclick="applyFilters()">Filter</button>
+            <button onclick="resetFilters()">Reset</button>
+        </div>
+
+        <table id="expense-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Expenses go here -->
+            </tbody>
+        </table>
+
+        <div class="summary">
+            <h3>Total Spending: $<span id="total-spending">0.00</span></h3>
+            <h4>Breakdown by Category:</h4>
+            <ul id="category-breakdown"></ul>
+            <canvas id="pie-chart" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('expense-form');
+        const amountInput = document.getElementById('amount');
+        const categoryInput = document.getElementById('category');
+        const descInput = document.getElementById('description');
+        const dateInput = document.getElementById('date');
+        const tableBody = document.querySelector('#expense-table tbody');
+        const totalSpendingEl = document.getElementById('total-spending');
+        const breakdownEl = document.getElementById('category-breakdown');
+        const pieCanvas = document.getElementById('pie-chart');
+
+        const filterCategory = document.getElementById('filter-category');
+        const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
+
+        let expenses = [];
+
+        function saveExpenses() {
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+
+        function loadExpenses() {
+            const data = localStorage.getItem('expenses');
+            if (data) {
+                expenses = JSON.parse(data);
+            }
+        }
+
+        function addExpense(e) {
+            e.preventDefault();
+            const expense = {
+                amount: parseFloat(amountInput.value),
+                category: categoryInput.value,
+                description: descInput.value,
+                date: dateInput.value
+            };
+            expenses.push(expense);
+            saveExpenses();
+            form.reset();
+            renderExpenses();
+        }
+
+        function renderExpenses() {
+            tableBody.innerHTML = '';
+            const filtered = getFilteredExpenses();
+            let total = 0;
+            const categoryTotals = {};
+
+            filtered.forEach(exp => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${exp.date}</td>
+                    <td>$${exp.amount.toFixed(2)}</td>
+                    <td>${exp.category}</td>
+                    <td>${exp.description}</td>
+                `;
+                tableBody.appendChild(row);
+                total += exp.amount;
+                if (!categoryTotals[exp.category]) categoryTotals[exp.category] = 0;
+                categoryTotals[exp.category] += exp.amount;
+            });
+
+            totalSpendingEl.textContent = total.toFixed(2);
+            breakdownEl.innerHTML = '';
+            for (let cat in categoryTotals) {
+                const li = document.createElement('li');
+                li.textContent = `${cat}: $${categoryTotals[cat].toFixed(2)}`;
+                breakdownEl.appendChild(li);
+            }
+
+            drawPieChart(categoryTotals);
+        }
+
+        function getFilteredExpenses() {
+            return expenses.filter(exp => {
+                const catMatch = !filterCategory.value || exp.category === filterCategory.value;
+                const dateMatch =
+                    (!startDate.value || exp.date >= startDate.value) &&
+                    (!endDate.value || exp.date <= endDate.value);
+                return catMatch && dateMatch;
+            });
+        }
+
+        function applyFilters() {
+            renderExpenses();
+        }
+
+        function resetFilters() {
+            filterCategory.value = '';
+            startDate.value = '';
+            endDate.value = '';
+            renderExpenses();
+        }
+
+        function drawPieChart(data) {
+            const ctx = pieCanvas.getContext('2d');
+            ctx.clearRect(0, 0, pieCanvas.width, pieCanvas.height);
+
+            const total = Object.values(data).reduce((a,b) => a + b, 0);
+            if (total === 0) return;
+
+            let startAngle = 0;
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#66BB6A', '#BA68C8', '#FFA726'];
+            const categories = Object.keys(data);
+            categories.forEach((key, i) => {
+                const val = data[key];
+                const sliceAngle = 2 * Math.PI * val / total;
+                ctx.beginPath();
+                ctx.moveTo(200, 200);
+                ctx.arc(200, 200, 150, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                startAngle += sliceAngle;
+            });
+        }
+
+        form.addEventListener('submit', addExpense);
+        window.addEventListener('load', () => {
+            loadExpenses();
+            renderExpenses();
+        });
+    </script>
+</body>
+</html>

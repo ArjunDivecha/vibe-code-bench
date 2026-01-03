@@ -58,7 +58,8 @@ def get_model(model_id: str) -> BaseModel:
       - gpt-4o, gpt-4o-mini, o1, o3-mini → OpenAIModel  
       - gemini-2.0-flash, gemini-2.5-pro → GeminiModel
       - local, local:model-name → LMStudioModel
-      - llama-3.1-8b, openrouter:model/name → OpenRouterModel
+      - any/model-id → OpenRouterModel
+      - any/model-id@Provider → OpenRouterModel with provider hint
     """
     from .claude import ClaudeModel
     from .openai import OpenAIModel
@@ -67,6 +68,12 @@ def get_model(model_id: str) -> BaseModel:
     from .openrouter import OpenRouterModel
     
     model_lower = model_id.lower()
+    
+    # Check for provider hint (model@Provider format)
+    provider = None
+    if "@" in model_id:
+        model_id, provider = model_id.rsplit("@", 1)
+        model_lower = model_id.lower()
     
     if model_lower.startswith("claude"):
         return ClaudeModel(model_id)
@@ -80,18 +87,7 @@ def get_model(model_id: str) -> BaseModel:
             name = model_id.split(":", 1)[1]
             return LMStudioModel(model_id=name)
         return LMStudioModel()
-    elif model_lower.startswith(("llama", "openrouter", "meta-llama", "cerebras")):
-        # OpenRouter models - use full model ID or map short names
-        if model_lower.startswith("openrouter:"):
-            full_id = model_id.split(":", 1)[1]
-        elif model_lower.startswith("llama-3.1-8b"):
-            full_id = "meta-llama/llama-3.1-8b-instruct"
-        elif model_lower.startswith("llama-3.1-70b"):
-            full_id = "meta-llama/llama-3.1-70b-instruct"
-        elif model_lower.startswith("cerebras"):
-            full_id = "meta-llama/llama-3.1-8b-instruct"
-        else:
-            full_id = model_id
-        return OpenRouterModel(model_id=full_id, provider="Cerebras")
     else:
-        raise ValueError(f"Unknown model: {model_id}. Supported prefixes: claude, gpt, o1, o3, gemini, local, llama, openrouter")
+        # Default to OpenRouter for any other model ID
+        # This handles: qwen/qwen3, anthropic/claude-haiku, google/gemini-*, etc.
+        return OpenRouterModel(model_id=model_id, provider=provider)

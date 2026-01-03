@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Habit Tracker</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --card: #0b1223;
+        --accent: #7c3aed;
+        --accent-2: #22d3ee;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --done: #34d399;
+        --border: #1e293b;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 20% 20%, rgba(124,58,237,0.15), transparent 25%),
+                    radial-gradient(circle at 80% 0%, rgba(34,211,238,0.12), transparent 25%),
+                    var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+    }
+    .container {
+        max-width: 1100px;
+        margin: 40px auto 60px;
+        padding: 0 18px;
+    }
+    header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: -0.5px;
+    }
+    .subtitle {
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 4px;
+    }
+    .card {
+        background: rgba(11, 18, 35, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    }
+    .add-form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .add-form input {
+        flex: 1 1 220px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #0d1528;
+        color: var(--text);
+        outline: none;
+        transition: border 0.2s;
+    }
+    .add-form input:focus {
+        border-color: var(--accent);
+    }
+    .add-form button {
+        padding: 12px 18px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #0b0f1d;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(124,58,237,0.35);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .add-form button:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(124,58,237,0.45);}
+    .add-form button:active { transform: translateY(0); }
+
+    .legend {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .legend .square {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: #0d1528;
+    }
+    .legend .square.done {
+        background: rgba(52, 211, 153, 0.2);
+        border-color: rgba(52, 211, 153, 0.5);
+    }
+    .grid {
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+    .grid-inner {
+        display: grid;
+        grid-template-columns: 220px repeat(30, 26px);
+        align-items: stretch;
+        min-width: fit-content;
+    }
+    .cell {
+        border: 1px solid var(--border);
+        padding: 8px 6px;
+        font-size: 12px;
+        text-align: center;
+        background: #0b1223;
+    }
+    .header-cell {
+        position: sticky;
+        top: 0;
+        background: #0b1223;
+        z-index: 2;
+        font-weight: 600;
+        color: var(--muted);
+    }
+    .habit-name {
+        text-align: left;
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .meta {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        flex-wrap: wrap;
+    }
+    .meta .pill {
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #0d1528;
+    }
+    .day-cell {
+        cursor: pointer;
+        transition: all 0.12s;
+        border-radius: 6px;
+        margin: 2px;
+        display: grid;
+        place-items: center;
+        min-height: 28px;
+        color: var(--muted);
+    }
+    .day-cell:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(124,58,237,0.5);
+    }
+    .day-cell.done {
+        background: rgba(52, 211, 153, 0.16);
+        border-color: rgba(52, 211, 153, 0.6);
+        color: #d1fae5;
+        box-shadow: inset 0 0 0 1px rgba(52,211,153,0.35);
+    }
+    .today-label {
+        color: var(--accent-2);
+        font-weight: 600;
+    }
+    .empty-message {
+        text-align: center;
+        color: var(--muted);
+        padding: 30px 0;
+    }
+    .delete-btn {
+        color: #fca5a5;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
+        font-size: 12px;
+        margin-left: auto;
+    }
+    .name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    @media (max-width: 700px) {
+        .grid-inner { grid-template-columns: 200px repeat(30, 24px); }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div>
+            <h1>Habit Tracker</h1>
+            <div class="subtitle">Build streaks, stay consistent. Track the last 30 days.</div>
+        </div>
+    </header>
+
+    <div class="card">
+        <form id="addForm" class="add-form">
+            <input id="habitInput" type="text" placeholder="Add a habit (e.g., Exercise, Read 20 pages)" autocomplete="off">
+            <button type="submit">+ Add Habit</button>
+        </form>
+
+        <div class="legend">
+            <span><div class="square done"></div> Completed</span>
+            <span><div class="square"></div> Incomplete</span>
+            <span>Click any day to toggle</span>
+        </div>
+
+        <div id="gridWrapper" class="grid"></div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const STORAGE_KEY = 'habitTrackerData_v1';
+    const gridWrapper = document.getElementById('gridWrapper');
+    const habitInput = document.getElementById('habitInput');
+    const addForm = document.getElementById('addForm');
+
+    let habits = loadHabits();
+
+    function loadHabits() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {
+            console.warn('Could not load habits', e);
+        }
+        return [
+            { id: Date.now(), name: 'Exercise', history: {} },
+            { id: Date.now() + 1, name: 'Read', history: {} },
+            { id: Date.now() + 2, name: 'Meditate', history: {} },
+        ];
+    }
+
+    function saveHabits() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+    }
+
+    function getLastNDates(n) {
+        const arr = [];
+        const today = new Date();
+        for (let i = n - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            arr.push(formatDate(d));
+        }
+        return arr;
+    }
+
+    function formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function formatLabel(dateStr) {
+        const date = new Date(dateStr);
+        const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][date.getDay()];
+        return `${weekday}<br>${date.getDate()}`;
+    }
+
+    function calcStreak(habit) {
+        let streak = 0;
+        let current = new Date();
+        for (let i = 0; i < 365; i++) {
+            const ds = formatDate(current);
+            if (habit.history && habit.history[ds]) {
+                streak++;
+            } else {
+                break;
+            }
+            current.setDate(current.getDate() - 1);
+        }
+        return streak;
+    }
+
+    function calcPercent(habit, days) {
+        let total = days.length;
+        let done = days.filter(d => habit.history && habit.history[d]).length;
+        return total === 0 ? 0 : Math.round((done / total) * 100);
+    }
+
+    function toggleDay(habitId, dateStr) {
+        habits = habits.map(h => {
+            if (h.id === habitId) {
+                if (!h.history) h.history = {};
+                if (h.history[dateStr]) {
+                    delete h.history[dateStr];
+                } else {
+                    h.history[dateStr] = true;
+                }
+            }
+            return h;
+        });
+        saveHabits();
+        render();
+    }
+
+    function deleteHabit(id) {
+        if (!confirm('Delete this habit? Progress will be lost.')) return;
+        habits = habits.filter(h => h.id !== id);
+        saveHabits();
+        render();
+    }
+
+    function render() {
+        const days = getLastNDates(30);
+        if (!habits.length) {
+            gridWrapper.innerHTML = `<div class="empty-message">No habits yet. Add one to start tracking!</div>`;
+            return;
+        }
+        const grid = document.createElement('div');
+        grid.className = 'grid-inner';
+
+        // Header row
+        const nameHeader = document.createElement('div');
+        nameHeader.className = 'cell header-cell';
+        nameHeader.innerHTML = 'Habit & Stats';
+        grid.appendChild(nameHeader);
+
+        days.forEach((d, idx) => {
+            const c = document.createElement('div');
+            c.className = 'cell header-cell';
+            if (idx === days.length - 1) c.classList.add('today-label');
+            c.innerHTML = formatLabel(d);
+            grid.appendChild(c);
+        });
+
+        habits.forEach(habit => {
+            const rowHeader = document.createElement('div');
+            rowHeader.className = 'cell';
+            rowHeader.style.textAlign = 'left';
+
+            const streak = calcStreak(habit);
+            const percent = calcPercent(habit, days);
+
+            const nameRow = document.createElement('div');
+            nameRow.className = 'name-row';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'habit-name';
+            nameEl.textContent = habit.name;
+
+            const del = document.createElement('button');
+            del.className = 'delete-btn';
+            del.textContent = '✕';
+            del.title = 'Delete habit';
+            del.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteHabit(habit.id);
+            });
+
+            nameRow.appendChild(nameEl);
+            nameRow.appendChild(del);
+
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.innerHTML = `<span class="pill">Streak: ${streak} day${streak===1?'':'s'}</span>
+                              <span class="pill">30-day: ${percent}%</span>`;
+
+            rowHeader.appendChild(nameRow);
+            rowHeader.appendChild(meta);
+            grid.appendChild(rowHeader);
+
+            days.forEach((d, idx) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell day-cell';
+                if (habit.history && habit.history[d]) cell.classList.add('done');
+                if (idx === days.length - 1) cell.title = `${d} (Today)`;
+                else cell.title = d;
+                cell.innerHTML = habit.history && habit.history[d] ? '✓' : '';
+                cell.addEventListener('click', () => toggleDay(habit.id, d));
+                grid.appendChild(cell);
+            });
+        });
+
+        gridWrapper.innerHTML = '';
+        gridWrapper.appendChild(grid);
+    }
+
+    addForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = habitInput.value.trim();
+        if (!val) return;
+        habits.push({ id: Date.now() + Math.random(), name: val, history: {} });
+        habitInput.value = '';
+        saveHabits();
+        render();
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>

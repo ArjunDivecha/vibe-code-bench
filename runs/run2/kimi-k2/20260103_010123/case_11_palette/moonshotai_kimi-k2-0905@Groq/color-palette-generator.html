@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .controls {
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease 0.4s both;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .palette-container {
+            padding: 0 30px 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            animation: fadeIn 1s ease 0.6s both;
+        }
+
+        .color-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .color-display {
+            height: 150px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .color-info {
+            padding: 20px;
+            background: white;
+        }
+
+        .hex-code {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rgb-code {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .color-name {
+            font-size: 0.85em;
+            color: #888;
+            font-style: italic;
+        }
+
+        .lock-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .lock-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        .lock-btn.locked {
+            background: #667eea;
+            color: white;
+        }
+
+        .favorites {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .favorites h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .favorite-palette {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .favorite-palette:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .mini-color {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .delete-fav {
+            margin-left: auto;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-fav:hover {
+            background: #ff5252;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes colorChange {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .color-changing {
+            animation: colorChange 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            .palette-container {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Color Palette Generator</h1>
+            <p class="subtitle">Discover beautiful color combinations</p>
+        </header>
+
+        <div class="controls">
+            <button onclick="generatePalette()">
+                <span>🎨</span> Generate New Palette
+            </button>
+            <button onclick="savePalette()">
+                <span>💾</span> Save Palette
+            </button>
+            <button onclick="clearFavorites()">
+                <span>🗑️</span> Clear Favorites
+            </button>
+        </div>
+
+        <div class="palette-container" id="paletteContainer"></div>
+
+        <div class="favorites">
+            <h2>Saved Palettes</h2>
+            <div id="favoritesContainer"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentPalette = [];
+        let lockedColors = [false, false, false, false, false];
+        let favorites = [];
+
+        // Color names mapping
+        const colorNames = {
+            'red': ['Crimson', 'Ruby', 'Cherry', 'Rose', 'Garnet'],
+            'orange': ['Amber', 'Coral', 'Sunset', 'Peach', 'Apricot'],
+            'yellow': ['Gold', 'Lemon', 'Canary', 'Honey', 'Sunflower'],
+            'green': ['Emerald', 'Forest', 'Mint', 'Lime', 'Jade'],
+            'blue': ['Sapphire', 'Ocean', 'Sky', 'Navy', 'Azure'],
+            'purple': ['Violet', 'Lavender', 'Plum', 'Orchid', 'Amethyst'],
+            'pink': ['Rose', 'Blush', 'Coral', 'Salmon', 'Flamingo'],
+            'brown': ['Chocolate', 'Coffee', 'Caramel', 'Mocha', 'Umber'],
+            'gray': ['Silver', 'Charcoal', 'Slate', 'Steel', 'Pearl'],
+            'black': ['Onyx', 'Jet', 'Ebony', 'Midnight', 'Obsidian'],
+            'white': ['Snow', 'Ivory', 'Pearl', 'Cream', 'Alabaster']
+        };
+
+        function getColorName(hex) {
+            const rgb = hexToRgb(hex);
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+            
+            let hueCategory;
+            if (hsl.h < 30) hueCategory = 'red';
+            else if (hsl.h < 60) hueCategory = 'orange';
+            else if (hsl.h < 90) hueCategory = 'yellow';
+            else if (hsl.h < 150) hueCategory = 'green';
+            else if (hsl.h < 210) hueCategory = 'blue';
+            else if (hsl.h < 270) hueCategory = 'purple';
+            else if (hsl.h < 330) hueCategory = 'pink';
+            else hueCategory = 'red';
+
+            if (hsl.s < 20) {
+                if (hsl.l < 20) return 'Black';
+                else if (hsl.l > 80) return 'White';
+                else hueCategory = 'gray';
+            }
+
+            const names = colorNames[hueCategory];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+
+        function generateRandomColor() {
+            return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+
+            return {
+                h: Math.round(h * 360),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        }
+
+        function generatePalette() {
+            currentPalette = [];
+            for (let i = 0; i < 5; i++) {
+                if (lockedColors[i] && currentPalette[i]) {
+                    currentPalette.push(currentPalette[i]);
+                } else {
+                    currentPalette.push(generateRandomColor());
+                }
+            }
+            renderPalette();
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('paletteContainer');
+            container.innerHTML = '';
+            
+            currentPalette.forEach((color, index) => {
+                const rgb = hexToRgb(color);
+                const colorCard = document.createElement('div');
+                colorCard.className = 'color-card';
+                colorCard.innerHTML = `
+                    <div class="color-display" style="background-color: ${color}">
+                        <button class="lock-btn ${lockedColors[index] ? 'locked' : ''}" 
+                                onclick="toggleLock(${index})">
+                            ${lockedColors[index] ? '🔒' : '🔓'}
+                        </button>
+                    </div>
+                    <div class="color-info">
+                        <div class="hex-code" onclick="copyToClipboard('${color}')">${color}</div>
+                        <div class="rgb-code" onclick="copyToClipboard('rgb(${rgb.r}, ${rgb.g}, ${rgb.b})')">
+                            RGB(${rgb.r}, ${rgb.g}, ${rgb.b})
+                        </div>
+                        <div class="color-name">${getColorName(color)}</div>
+                    </div>
+                `;
+                
+                const colorDisplay = colorCard.querySelector('.color-display');
+                colorDisplay.classList.add('color-changing');
+                setTimeout(() => colorDisplay.classList.remove('color-changing'), 500);
+                
+                container.appendChild(colorCard);
+            });
+        }
+
+        function toggleLock(index) {
+            lockedColors[index] = !lockedColors[index];
+            renderPalette();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${text} to clipboard!`);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function savePalette() {
+            const paletteData = {
+                colors: [...currentPalette],
+                timestamp: new Date().toLocaleString()
+            };
+            favorites.push(paletteData);
+            localStorage.setItem('colorFavorites', JSON.stringify(favorites));
+            renderFavorites();
+            showToast('Palette saved to favorites!');
+        }
+
+        function renderFavorites() {
+            const container = document.getElementById('favoritesContainer');
+            container.innerHTML = '';
+            
+            if (favorites.length === 0) {
+                container.innerHTML = '<p style="color: #888; text-align: center;">No saved palettes yet</p>';
+                return;
+            }
+            
+            favorites.forEach((palette, index) => {
+                const paletteDiv = document.createElement('div');
+                paletteDiv.className = 'favorite-palette';
+                paletteDiv.innerHTML = `
+                    ${palette.colors.map(color => 
+                        `<div class="mini-color" style="background-color: ${color}"></div>`
+                    ).join('')}
+                    <span style="margin-left: 10px; color: #666;">${palette.timestamp}</span>
+                    <button class="delete-fav" onclick="deleteFavorite(${index})">Delete</button>
+                `;
+                container.appendChild(paletteDiv);
+            });
+        }
+
+        function deleteFavorite(index) {
+            favorites.splice(index, 1);
+            localStorage.setItem('colorFavorites', JSON.stringify(favorites));
+            renderFavorites();
+            showToast('Palette removed from favorites');
+        }
+
+        function clearFavorites() {
+            if (confirm('Are you sure you want to clear all favorites?')) {
+                favorites = [];
+                localStorage.removeItem('colorFavorites');
+                renderFavorites();
+                showToast('All favorites cleared');
+            }
+        }
+
+        // Load favorites from localStorage
+        function loadFavorites() {
+            const saved = localStorage.getItem('colorFavorites');
+            if (saved) {
+                favorites = JSON.parse(saved);
+                renderFavorites();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                generatePalette();
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadFavorites();
+            generatePalette();
+        });
+    </script>
+</body>
+</html>

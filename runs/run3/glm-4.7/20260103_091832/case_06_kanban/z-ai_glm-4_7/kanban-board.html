@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .board {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .column-header h2 {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .column-header .card-count {
+            background: #667eea;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .add-card-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        .add-card-btn:hover {
+            background: #5568d3;
+        }
+
+        .cards-container {
+            min-height: 100px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: grab;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #ccc;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+            transform: rotate(3deg);
+        }
+
+        .card.priority-urgent {
+            border-left-color: #e74c3c;
+        }
+
+        .card.priority-medium {
+            border-left-color: #f39c12;
+        }
+
+        .card.priority-low {
+            border-left-color: #27ae60;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        .card-priority {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .card.drag-over {
+            background: #f0f0f0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .priority-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .priority-option {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .priority-option.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .priority-option.urgent {
+            border-left-color: #e74c3c;
+        }
+
+        .priority-option.medium {
+            border-left-color: #f39c12;
+        }
+
+        .priority-option.low {
+            border-left-color: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .board {
+                flex-direction: column;
+            }
+            
+            .column {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Kanban Board</h1>
+    
+    <div class="board">
+        <!-- To Do Column -->
+        <div class="column" data-column="todo">
+            <div class="column-header">
+                <h2>📝 To Do</h2>
+                <span class="card-count" id="todo-count">0</span>
+            </div>
+            <div class="cards-container" id="todo-cards"></div>
+            <button class="add-card-btn" onclick="openModal('todo')">+ Add Card</button>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="column" data-column="inprogress">
+            <div class="column-header">
+                <h2>🚀 In Progress</h2>
+                <span class="card-count" id="inprogress-count">0</span>
+            </div>
+            <div class="cards-container" id="inprogress-cards"></div>
+            <button class="add-card-btn" onclick="openModal('inprogress')">+ Add Card</button>
+        </div>
+
+        <!-- Done Column -->
+        <div class="column" data-column="done">
+            <div class="column-header">
+                <h2>✅ Done</h2>
+                <span class="card-count" id="done-count">0</span>
+            </div>
+            <div class="cards-container" id="done-cards"></div>
+            <button class="add-card-btn" onclick="openModal('done')">+ Add Card</button>
+        </div>
+    </div>
+
+    <!-- Add/Edit Card Modal -->
+    <div class="modal" id="card-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Add New Card</h2>
+            <form id="card-form">
+                <input type="hidden" id="card-id">
+                <input type="hidden" id="card-column">
+                
+                <div class="form-group">
+                    <label for="card-title-input">Title</label>
+                    <input type="text" id="card-title-input" required placeholder="Enter card title...">
+                </div>
+
+                <div class="form-group">
+                    <label for="card-description-input">Description (optional)</label>
+                    <textarea id="card-description-input" placeholder="Enter description..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Priority</label>
+                    <div class="priority-options">
+                        <div class="priority-option urgent" data-priority="urgent" onclick="selectPriority('urgent')">
+                            🔴 Urgent
+                        </div>
+                        <div class="priority-option medium selected" data-priority="medium" onclick="selectPriority('medium')">
+                            🟡 Medium
+                        </div>
+                        <div class="priority-option low" data-priority="low" onclick="selectPriority('low')">
+                            🟢 Low
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-danger" id="delete-btn" style="display: none;" onclick="deleteCard()">Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let cards = [];
+        let selectedPriority = 'medium';
+        let draggedCard = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCards();
+            renderCards();
+            setupDragAndDrop();
+        });
+
+        // Local Storage
+        function saveCards() {
+            localStorage.setItem('kanban-cards', JSON.stringify(cards));
+        }
+
+        function loadCards() {
+            const saved = localStorage.getItem('kanban-cards');
+            if (saved) {
+                cards = JSON.parse(saved);
+            }
+        }
+
+        // Render Cards
+        function renderCards() {
+            const columns = ['todo', 'inprogress', 'done'];
+            
+            columns.forEach(column => {
+                const container = document.getElementById(`${column}-cards`);
+                const columnCards = cards.filter(c => c.column === column);
+                
+                container.innerHTML = columnCards.map(card => `
+                    <div class="card priority-${card.priority}" 
+                         draggable="true" 
+                         data-id="${card.id}"
+                         onclick="editCard('${card.id}')">
+                        <div class="card-title">${escapeHtml(card.title)}</div>
+                        <div class="card-priority">${card.priority}</div>
+                    </div>
+                `).join('');
+
+                // Update count
+                document.getElementById(`${column}-count`).textContent = columnCards.length;
+            });
+
+            // Re-attach drag events
+            setupDragAndDrop();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Drag and Drop
+        function setupDragAndDrop() {
+            const cardElements = document.querySelectorAll('.card');
+            const containers = document.querySelectorAll('.cards-container');
+
+            cardElements.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+
+            containers.forEach(container => {
+                container.addEventListener('dragover', handleDragOver);
+                container.addEventListener('drop', handleDrop);
+                container.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedCard = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('drag-over');
+            });
+            draggedCard = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragLeave(e) {
+            e.target.closest('.card')?.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const container = e.target.closest('.cards-container');
+            if (!container || !draggedCard) return;
+
+            const cardId = draggedCard.dataset.id;
+            const newColumn = container.closest('.column').dataset.column;
+
+            // Update card column
+            const card = cards.find(c => c.id === cardId);
+            if (card) {
+                card.column = newColumn;
+                saveCards();
+                renderCards();
+            }
+        }
+
+        // Modal Functions
+        function openModal(column, cardId = null) {
+            const modal = document.getElementById('card-modal');
+            const form = document.getElementById('card-form');
+            const title = document.getElementById('modal-title');
+            const deleteBtn = document.getElementById('delete-btn');
+
+            form.reset();
+            document.getElementById('card-column').value = column;
+            selectPriority('medium');
+
+            if (cardId) {
+                const card = cards.find(c => c.id === cardId);
+                if (card) {
+                    title.textContent = 'Edit Card';
+                    document.getElementById('card-id').value = card.id;
+                    document.getElementById('card-title-input').value = card.title;
+                    document.getElementById('card-description-input').value = card.description || '';
+                    selectPriority(card.priority);
+                    deleteBtn.style.display = 'block';
+                }
+            } else {
+                title.textContent = 'Add New Card';
+                document.getElementById('card-id').value = '';
+                deleteBtn.style.display = 'none';
+            }
+
+            modal.classList.add('active');
+            document.getElementById('card-title-input').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('card-modal').classList.remove('active');
+        }
+
+        function selectPriority(priority) {
+            selectedPriority = priority;
+            document.querySelectorAll('.priority-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.priority === priority);
+            });
+        }
+
+        // Card CRUD
+        document.getElementById('card-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const cardId = document.getElementById('card-id').value;
+            const column = document.getElementById('card-column').value;
+            const title = document.getElementById('card-title-input').value.trim();
+            const description = document.getElementById('card-description-input').value.trim();
+
+            if (!title) return;
+
+            if (cardId) {
+                // Edit existing card
+                const card = cards.find(c => c.id === cardId);
+                if (card) {
+                    card.title = title;
+                    card.description = description;
+                    card.priority = selectedPriority;
+                }
+            } else {
+                // Add new card
+                const newCard = {
+                    id: Date.now().toString(),
+                    title,
+                    description,
+                    priority: selectedPriority,
+                    column,
+                    createdAt: new Date().toISOString()
+                };
+                cards.push(newCard);
+            }
+
+            saveCards();
+            renderCards();
+            closeModal();
+        });
+
+        function editCard(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (card) {
+                openModal(card.column, cardId);
+            }
+        }
+
+        function deleteCard() {
+            const cardId = document.getElementById('card-id').value;
+            if (cardId && confirm('Are you sure you want to delete this card?')) {
+                cards = cards.filter(c => c.id !== cardId);
+                saveCards();
+                renderCards();
+                closeModal();
+            }
+        }
+
+        // Close modal on outside click
+        document.getElementById('card-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'card-modal') {
+                closeModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Trivia Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .start-screen p {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 10px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            color: #667eea;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .score {
+            color: #764ba2;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .question-text {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 30px;
+            animation: slideIn 0.5s ease;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1em;
+            animation: slideIn 0.5s ease;
+        }
+
+        .option:hover:not(.correct):not(.wrong):not(.disabled) {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateX(10px);
+        }
+
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            animation: pulse 0.5s ease;
+        }
+
+        .option.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            animation: shake 0.5s ease;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .next-btn {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .next-btn.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-screen {
+            text-align: center;
+        }
+
+        .result-screen h1 {
+            margin-bottom: 30px;
+        }
+
+        .final-score {
+            font-size: 4em;
+            color: #667eea;
+            font-weight: bold;
+            margin: 30px 0;
+            animation: pulse 1s ease infinite;
+        }
+
+        .result-message {
+            font-size: 1.3em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .score-breakdown {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .score-breakdown p {
+            font-size: 1.2em;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .emoji {
+            font-size: 3em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div class="screen active" id="startScreen">
+            <h1>🎯 Epic Trivia Quiz</h1>
+            <p>Test your knowledge with 10 fun questions!</p>
+            <p>Are you ready to challenge yourself?</p>
+            <button class="btn" onclick="startQuiz()">Begin Quiz</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div class="screen" id="quizScreen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            
+            <div class="question-header">
+                <span class="question-number" id="questionNumber">Question 1/10</span>
+                <span class="score" id="scoreDisplay">Score: 0</span>
+            </div>
+
+            <div class="question-text" id="questionText"></div>
+
+            <div class="options" id="optionsContainer"></div>
+
+            <button class="btn next-btn" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div class="screen" id="resultScreen">
+            <h1>🎉 Quiz Complete!</h1>
+            <div class="emoji" id="resultEmoji"></div>
+            <div class="final-score" id="finalScore"></div>
+            <div class="result-message" id="resultMessage"></div>
+            <div class="score-breakdown">
+                <p><strong>Correct Answers:</strong> <span id="correctCount"></span></p>
+                <p><strong>Wrong Answers:</strong> <span id="wrongCount"></span></p>
+                <p><strong>Accuracy:</strong> <span id="accuracy"></span>%</p>
+            </div>
+            <button class="btn" onclick="restartQuiz()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "What is the only planet in our solar system that rotates clockwise?",
+                options: ["Mars", "Venus", "Uranus", "Neptune"],
+                correct: 1
+            },
+            {
+                question: "Which of these foods was originally blue before selective breeding?",
+                options: ["Tomatoes", "Carrots", "Bananas", "Oranges"],
+                correct: 1
+            },
+            {
+                question: "What is the only mammal capable of true flight?",
+                options: ["Flying Squirrel", "Sugar Glider", "Bat", "Colugo"],
+                correct: 2
+            },
+            {
+                question: "In which movie does the quote 'I'm going to make him an offer he can't refuse' appear?",
+                options: ["Goodfellas", "The Godfather", "Scarface", "Casino"],
+                correct: 1
+            },
+            {
+                question: "What is the hardest natural substance on Earth?",
+                options: ["Diamond", "Titanium", "Tungsten", "Corundum"],
+                correct: 0
+            },
+            {
+                question: "Which country has the most natural lakes?",
+                options: ["United States", "Russia", "Canada", "Finland"],
+                correct: 2
+            },
+            {
+                question: "Which ancient wonder of the world is still standing?",
+                options: ["Colossus of Rhodes", "Hanging Gardens of Babylon", "Great Pyramid of Giza", "Lighthouse of Alexandria"],
+                correct: 2
+            },
+            {
+                question: "Which band was Freddie Mercury the lead singer of?",
+                options: ["The Beatles", "Led Zeppelin", "Queen", "Pink Floyd"],
+                correct: 2
+            },
+            {
+                question: "What does 'HTTP' stand for?",
+                options: ["HyperText Transfer Protocol", "High Transfer Text Protocol", "HyperText Transmission Process", "High-Tech Transfer Protocol"],
+                correct: 0
+            },
+            {
+                question: "In chess, which piece can only move diagonally?",
+                options: ["Rook", "Knight", "Bishop", "Queen"],
+                correct: 2
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        function startQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            answered = false;
+            showScreen('quizScreen');
+            loadQuestion();
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function loadQuestion() {
+            answered = false;
+            const question = questions[currentQuestion];
+            
+            // Update progress bar
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Update question number and score
+            document.getElementById('questionNumber').textContent = `Question ${currentQuestion + 1}/10`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+            
+            // Update question text
+            document.getElementById('questionText').textContent = question.question;
+            
+            // Create options
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = option;
+                optionDiv.onclick = () => selectAnswer(index);
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // Hide next button
+            document.getElementById('nextBtn').classList.remove('show');
+        }
+
+        function selectAnswer(selectedIndex) {
+            if (answered) return;
+            
+            answered = true;
+            const question = questions[currentQuestion];
+            const options = document.querySelectorAll('.option');
+            
+            // Disable all options
+            options.forEach(option => option.classList.add('disabled'));
+            
+            // Show correct and wrong answers
+            if (selectedIndex === question.correct) {
+                options[selectedIndex].classList.add('correct');
+                score++;
+            } else {
+                options[selectedIndex].classList.add('wrong');
+                options[question.correct].classList.add('correct');
+            }
+            
+            // Update score display
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+            
+            // Show next button
+            document.getElementById('nextBtn').classList.add('show');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            showScreen('resultScreen');
+            
+            const percentage = (score / questions.length) * 100;
+            const wrongAnswers = questions.length - score;
+            
+            // Set final score
+            document.getElementById('finalScore').textContent = `${score}/${questions.length}`;
+            
+            // Set emoji and message based on score
+            let emoji, message;
+            if (percentage === 100) {
+                emoji = '🏆';
+                message = 'Perfect! You\'re a trivia master!';
+            } else if (percentage >= 80) {
+                emoji = '🌟';
+                message = 'Excellent! You really know your stuff!';
+            } else if (percentage >= 60) {
+                emoji = '😊';
+                message = 'Good job! You did well!';
+            } else if (percentage >= 40) {
+                emoji = '🤔';
+                message = 'Not bad! Keep practicing!';
+            } else {
+                emoji = '💪';
+                message = 'Keep trying! You\'ll get better!';
+            }
+            
+            document.getElementById('resultEmoji').textContent = emoji;
+            document.getElementById('resultMessage').textContent = message;
+            
+            // Set score breakdown
+            document.getElementById('correctCount').textContent = score;
+            document.getElementById('wrongCount').textContent = wrongAnswers;
+            document.getElementById('accuracy').textContent = percentage.toFixed(0);
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+    </script>
+</body>
+</html>

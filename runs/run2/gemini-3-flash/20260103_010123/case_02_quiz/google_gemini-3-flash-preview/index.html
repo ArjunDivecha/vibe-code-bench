@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Trivia Challenge</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        #app {
+            width: 90%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        h1 { margin-bottom: 1.5rem; color: var(--primary); }
+        p { line-height: 1.6; font-size: 1.1rem; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .options-container {
+            display: grid;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid var(--border);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: #f5f3ff;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success);
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--error);
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .score-badge {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="animate-in">
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>🧠 Trivia Master</h1>
+        <p>Test your knowledge across 10 random topics! Can you get a perfect score?</p>
+        <button class="btn" onclick="quiz.start()">Begin Quiz</button>
+    </div>
+
+    <!-- Question Screen -->
+    <div id="quiz-screen" class="hidden">
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="score-badge">Question <span id="q-number">1</span>/10</div>
+        <h2 id="question-text">Question goes here?</h2>
+        <div class="options-container" id="options">
+            <!-- Buttons injected here -->
+        </div>
+        <button id="next-btn" class="btn hidden" onclick="quiz.nextQuestion()" style="margin-top: 2rem; width: 100%;">Next Question</button>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="hidden">
+        <div class="result-emoji" id="result-emoji">🏆</div>
+        <h1 id="result-title">Quiz Finished!</h1>
+        <p>Your final score is:</p>
+        <h2 style="font-size: 3rem; margin: 1rem 0;"><span id="final-score">0</span> / 10</h2>
+        <p id="result-msg">Great job!</p>
+        <button class="btn" onclick="quiz.restart()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "Which planet is known as the 'Red Planet'?",
+            a: ["Venus", "Mars", "Jupiter", "Saturn"],
+            correct: 1
+        },
+        {
+            q: "What is the capital city of Japan?",
+            a: ["Seoul", "Beijing", "Tokyo", "Bangkok"],
+            correct: 2
+        },
+        {
+            q: "Which mammal is known to have the most powerful bite in the world?",
+            a: ["Grizzly Bear", "Hippopotamus", "Hyena", "Lion"],
+            correct: 1
+        },
+        {
+            q: "In what year did the Titanic sink?",
+            a: ["1905", "1912", "1920", "1898"],
+            correct: 1
+        },
+        {
+            q: "What is the chemical symbol for Gold?",
+            a: ["Gd", "Ag", "Au", "Pb"],
+            correct: 2
+        },
+        {
+            q: "Which artist painted the 'Mona Lisa'?",
+            a: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Claude Monet"],
+            correct: 2
+        },
+        {
+            q: "What is the smallest country in the world?",
+            a: ["Monaco", "Nauru", "Vatican City", "San Marino"],
+            correct: 2
+        },
+        {
+            q: "How many hearts does an octopus have?",
+            a: ["1", "3", "5", "8"],
+            correct: 1
+        },
+        {
+            q: "Which element is the most abundant in Earth's atmosphere?",
+            a: ["Oxygen", "Carbon Dioxide", "Hydrogen", "Nitrogen"],
+            correct: 3
+        },
+        {
+            q: "What is the hardest natural substance on Earth?",
+            a: ["Steel", "Diamond", "Quartz", "Graphite"],
+            correct: 1
+        }
+    ];
+
+    class Quiz {
+        constructor() {
+            this.currentQuestionIndex = 0;
+            this.score = 0;
+            this.answered = false;
+        }
+
+        start() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            this.showQuestion();
+        }
+
+        showQuestion() {
+            this.answered = false;
+            const qData = questions[this.currentQuestionIndex];
+            
+            // Update Progress
+            const progress = ((this.currentQuestionIndex) / questions.length) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            document.getElementById('q-number').innerText = this.currentQuestionIndex + 1;
+            
+            // Set Text
+            document.getElementById('question-text').innerText = qData.q;
+            
+            // Clear and build options
+            const container = document.getElementById('options');
+            container.innerHTML = '';
+            document.getElementById('next-btn').classList.add('hidden');
+
+            qData.a.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn animate-in';
+                btn.style.animationDelay = `${index * 0.1}s`;
+                btn.innerText = option;
+                btn.onclick = () => this.handleAnswer(index, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        handleAnswer(selectedIndex, btnElement) {
+            if (this.answered) return;
+            this.answered = true;
+
+            const correctIndex = questions[this.currentQuestionIndex].correct;
+            const buttons = document.querySelectorAll('.option-btn');
+
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct');
+                this.score++;
+            } else {
+                btnElement.classList.add('wrong');
+                buttons[correctIndex].classList.add('correct');
+            }
+
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Show next button
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        nextQuestion() {
+            this.currentQuestionIndex++;
+            if (this.currentQuestionIndex < questions.length) {
+                this.showQuestion();
+            } else {
+                this.showResults();
+            }
+        }
+
+        showResults() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = this.score;
+            
+            const emoji = document.getElementById('result-emoji');
+            const msg = document.getElementById('result-msg');
+            
+            if (this.score === 10) {
+                emoji.innerText = "👑";
+                msg.innerText = "Absolute Perfection! You're a genius!";
+            } else if (this.score > 7) {
+                emoji.innerText = "🌟";
+                msg.innerText = "Amazing job! You really know your stuff.";
+            } else if (this.score > 4) {
+                emoji.innerText = "👍";
+                msg.innerText = "Not bad! A bit more practice and you'll be a pro.";
+            } else {
+                emoji.innerText = "😅";
+                msg.innerText = "Better luck next time! Want to try again?";
+            }
+        }
+
+        restart() {
+            this.currentQuestionIndex = 0;
+            this.score = 0;
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+    }
+
+    const quiz = new Quiz();
+</script>
+</body>
+</html>

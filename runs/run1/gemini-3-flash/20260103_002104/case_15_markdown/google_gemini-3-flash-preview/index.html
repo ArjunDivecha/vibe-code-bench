@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Live Editor</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --header-bg: #f8f9fa;
+            --editor-bg: #ffffff;
+            --preview-bg: #ffffff;
+            --accent-color: #007bff;
+            --code-bg: #f4f4f4;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #444444;
+            --header-bg: #2d2d2d;
+            --editor-bg: #1e1e1e;
+            --preview-bg: #1e1e1e;
+            --accent-color: #3794ff;
+            --code-bg: #2d2d2d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        header {
+            height: 50px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 6px 12px;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100% - 50px);
+            width: 100%;
+        }
+
+        #editor, #preview {
+            flex: 1;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #editor {
+            border: none;
+            border-right: 1px solid var(--border-color);
+            resize: none;
+            outline: none;
+            background-color: var(--editor-bg);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #preview {
+            background-color: var(--preview-bg);
+        }
+
+        /* Markdown Styles */
+        #preview h1 { border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview code { background-color: var(--code-bg); padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        #preview pre { background-color: var(--code-bg); padding: 16px; overflow: auto; border-radius: 6px; }
+        #preview pre code { background-color: transparent; padding: 0; }
+        #preview blockquote { border-left: 4px solid #ddd; color: #666; padding-left: 1em; margin-left: 0; }
+        #preview img { max-width: 100%; }
+        #preview table { border-collapse: collapse; width: 100%; }
+        #preview th, #preview td { border: 1px solid var(--border-color); padding: 6px 13px; }
+        
+        [data-theme="dark"] #preview blockquote { border-left-color: #555; color: #aaa; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">MD Editor</div>
+    <div class="toolbar">
+        <button id="themeToggle">Toggle Dark Mode</button>
+        <button id="exportBtn">Export HTML</button>
+        <button id="clearBtn" style="background-color: #dc3545;">Clear</button>
+    </div>
+</header>
+
+<div class="container">
+    <textarea id="editor" placeholder="Type your markdown here..."></textarea>
+    <div id="preview"></div>
+</div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const themeToggle = document.getElementById('themeToggle');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // Simple Markdown Parser Logic
+    function parseMarkdown(md) {
+        let html = md
+            // Escape HTML characters to prevent XSS
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Blockquotes (Simple)
+        html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+        
+        // Headers
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+        // Code Blocks (Triple Backticks)
+        html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
+
+        // Bold and Italic
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+        // Links
+        html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+        // Inline Code
+        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+        // Lists (Unordered)
+        html = html.replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>');
+        html = html.replace(/<\/ul>\s?<ul>/g, ''); // Join adjacent lists
+
+        // Lists (Ordered)
+        html = html.replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>');
+        html = html.replace(/<\/ol>\s?<ol>/g, ''); // Join adjacent lists
+
+        // Paragraphs (Simple line breaks)
+        html = html.replace(/\n\n/g, '<br><br>');
+
+        return html;
+    }
+
+    function updatePreview() {
+        const content = editor.value;
+        preview.innerHTML = parseMarkdown(content);
+        localStorage.setItem('markdown_content', content);
+    }
+
+    // Event Listeners
+    editor.addEventListener('input', updatePreview);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    exportBtn.addEventListener('click', () => {
+        const content = preview.innerHTML;
+        const fullHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Exported Markdown</title>
+<style>
+    body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    blockquote { border-left: 4px solid #ccc; padding-left: 15px; color: #666; }
+    code { background: #eee; padding: 2px 4px; }
+</style>
+</head>
+<body>
+    ${content}
+</body>
+</html>`;
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'exported_content.html';
+        a.click();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        if (confirm('Clear all content?')) {
+            editor.value = '';
+            updatePreview();
+        }
+    });
+
+    // Initialization
+    window.onload = () => {
+        // Load Content
+        const savedContent = localStorage.getItem('markdown_content');
+        if (savedContent) {
+            editor.value = savedContent;
+        } else {
+            editor.value = "# Welcome\n\nThis is a **live** markdown editor.\n\n- Support for lists\n- Support for `code`\n\n> Try writing something!";
+        }
+        
+        // Load Theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        
+        updatePreview();
+    };
+
+    // Tab key support in textarea
+    editor.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+</script>
+
+</body>
+</html>

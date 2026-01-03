@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Control Center</title>
+<style>
+:root{
+    --glass: rgba(255,255,255,0.08);
+    --glass-strong: rgba(255,255,255,0.16);
+    --border: rgba(255,255,255,0.15);
+    --text: #eaf2ff;
+    --muted: #cdd8f0;
+    --accent: #7ad7f0;
+    --accent-2: #a58bff;
+    --bg1: #0f1729;
+    --bg2: #10172d;
+    --shadow: 0 20px 60px rgba(0,0,0,0.45);
+    --radius: 16px;
+    --transition: 200ms ease;
+}
+*{box-sizing:border-box;}
+body{
+    margin:0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(120% 120% at 20% 20%, rgba(122,215,240,0.2), transparent),
+                radial-gradient(100% 120% at 80% 0%, rgba(165,139,255,0.25), transparent),
+                radial-gradient(80% 100% at 80% 80%, rgba(255,161,130,0.15), transparent),
+                linear-gradient(135deg,#0c1323,#0c162b 50%, #0c1323);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+}
+::-webkit-scrollbar{
+    width: 10px; height: 10px;
+}
+::-webkit-scrollbar-thumb{
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+}
+.sidebar{
+    position: sticky;
+    top:0;
+    height: 100vh;
+    padding: 26px 20px;
+    backdrop-filter: blur(22px);
+    background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border-right: 1px solid var(--border);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.03);
+}
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:24px;
+}
+.brand-circle{
+    width:44px;height:44px;
+    border-radius:14px;
+    background: linear-gradient(145deg,#7ad7f0,#a58bff);
+    box-shadow: 0 10px 30px rgba(122,215,240,0.4);
+}
+.brand h1{
+    margin:0;font-size:18px;letter-spacing:0.5px;font-weight:700;
+}
+.nav{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.nav button{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: transparent;
+    color: var(--text);
+    border:1px solid transparent;
+    padding:12px 14px;
+    border-radius:12px;
+    font-size:14px;
+    cursor:pointer;
+    transition: transform var(--transition), border var(--transition), background var(--transition), box-shadow var(--transition);
+}
+.nav button .icon{
+    width:34px;height:34px;border-radius:12px;
+    display:grid;place-items:center;
+    background: rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+.nav button:hover{
+    transform: translateX(4px);
+    background: rgba(255,255,255,0.05);
+    border-color: var(--border);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+.nav button.active{
+    background: linear-gradient(135deg, rgba(122,215,240,0.25), rgba(165,139,255,0.25));
+    border-color: rgba(255,255,255,0.22);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.sidebar .section-title{
+    margin:26px 10px 10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:11px;
+    color: var(--muted);
+}
+.sidebar .mini-card{
+    background: var(--glass);
+    border: 1px solid var(--border);
+    padding:16px;
+    border-radius:14px;
+    margin-top:10px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+}
+.mini-card p{margin:6px 0 0;color: var(--muted);font-size:13px;}
+main{
+    padding:24px 28px 32px;
+    overflow-y:auto;
+}
+.top-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
+}
+h2{margin:0;font-weight:700;letter-spacing:0.4px;}
+.action-group{
+    display:flex;gap:10px;align-items:center;
+}
+.btn{
+    border:1px solid var(--border);
+    background: var(--glass);
+    color: var(--text);
+    padding:12px 16px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:600;
+    backdrop-filter: blur(14px);
+    transition: transform var(--transition), box-shadow var(--transition), border var(--transition), background var(--transition);
+}
+.btn.primary{
+    background: linear-gradient(135deg,#7ad7f0,#a58bff);
+    border: none;
+    box-shadow: 0 12px 26px rgba(122,215,240,0.35);
+    color: #0c1323;
+}
+.btn:hover{
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.18);
+    border-color: rgba(255,255,255,0.3);
+}
+.grid{
+    display:grid;
+    gap:18px;
+}
+.cards-2{grid-template-columns: repeat(auto-fit,minmax(320px,1fr));}
+.cards-3{grid-template-columns: repeat(auto-fit,minmax(220px,1fr));}
+.widget{
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding:18px;
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow);
+    transition: transform var(--transition), box-shadow var(--transition), border var(--transition);
+}
+.widget:hover{
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.22);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+}
+.widget h3{
+    margin-top:0;margin-bottom:10px;
+    font-size:16px;
+    letter-spacing:0.3px;
+}
+.subtle{
+    color: var(--muted);
+    font-size:13px;
+}
+.project-card{
+    padding:14px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    margin-bottom:12px;
+    transition: transform var(--transition), border var(--transition);
+}
+.project-card:hover{
+    transform: translateY(-2px);
+    border-color: rgba(122,215,240,0.4);
+}
+.project-title{
+    display:flex;align-items:center;gap:10px;
+    font-weight:600;
+}
+.badge{
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:10px;
+    background: rgba(122,215,240,0.18);
+    color: var(--text);
+    border:1px solid rgba(122,215,240,0.4);
+}
+.progress{
+    margin-top:10px;
+    background: rgba(255,255,255,0.06);
+    border-radius:20px;
+    height:9px;
+    position:relative;
+    overflow:hidden;
+}
+.progress span{
+    position:absolute;
+    top:0;left:0;height:100%;
+    border-radius:20px;
+    background: linear-gradient(90deg,#7ad7f0,#a58bff);
+    box-shadow: 0 6px 18px rgba(122,215,240,0.35);
+}
+.timeline{
+    position:relative;
+    padding-left:16px;
+}
+.timeline::before{
+    content:'';
+    position:absolute;left:6px;top:6px;bottom:6px;
+    width:2px;
+    background: linear-gradient(180deg,rgba(122,215,240,0.5),rgba(165,139,255,0.3));
+}
+.timeline-item{
+    position:relative;
+    padding:10px 12px 12px 22px;
+    margin-bottom:10px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+}
+.timeline-item::before{
+    content:'';
+    position:absolute;
+    width:12px;height:12px;
+    border-radius:50%;
+    background: linear-gradient(135deg,#7ad7f0,#a58bff);
+    left:-0px;top:14px;
+    box-shadow:0 6px 16px rgba(122,215,240,0.4);
+}
+.links-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+    gap:12px;
+}
+.link-card{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:12px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    align-items:flex-start;
+    cursor:pointer;
+    transition: transform var(--transition), border var(--transition), box-shadow var(--transition), background var(--transition);
+}
+.link-card .icon{
+    width:40px;height:40px;
+    border-radius:10px;
+    background: linear-gradient(135deg,rgba(122,215,240,0.25),rgba(165,139,255,0.4));
+    display:grid;place-items:center;
+    font-size:18px;
+}
+.link-card:hover{
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.24);
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+}
+.todo{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.todo-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    background: rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    transition: background var(--transition), transform var(--transition);
+}
+.todo-item:hover{background: rgba(255,255,255,0.08); transform: translateY(-1px);}
+.todo-item input[type="checkbox"]{accent-color:#7ad7f0; width:16px;height:16px;}
+.todo-item.done .text{text-decoration:line-through;color:var(--muted);}
+.todo-add{
+    display:flex;gap:8px;margin-top:8px;
+}
+.todo-add input{
+    flex:1;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    padding:10px 12px;
+    outline:none;
+}
+.todo-add button{
+    border:none;
+    padding:10px 14px;
+    border-radius:10px;
+    background: linear-gradient(135deg,#7ad7f0,#a58bff);
+    color:#0c1323;
+    font-weight:700;
+    cursor:pointer;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+.todo-add button:hover{transform: translateY(-1px);box-shadow:0 8px 18px rgba(122,215,240,0.3);}
+.tagline{
+    color:var(--muted);
+    margin:4px 0 0;
+}
+.section{display:none;}
+.section.active{display:block;}
+.modal-backdrop{
+    position:fixed; inset:0;
+    background: rgba(0,0,0,0.45);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:10;
+    backdrop-filter: blur(4px);
+}
+.modal{
+    width:360px;
+    padding:20px;
+    border-radius:16px;
+    background: rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    backdrop-filter: blur(18px);
+    animation: pop 200ms ease;
+}
+@keyframes pop{from{transform:scale(0.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal label{display:block;margin:10px 0 6px;color:var(--muted);}
+.modal input, .modal textarea{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color:var(--text);
+    outline:none;
+}
+.modal textarea{resize:vertical;min-height:80px;}
+.modal .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
+.status-pill{
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    font-size:12px;
+}
+.badge-small{
+    padding:2px 8px; border-radius:8px;
+    background: rgba(122,215,240,0.16);
+    border:1px solid rgba(122,215,240,0.4);
+    font-size:11px;
+}
+</style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-circle"></div>
+            <div>
+                <h1>Control Center</h1>
+                <div class="tagline">Projects at a glance</div>
+            </div>
+        </div>
+        <div class="nav">
+            <button class="active" data-target="home"><div class="icon">🏠</div>Home</button>
+            <button data-target="projects"><div class="icon">📁</div>Projects</button>
+            <button data-target="settings"><div class="icon">⚙️</div>Settings</button>
+        </div>
+        <div class="section-title">Insights</div>
+        <div class="mini-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Capacity</span>
+                <span class="badge-small">72%</span>
+            </div>
+            <p>Team bandwidth healthy. Keep momentum.</p>
+        </div>
+        <div class="mini-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span>Sprint</span>
+                <span class="badge-small">5d left</span>
+            </div>
+            <p>Velocity trending up 12% this week.</p>
+        </div>
+    </aside>
+
+    <main>
+        <div class="top-row">
+            <div>
+                <h2 id="view-title">Home</h2>
+                <div class="tagline" id="view-subtitle">High-level overview of ongoing work.</div>
+            </div>
+            <div class="action-group">
+                <button class="btn" id="refresh-btn">⟳ Refresh</button>
+                <button class="btn primary" id="new-project-btn">＋ New Project</button>
+            </div>
+        </div>
+
+        <!-- HOME SECTION -->
+        <section class="section active" id="home-section">
+            <div class="grid cards-2">
+                <div class="widget" id="active-projects">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3>Active Projects</h3>
+                        <span class="status-pill">4 running</span>
+                    </div>
+                    <div id="project-list"></div>
+                </div>
+                <div class="widget">
+                    <h3>Recent Activity</h3>
+                    <div class="timeline" id="activity-timeline">
+                        <!-- timeline items -->
+                    </div>
+                </div>
+            </div>
+            <div class="grid cards-2" style="margin-top:18px;">
+                <div class="widget">
+                    <h3>Quick Links</h3>
+                    <div class="links-grid" id="links-grid"></div>
+                </div>
+                <div class="widget">
+                    <h3>Task List</h3>
+                    <div class="todo" id="todo-list"></div>
+                    <div class="todo-add">
+                        <input type="text" id="todo-input" placeholder="Add a task and press Enter">
+                        <button id="todo-add-btn">Add</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROJECTS SECTION -->
+        <section class="section" id="projects-section">
+            <div class="grid cards-2">
+                <div class="widget">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <h3>All Projects</h3>
+                        <span class="status-pill" id="projects-count">0 items</span>
+                    </div>
+                    <div id="projects-gallery" class="grid cards-2" style="margin-top:12px;"></div>
+                </div>
+                <div class="widget">
+                    <h3>Recent Activity</h3>
+                    <div class="timeline" id="projects-activity"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SETTINGS SECTION -->
+        <section class="section" id="settings-section">
+            <div class="grid cards-3">
+                <div class="widget">
+                    <h3>Appearance</h3>
+                    <p class="subtle">Adjust accent intensity.</p>
+                    <div style="margin-top:10px;">
+                        <label class="subtle">Glass Opacity</label>
+                        <input type="range" min="4" max="20" value="8" id="opacity-range" style="width:100%;">
+                    </div>
+                </div>
+                <div class="widget">
+                    <h3>Notifications</h3>
+                    <p class="subtle">Receive project updates.</p>
+                    <div class="todo-item">
+                        <input type="checkbox" id="email-notify" checked>
+                        <span>Email summaries</span>
+                    </div>
+                    <div class="todo-item">
+                        <input type="checkbox" id="push-notify">
+                        <span>Push alerts</span>
+                    </div>
+                </div>
+                <div class="widget">
+                    <h3>About</h3>
+                    <p class="subtle">Crafted UI for project control, featuring glassmorphism and smooth interactions.</p>
+                    <div class="badge" style="margin-top:8px;">v1.0</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL -->
+    <div class="modal-backdrop" id="modal">
+        <div class="modal">
+            <h3 style="margin-top:0;">New Project</h3>
+            <label>Name</label>
+            <input type="text" id="modal-name" placeholder="Project Phoenix">
+            <label>Description</label>
+            <textarea id="modal-desc" placeholder="Short description"></textarea>
+            <label>Initial Progress (%)</label>
+            <input type="number" id="modal-progress" min="0" max="100" value="20">
+            <div class="actions">
+                <button class="btn" id="modal-cancel">Cancel</button>
+                <button class="btn primary" id="modal-save">Create</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const navButtons = document.querySelectorAll('.nav button');
+const sections = {
+    home: document.getElementById('home-section'),
+    projects: document.getElementById('projects-section'),
+    settings: document.getElementById('settings-section')
+};
+const viewTitle = document.getElementById('view-title');
+const viewSubtitle = document.getElementById('view-subtitle');
+const subtitles = {
+    home:'High-level overview of ongoing work.',
+    projects:'Dive into detailed project views and milestones.',
+    settings:'Tailor the experience to your preferences.'
+};
+navButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+        navButtons.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.dataset.target;
+        Object.keys(sections).forEach(key=>{
+            sections[key].classList.toggle('active', key===target);
+        });
+        viewTitle.textContent = target.charAt(0).toUpperCase()+target.slice(1);
+        viewSubtitle.textContent = subtitles[target] || '';
+    });
+});
+
+const activeProjectsEl = document.getElementById('project-list');
+const projectsGallery = document.getElementById('projects-gallery');
+let projects = [
+    {name:'Aurora UI', status:'On Track', progress:64, desc:'Design system revamp'},
+    {name:'Nimbus API', status:'Blocked', progress:42, desc:'Gateway integration'},
+    {name:'Pulse Analytics', status:'On Track', progress:78, desc:'Metrics pipeline'},
+    {name:'Atlas Mobile', status:'At Risk', progress:33, desc:'Offline sync'}
+];
+function renderProjects(){
+    activeProjectsEl.innerHTML='';
+    projectsGallery.innerHTML='';
+    projects.forEach((p,i)=>{
+        const card=document.createElement('div');
+        card.className='project-card';
+        card.innerHTML=`
+            <div class="project-title">
+                <span>${p.name}</span>
+                <span class="badge">${p.status}</span>
+            </div>
+            <div class="subtle">${p.desc || ''}</div>
+            <div class="progress"><span style="width:${p.progress}%;"></span></div>
+        `;
+        activeProjectsEl.appendChild(card);
+
+        const galleryCard=document.createElement('div');
+        galleryCard.className='project-card';
+        galleryCard.innerHTML=`
+            <div class="project-title" style="justify-content:space-between;">
+                <span>${p.name}</span>
+                <span class="badge-small">${p.progress}%</span>
+            </div>
+            <div class="subtle">${p.desc || ''}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                <div class="status-pill">${p.status}</div>
+                <div class="badge-small">ID-${i+1}</div>
+            </div>
+        `;
+        projectsGallery.appendChild(galleryCard);
+    });
+    document.getElementById('projects-count').textContent=`${projects.length} items`;
+}
+renderProjects();
+
+const timelineData = [
+    {title:'UX review complete', time:'Today • 10:20', detail:'Feedback merged into Aurora UI'},
+    {title:'QA sign-off', time:'Today • 09:05', detail:'Atlas Mobile build #142'},
+    {title:'API deployment', time:'Yesterday • 18:40', detail:'Nimbus API v2.3.1 to staging'},
+    {title:'New epic created', time:'2d ago', detail:'Pulse Analytics ingestion'},
+];
+function renderTimeline(id){
+    const container=document.getElementById(id);
+    container.innerHTML='';
+    timelineData.forEach(item=>{
+        const el=document.createElement('div');
+        el.className='timeline-item';
+        el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;">
+            <strong>${item.title}</strong>
+            <span class="subtle" style="font-size:12px;">${item.time}</span>
+        </div>
+        <div class="subtle">${item.detail}</div>`;
+        container.appendChild(el);
+    });
+}
+renderTimeline('activity-timeline');
+renderTimeline('projects-activity');
+
+const links = [
+    {icon:'📊', label:'Analytics'},
+    {icon:'💬', label:'Messages'},
+    {icon:'🗂️', label:'Repository'},
+    {icon:'✅', label:'Approvals'},
+    {icon:'📅', label:'Calendar'},
+    {icon:'🛠️', label:'Admin'},
+];
+const linksGrid=document.getElementById('links-grid');
+links.forEach(link=>{
+    const el=document.createElement('div');
+    el.className='link-card';
+    el.innerHTML=`<div class="icon">${link.icon}</div><div>${link.label}</div>`;
+    el.addEventListener('click',()=>{
+        flashStatus(`Opening ${link.label}...`);
+    });
+    linksGrid.appendChild(el);
+});
+
+function flashStatus(message){
+    const status=document.createElement('div');
+    status.textContent=message;
+    status.style.position='fixed';
+    status.style.bottom='20px';
+    status.style.right='20px';
+    status.style.padding='12px 14px';
+    status.style.borderRadius='12px';
+    status.style.background='rgba(255,255,255,0.12)';
+    status.style.border='1px solid rgba(255,255,255,0.2)';
+    status.style.backdropFilter='blur(12px)';
+    status.style.boxShadow='0 12px 28px rgba(0,0,0,0.25)';
+    status.style.zIndex='11';
+    document.body.appendChild(status);
+    setTimeout(()=>status.style.opacity='0',1200);
+    setTimeout(()=>status.remove(),1500);
+}
+
+// Task List with localStorage
+const todoListEl=document.getElementById('todo-list');
+const todoInput=document.getElementById('todo-input');
+const todoAddBtn=document.getElementById('todo-add-btn');
+const TASKS_KEY='pcc_tasks';
+function loadTasks(){
+    try{
+        return JSON.parse(localStorage.getItem(TASKS_KEY)) || [
+            {text:'Review sprint goals', done:false},
+            {text:'Sync with design team', done:false},
+            {text:'Approve deployment window', done:true}
+        ];
+    }catch(e){return[];}
+}
+let tasks=loadTasks();
+function saveTasks(){localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));}
+function renderTasks(){
+    todoListEl.innerHTML='';
+    tasks.forEach((t,idx)=>{
+        const item=document.createElement('div');
+        item.className='todo-item'+(t.done?' done':'');
+        item.innerHTML=`<input type="checkbox" ${t.done?'checked':''}>
+                        <span class="text">${t.text}</span>
+                        <span style="margin-left:auto;cursor:pointer;color:var(--muted);" title="Remove">✕</span>`;
+        const checkbox=item.querySelector('input');
+        checkbox.addEventListener('change',()=>{tasks[idx].done=!tasks[idx].done;saveTasks();renderTasks();});
+        item.querySelector('span[title="Remove"]').addEventListener('click',()=>{tasks.splice(idx,1);saveTasks();renderTasks();});
+        todoListEl.appendChild(item);
+    });
+}
+function addTask(){
+    const text=todoInput.value.trim();
+    if(!text) return;
+    tasks.unshift({text, done:false});
+    saveTasks(); renderTasks(); todoInput.value='';
+}
+todoAddBtn.addEventListener('click', addTask);
+todoInput.addEventListener('keydown',e=>{if(e.key==='Enter'){addTask();}});
+renderTasks();
+
+// Modal functionality
+const modal=document.getElementById('modal');
+const modalName=document.getElementById('modal-name');
+const modalDesc=document.getElementById('modal-desc');
+const modalProg=document.getElementById('modal-progress');
+document.getElementById('new-project-btn').addEventListener('click',()=>{modal.style.display='flex';modalName.focus();});
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+modal.addEventListener('click', e=>{if(e.target===modal) closeModal();});
+function closeModal(){
+    modal.style.display='none';
+    modalName.value=''; modalDesc.value=''; modalProg.value=20;
+}
+document.getElementById('modal-save').addEventListener('click', ()=>{
+    const name=modalName.value.trim();
+    const desc=modalDesc.value.trim();
+    let prog=parseInt(modalProg.value||'0',10);
+    if(!name) {flashStatus('Name required'); return;}
+    prog=Math.max(0, Math.min(100, prog));
+    projects.unshift({name, status:'New', progress:prog, desc});
+    renderProjects();
+    flashStatus('Project created');
+    closeModal();
+});
+
+// Refresh micro animation
+document.getElementById('refresh-btn').addEventListener('click',()=>{
+    flashStatus('Refreshing data...');
+    // playful pulse on widgets
+    document.querySelectorAll('.widget').forEach(w=>{
+        w.animate([{transform:'scale(1)'},{transform:'scale(1.01)'},{transform:'scale(1)'}],{duration:300});
+    });
+});
+
+// Settings appearance control
+const opacityRange=document.getElementById('opacity-range');
+opacityRange.addEventListener('input',()=>{
+    const val=opacityRange.value;
+    document.documentElement.style.setProperty('--glass', `rgba(255,255,255,0.${val.toString().padStart(2,'0')})`);
+});
+
+// Demo hover micro animation on link cards (already subtle)
+</script>
+</body>
+</html>

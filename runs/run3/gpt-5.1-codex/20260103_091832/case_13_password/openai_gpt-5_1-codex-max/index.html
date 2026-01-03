@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Password Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+    --bg:#0b1220;
+    --panel:#10192b;
+    --accent:#5be7c4;
+    --accent2:#6ba8ff;
+    --text:#e8ecf2;
+    --muted:#9aadc6;
+    --danger:#ff7b92;
+}
+*{box-sizing:border-box;}
+body{
+    margin:0;
+    font-family:"Inter",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(circle at 20% 20%, rgba(91,231,196,0.18), transparent 30%),
+               radial-gradient(circle at 80% 0%, rgba(107,168,255,0.16), transparent 30%),
+               radial-gradient(circle at 50% 80%, rgba(255,123,146,0.12), transparent 30%),
+               var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+}
+.container{
+    width: min(1100px, 100%);
+    background:rgba(16,25,43,0.8);
+    border:1px solid rgba(255,255,255,0.06);
+    box-shadow:0 20px 80px rgba(0,0,0,0.45);
+    border-radius:24px;
+    padding:28px;
+    backdrop-filter: blur(16px);
+}
+.header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+}
+.title{
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:0.3px;
+}
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:14px;
+    background:linear-gradient(120deg, rgba(91,231,196,0.12), rgba(107,168,255,0.12));
+    border:1px solid rgba(255,255,255,0.06);
+    color:var(--muted);
+    font-size:13px;
+}
+.grid{
+    display:grid;
+    grid-template-columns:2fr 1.2fr;
+    gap:20px;
+    margin-top:20px;
+}
+.card{
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.3);
+}
+label{
+    color:var(--muted);
+}
+.row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+.controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:12px;
+}
+.switch{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    user-select:none;
+}
+.switch input{display:none;}
+.toggle{
+    width:44px;height:24px;
+    background:#1b2742;
+    border-radius:999px;
+    position:relative;
+    transition:all .25s ease;
+    border:1px solid rgba(255,255,255,0.08);
+}
+.toggle::after{
+    content:"";
+    position:absolute;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    top:2px;left:3px;
+    transition:all .25s ease;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+.switch input:checked + .toggle{
+    background:linear-gradient(120deg, var(--accent), var(--accent2));
+    border-color:transparent;
+}
+.switch input:checked + .toggle::after{
+    transform:translateX(18px);
+}
+.slider-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+.slider-row input[type=range]{
+    flex:1;
+    accent-color:var(--accent);
+}
+.value-pill{
+    padding:6px 10px;
+    background:#18233c;
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:10px;
+    font-weight:600;
+    color:var(--accent);
+    min-width:42px;
+    text-align:center;
+}
+.btn{
+    padding:12px 16px;
+    border:none;
+    border-radius:12px;
+    font-weight:700;
+    color:#0b1220;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .2s ease;
+    box-shadow:0 10px 30px rgba(91,231,196,0.3);
+}
+.btn:active{transform:translateY(1px);}
+.btn.secondary{
+    background:#1a243b;
+    color:var(--text);
+    box-shadow:none;
+    border:1px solid rgba(255,255,255,0.05);
+}
+.password-display{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#0f172a;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:14px;
+    font-family:"SF Mono","Roboto Mono",monospace;
+    letter-spacing:0.2px;
+    overflow:auto;
+}
+.password-text{
+    flex:1;
+    word-break:break-all;
+    font-size:16px;
+}
+.status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+.mini{
+    font-size:12px;
+    color:var(--muted);
+}
+.strength{
+    width:100%;
+    height:12px;
+    background:#121c30;
+    border-radius:999px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.05);
+}
+.strength-fill{
+    height:100%;
+    width:30%;
+    background:linear-gradient(90deg, var(--danger), var(--accent));
+    border-radius:999px;
+    transition:width .25s ease;
+}
+.strength-label{
+    font-weight:700;
+    color:var(--muted);
+}
+.badge-chip{
+    padding:4px 10px;
+    border-radius:10px;
+    background:rgba(91,231,196,0.1);
+    border:1px solid rgba(91,231,196,0.35);
+    color:var(--accent);
+    font-weight:600;
+}
+.list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    background:#0f172a;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.05);
+}
+.item .text{
+    flex:1;
+    font-family:"SF Mono","Roboto Mono",monospace;
+    color:var(--text);
+    word-break:break-all;
+}
+small{color:var(--muted);}
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+input[type=number]{
+    width:80px;
+    background:#0f172a;
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:10px;
+    padding:8px 10px;
+    color:var(--text);
+    font-weight:700;
+}
+@media(max-width:900px){
+    .grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="title">Password Generator</div>
+        <div class="badge">Secure • Client-side • No storage outside your browser</div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="row" style="margin-bottom:12px;">
+                <div style="font-weight:700;">Password Options</div>
+            </div>
+            <div class="slider-row">
+                <label for="length">Length</label>
+                <input type="range" id="length" min="8" max="32" value="16">
+                <div class="value-pill" id="lengthValue">16</div>
+            </div>
+
+            <div class="controls" style="margin:14px 0;">
+                <label class="switch">Uppercase
+                    <input type="checkbox" id="upper" checked>
+                    <span class="toggle"></span>
+                </label>
+                <label class="switch">Lowercase
+                    <input type="checkbox" id="lower" checked>
+                    <span class="toggle"></span>
+                </label>
+                <label class="switch">Numbers
+                    <input type="checkbox" id="numbers" checked>
+                    <span class="toggle"></span>
+                </label>
+                <label class="switch">Symbols
+                    <input type="checkbox" id="symbols" checked>
+                    <span class="toggle"></span>
+                </label>
+            </div>
+
+            <div class="flex-between" style="gap:10px; flex-wrap:wrap;">
+                <div class="row">
+                    <label for="count">Generate</label>
+                    <input type="number" id="count" min="1" max="10" value="3">
+                    <small>passwords</small>
+                </div>
+                <div class="row" style="gap:8px;">
+                    <button class="btn" id="generateBtn">Generate</button>
+                    <button class="btn secondary" id="copyBtn">Copy</button>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <div class="password-display">
+                    <div class="password-text" id="mainPassword">Click generate to create a password.</div>
+                    <button class="btn secondary" style="padding:10px 12px;" id="copyMain">
+                        Copy
+                    </button>
+                </div>
+                <div class="status" style="margin-top:10px;">
+                    <div class="strength">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+                    <div class="strength-label" id="strengthLabel">Strength: N/A</div>
+                    <div class="badge-chip" id="criteriaChip">Length: 16 • Variety: 4 sets</div>
+                </div>
+            </div>
+
+            <div style="margin-top:18px;">
+                <div style="font-weight:700; margin-bottom:10px;">Generated Batch</div>
+                <div class="list" id="batchList">
+                    <small>No passwords yet.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex-between" style="margin-bottom:8px;">
+                <div style="font-weight:700;">History</div>
+                <small id="historyCount">0 saved</small>
+            </div>
+            <div class="list" id="historyList">
+                <small>Generate a password to start your history.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const sets = {
+        upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        lower: "abcdefghijklmnopqrstuvwxyz",
+        numbers: "0123456789",
+        symbols: "!@#$%^&*()_+{}[]<>?/|~-="
+    };
+
+    const lengthEl = document.getElementById('length');
+    const lengthValue = document.getElementById('lengthValue');
+    const checkboxes = {
+        upper: document.getElementById('upper'),
+        lower: document.getElementById('lower'),
+        numbers: document.getElementById('numbers'),
+        symbols: document.getElementById('symbols')
+    };
+    const generateBtn = document.getElementById('generateBtn');
+    const countEl = document.getElementById('count');
+    const mainPasswordEl = document.getElementById('mainPassword');
+    const batchList = document.getElementById('batchList');
+    const historyList = document.getElementById('historyList');
+    const historyCount = document.getElementById('historyCount');
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthLabel = document.getElementById('strengthLabel');
+    const criteriaChip = document.getElementById('criteriaChip');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyMainBtn = document.getElementById('copyMain');
+
+    let history = [];
+
+    const updateLengthDisplay = () => {
+        lengthValue.textContent = lengthEl.value;
+        updateCriteriaChip();
+    };
+
+    const updateCriteriaChip = () => {
+        const activeSets = selectedSets().length;
+        criteriaChip.textContent = `Length: ${lengthEl.value} • Variety: ${activeSets} set${activeSets!==1?'s':''}`;
+        const theoretical = computeStrengthPreview();
+        applyStrengthUI(theoretical.score, theoretical.label);
+    };
+
+    const selectedSets = () => {
+        return Object.entries(checkboxes)
+            .filter(([k, cb]) => cb.checked)
+            .map(([k]) => ({key:k, chars: sets[k]}));
+    };
+
+    const randomIndex = (max) => {
+        // secure random index using crypto
+        const buffer = new Uint32Array(1);
+        window.crypto.getRandomValues(buffer);
+        return buffer[0] % max;
+    };
+
+    const shuffleArray = (arr) => {
+        for(let i=arr.length-1;i>0;i--){
+            const j = randomIndex(i+1);
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    };
+
+    const generatePassword = (length, opts) => {
+        if(opts.length === 0) return null;
+        const required = [];
+        opts.forEach(set => {
+            const idx = randomIndex(set.chars.length);
+            required.push(set.chars[idx]);
+        });
+
+        const allChars = opts.map(s=>s.chars).join('');
+        const remaining = length - required.length;
+        const result = [...required];
+        for(let i=0;i<remaining;i++){
+            const idx = randomIndex(allChars.length);
+            result.push(allChars[idx]);
+        }
+        shuffleArray(result);
+        return result.join('');
+    };
+
+    const computeStrength = (pwd) => {
+        const lengthScore = Math.min(pwd.length / 32, 1);
+        const diversity = new Set([
+            /[A-Z]/.test(pwd),
+            /[a-z]/.test(pwd),
+            /[0-9]/.test(pwd),
+            /[^A-Za-z0-9]/.test(pwd)
+        ]);
+        const varietyScore = (Array.from(diversity).filter(Boolean).length) / 4;
+        const rawScore = (lengthScore * 0.6 + varietyScore * 0.4) * 100;
+        let label = "Weak";
+        if(rawScore > 80) label = "Excellent";
+        else if(rawScore > 65) label = "Strong";
+        else if(rawScore > 45) label = "Moderate";
+        else if(rawScore > 30) label = "Fair";
+        return {score: Math.round(rawScore), label};
+    };
+
+    const computeStrengthPreview = () => {
+        const len = parseInt(lengthEl.value,10);
+        const variety = selectedSets().length / 4;
+        const score = (Math.min(len/32,1)*0.6 + variety*0.4)*100;
+        let label = "Weak";
+        if(score > 80) label = "Excellent";
+        else if(score > 65) label = "Strong";
+        else if(score > 45) label = "Moderate";
+        else if(score > 30) label = "Fair";
+        return {score, label};
+    };
+
+    const applyStrengthUI = (score, label) => {
+        const clamped = Math.max(4, Math.min(100, score));
+        strengthFill.style.width = clamped + "%";
+        const gradient = score > 70 ? "linear-gradient(90deg, #7af5d3, #6ba8ff)" :
+                         score > 50 ? "linear-gradient(90deg, #f5e87a, #7af5d3)" :
+                         score > 30 ? "linear-gradient(90deg, #ffb26f, #f5e87a)" :
+                                      "linear-gradient(90deg, #ff7b92, #ffb26f)";
+        strengthFill.style.background = gradient;
+        strengthLabel.textContent = `Strength: ${label}`;
+    };
+
+    const renderBatch = (list) => {
+        batchList.innerHTML = '';
+        if(list.length === 0){
+            batchList.innerHTML = '<small>No passwords yet.</small>';
+            return;
+        }
+        list.forEach((pwd, idx) => {
+            const row = document.createElement('div');
+            row.className = 'item';
+            row.innerHTML = `
+                <div class="text">${pwd}</div>
+                <button class="btn secondary" data-pwd="${pwd}">Copy</button>
+            `;
+            row.querySelector('button').addEventListener('click', () => copyToClipboard(pwd));
+            batchList.appendChild(row);
+        });
+    };
+
+    const renderHistory = () => {
+        historyList.innerHTML = '';
+        if(history.length === 0){
+            historyList.innerHTML = '<small>Generate a password to start your history.</small>';
+            historyCount.textContent = '0 saved';
+            return;
+        }
+        historyCount.textContent = `${history.length} saved`;
+        history.slice(0,50).forEach(pwd => {
+            const row = document.createElement('div');
+            row.className = 'item';
+            row.innerHTML = `
+                <div class="text">${pwd}</div>
+                <button class="btn secondary">Copy</button>
+            `;
+            row.querySelector('button').addEventListener('click', () => copyToClipboard(pwd));
+            historyList.appendChild(row);
+        });
+    };
+
+    const copyToClipboard = async (text) => {
+        try{
+            await navigator.clipboard.writeText(text);
+            flashMessage('Copied!');
+        }catch(e){
+            flashMessage('Copy failed', true);
+        }
+    };
+
+    const flashMessage = (msg, error=false) => {
+        const note = document.createElement('div');
+        note.textContent = msg;
+        note.style.position = 'fixed';
+        note.style.top = '20px';
+        note.style.right = '20px';
+        note.style.padding = '10px 14px';
+        note.style.borderRadius = '12px';
+        note.style.background = error ? 'rgba(255,123,146,0.9)' : 'rgba(91,231,196,0.9)';
+        note.style.color = '#0b1220';
+        note.style.fontWeight = '700';
+        note.style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)';
+        document.body.appendChild(note);
+        setTimeout(() => note.remove(), 1200);
+    };
+
+    const handleGenerate = () => {
+        const length = parseInt(lengthEl.value,10);
+        const setsSelected = selectedSets();
+        if(setsSelected.length === 0){
+            flashMessage("Select at least one character set", true);
+            return;
+        }
+        let count = parseInt(countEl.value,10);
+        if(isNaN(count) || count < 1) count = 1;
+        if(count > 10) count = 10;
+        countEl.value = count;
+
+        const generated = [];
+        for(let i=0;i<count;i++){
+            const pwd = generatePassword(length, setsSelected);
+            if(pwd) generated.push(pwd);
+        }
+        if(generated.length === 0) return;
+        mainPasswordEl.textContent = generated[0];
+        applyStrengthForPassword(generated[0]);
+        renderBatch(generated);
+        history = [...generated, ...history].slice(0,100);
+        renderHistory();
+    };
+
+    const applyStrengthForPassword = (pwd) => {
+        const {score, label} = computeStrength(pwd);
+        applyStrengthUI(score, label);
+    };
+
+    lengthEl.addEventListener('input', updateLengthDisplay);
+    Object.values(checkboxes).forEach(cb => cb.addEventListener('change', updateCriteriaChip));
+    generateBtn.addEventListener('click', handleGenerate);
+    copyBtn.addEventListener('click', () => {
+        if(history.length === 0){
+            flashMessage('Nothing to copy', true);
+            return;
+        }
+        copyToClipboard(history[0]);
+    });
+    copyMainBtn.addEventListener('click', () => {
+        const text = mainPasswordEl.textContent || '';
+        if(!text || text.startsWith('Click generate')){
+            flashMessage('Generate a password first', true);
+            return;
+        }
+        copyToClipboard(text);
+    });
+
+    // Initialize
+    updateCriteriaChip();
+})();
+</script>
+</body>
+</html>

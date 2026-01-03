@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Kanban Board</title>
+    <style>
+        :root {
+            --bg-color: #f4f5f7;
+            --column-bg: #ebecf0;
+            --header-color: #172b4d;
+            --urgent: #ff5252;
+            --medium: #ffc107;
+            --low: #4caf50;
+            --text: #172b4d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .board {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .column {
+            background-color: var(--column-bg);
+            border-radius: 8px;
+            width: 300px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        .column h2 {
+            font-size: 1.1rem;
+            padding: 5px 10px;
+            margin-top: 0;
+        }
+
+        .card-list {
+            flex-grow: 1;
+            min-height: 100px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 0 rgba(9,30,66,.25);
+            cursor: grab;
+            position: relative;
+            border-left: 5px solid transparent;
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card.urgent { border-left-color: var(--urgent); }
+        .card.medium { border-left-color: var(--medium); }
+        .card.low { border-left-color: var(--low); }
+
+        .card.dragging {
+            opacity: 0.5;
+        }
+
+        .add-card-btn {
+            background: transparent;
+            border: none;
+            color: #5e6c84;
+            padding: 8px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .add-card-btn:hover {
+            background-color: rgba(9,30,66,.08);
+            color: #172b4d;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 350px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 { margin-top: 0; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        button.primary { background: #0079bf; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        button.danger { background: #eb5a46; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        button.secondary { background: #eee; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>My Kanban Board</h1>
+</header>
+
+<div class="board">
+    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h2>To Do</h2>
+        <div class="card-list" id="todo-list"></div>
+        <button class="add-card-btn" onclick="openModal('todo')">+ Add a card</button>
+    </div>
+
+    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h2>In Progress</h2>
+        <div class="card-list" id="inprogress-list"></div>
+        <button class="add-card-btn" onclick="openModal('in-progress')">+ Add a card</button>
+    </div>
+
+    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h2>Done</h2>
+        <div class="card-list" id="done-list"></div>
+        <button class="add-card-btn" onclick="openModal('done')">+ Add a card</button>
+    </div>
+</div>
+
+<!-- Modal for Add/Edit -->
+<div id="cardModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">Add Card</h3>
+        <input type="hidden" id="cardId">
+        <input type="hidden" id="cardStatus">
+        
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" placeholder="Enter task title...">
+        </div>
+        
+        <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority">
+                <option value="low">Low (Green)</option>
+                <option value="medium">Medium (Yellow)</option>
+                <option value="urgent">Urgent (Red)</option>
+            </select>
+        </div>
+
+        <div class="modal-actions">
+            <button id="deleteBtn" class="danger" onclick="deleteCard()" style="display:none; margin-right: auto;">Delete</button>
+            <button class="secondary" onclick="closeModal()">Cancel</button>
+            <button class="primary" onclick="saveCard()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cards = JSON.parse(localStorage.getItem('kanban-cards')) || [];
+
+    function saveToLocal() {
+        localStorage.setItem('kanban-cards', JSON.stringify(cards));
+    }
+
+    function renderCards() {
+        const columns = {
+            'todo': document.getElementById('todo-list'),
+            'in-progress': document.getElementById('inprogress-list'),
+            'done': document.getElementById('done-list')
+        };
+
+        // Clear columns
+        Object.values(columns).forEach(el => el.innerHTML = '');
+
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card ${card.priority}`;
+            cardEl.draggable = true;
+            cardEl.id = `card-${card.id}`;
+            cardEl.innerText = card.title;
+            
+            // Events
+            cardEl.ondragstart = (e) => {
+                e.dataTransfer.setData("text/plain", card.id);
+                cardEl.classList.add('dragging');
+            };
+            cardEl.ondragend = () => cardEl.classList.remove('dragging');
+            cardEl.onclick = () => openModal(card.status, card.id);
+
+            columns[card.status].appendChild(cardEl);
+        });
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('cardModal');
+    
+    function openModal(status, id = null) {
+        const titleInput = document.getElementById('title');
+        const priorityInput = document.getElementById('priority');
+        const idInput = document.getElementById('cardId');
+        const statusInput = document.getElementById('cardStatus');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const modalTitle = document.getElementById('modalTitle');
+
+        if (id) {
+            const card = cards.find(c => c.id == id);
+            modalTitle.innerText = "Edit Card";
+            titleInput.value = card.title;
+            priorityInput.value = card.priority;
+            idInput.value = card.id;
+            statusInput.value = card.status;
+            deleteBtn.style.display = "block";
+        } else {
+            modalTitle.innerText = "Add Card";
+            titleInput.value = "";
+            priorityInput.value = "low";
+            idInput.value = "";
+            statusInput.value = status;
+            deleteBtn.style.display = "none";
+        }
+        modal.style.display = "block";
+    }
+
+    function closeModal() {
+        modal.style.display = "none";
+    }
+
+    function saveCard() {
+        const title = document.getElementById('title').value;
+        const priority = document.getElementById('priority').value;
+        const id = document.getElementById('cardId').value;
+        const status = document.getElementById('cardStatus').value;
+
+        if (!title.trim()) return alert("Please enter a title");
+
+        if (id) {
+            // Update
+            const index = cards.findIndex(c => c.id == id);
+            cards[index] = { ...cards[index], title, priority };
+        } else {
+            // Create
+            const newCard = {
+                id: Date.now(),
+                title,
+                priority,
+                status
+            };
+            cards.push(newCard);
+        }
+
+        saveToLocal();
+        renderCards();
+        closeModal();
+    }
+
+    function deleteCard() {
+        const id = document.getElementById('cardId').value;
+        cards = cards.filter(c => c.id != id);
+        saveToLocal();
+        renderCards();
+        closeModal();
+    }
+
+    // Drag and Drop Logic
+    function allowDrop(ev) {
+        ev.preventDefault();
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        const cardId = ev.dataTransfer.getData("text/plain");
+        const targetColumn = ev.currentTarget.id; // The column ID
+        
+        const cardIndex = cards.findIndex(c => c.id == cardId);
+        if (cardIndex > -1) {
+            cards[cardIndex].status = targetColumn;
+            saveToLocal();
+            renderCards();
+        }
+    }
+
+    // Initial Render
+    renderCards();
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        if (event.target == modal) closeModal();
+    }
+</script>
+
+</body>
+</html>

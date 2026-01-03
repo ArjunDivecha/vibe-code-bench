@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Expense Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --accent: #4a90e2;
+      --accent-2: #ff9f43;
+      --text: #2c3e50;
+      --muted: #7f8c8d;
+      --border: #e5e7eb;
+      --danger: #e74c3c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #e0ecff 0%, #fdf5e6 100%);
+      color: var(--text);
+    }
+    header {
+      padding: 24px 16px 8px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: 0.5px;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto 48px;
+      padding: 0 16px 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+    form label {
+      display: block;
+      font-weight: 600;
+      margin: 10px 0 4px;
+    }
+    form input, form select, form button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    form input:focus, form select:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(74,144,226,0.15);
+    }
+    .btn {
+      background: linear-gradient(135deg, var(--accent), #6fb1fc);
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 14px;
+    }
+    .btn:hover { opacity: 0.95; }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    th, td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    tr:hover td { background: #f8fbff; }
+    .amount {
+      font-weight: 700;
+      color: var(--text);
+    }
+    .muted { color: var(--muted); }
+    .tag {
+      background: #eef4ff;
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #f1f3f7;
+      border-radius: 10px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 4px 0;
+    }
+    .danger {
+      background: #ffe8e6;
+      color: var(--danger);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .danger:hover { opacity: 0.9; }
+    .totals {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .pill {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+    }
+    .empty {
+      text-align: center;
+      padding: 18px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Expense Tracker</h1>
+    <div class="subtitle">Track your spending, visualize habits, and stay on budget.</div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>Add Expense</h2>
+        <form id="expenseForm">
+          <label for="amount">Amount</label>
+          <input type="number" id="amount" step="0.01" min="0" placeholder="e.g., 23.50" required>
+
+          <label for="category">Category</label>
+          <select id="category" required></select>
+
+          <label for="description">Description</label>
+          <input type="text" id="description" maxlength="120" placeholder="e.g., Lunch with friends">
+
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+
+          <button class="btn" type="submit">Add Expense</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="flex-between">
+          <h2>Filters &amp; Overview</h2>
+          <button class="danger" id="clearAll">Clear All</button>
+        </div>
+
+        <div class="filters">
+          <div>
+            <label>Category</label>
+            <select id="filterCategory"></select>
+          </div>
+          <div>
+            <label>From</label>
+            <input type="date" id="filterStart">
+          </div>
+          <div>
+            <label>To</label>
+            <input type="date" id="filterEnd">
+          </div>
+        </div>
+
+        <div class="totals">
+          <div class="pill">
+            <span>Total Spent</span>
+            <span class="amount" id="totalAmount">$0.00</span>
+          </div>
+          <div class="pill">
+            <span>Items</span>
+            <span id="itemCount">0</span>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <h3 style="margin:0 0 6px;">Breakdown by Category</h3>
+          <div id="categoryBreakdown" class="badge-list"></div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <h3 style="margin:0 0 6px;">Spending Pie</h3>
+          <canvas id="pieChart" width="320" height="320"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2 style="margin-bottom:8px;">Expenses</h2>
+      <div class="muted" style="font-size:0.9rem;">Filtered results appear below. Click ✕ to remove an expense.</div>
+      <div style="overflow-x:auto;">
+        <table id="expenseTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty" style="display:none;">No expenses yet. Add your first one!</div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const categories = ["Food", "Transport", "Entertainment", "Bills", "Shopping", "Other"];
+      const storageKey = "expense-tracker-data";
+
+      const els = {
+        form: document.getElementById("expenseForm"),
+        amount: document.getElementById("amount"),
+        category: document.getElementById("category"),
+        description: document.getElementById("description"),
+        date: document.getElementById("date"),
+        filterCategory: document.getElementById("filterCategory"),
+        filterStart: document.getElementById("filterStart"),
+        filterEnd: document.getElementById("filterEnd"),
+        totalAmount: document.getElementById("totalAmount"),
+        itemCount: document.getElementById("itemCount"),
+        breakdown: document.getElementById("categoryBreakdown"),
+        tableBody: document.querySelector("#expenseTable tbody"),
+        emptyState: document.getElementById("emptyState"),
+        clearAll: document.getElementById("clearAll"),
+        pie: document.getElementById("pieChart"),
+      };
+
+      const ctx = els.pie.getContext("2d");
+
+      function initCategorySelects() {
+        categories.forEach(cat => {
+          const opt = document.createElement("option");
+          opt.value = cat;
+          opt.textContent = cat;
+          els.category.appendChild(opt);
+        });
+
+        const allOpt = document.createElement("option");
+        allOpt.value = "all";
+        allOpt.textContent = "All Categories";
+        els.filterCategory.appendChild(allOpt);
+        categories.forEach(cat => {
+          const opt = document.createElement("option");
+          opt.value = cat;
+          opt.textContent = cat;
+          els.filterCategory.appendChild(opt);
+        });
+        els.filterCategory.value = "all";
+      }
+
+      function todayStr() {
+        const d = new Date();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${d.getFullYear()}-${m}-${day}`;
+      }
+
+      function getExpenses() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          console.error("Failed to read data", e);
+          return [];
+        }
+      }
+
+      function saveExpenses(data) {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      function addExpense(exp) {
+        const data = getExpenses();
+        data.push(exp);
+        saveExpenses(data);
+      }
+
+      function deleteExpense(id) {
+        const data = getExpenses().filter(item => item.id !== id);
+        saveExpenses(data);
+      }
+
+      function filteredExpenses() {
+        const data = getExpenses();
+        const cat = els.filterCategory.value;
+        const start = els.filterStart.value;
+        const end = els.filterEnd.value;
+        return data.filter(item => {
+          const matchesCat = cat === "all" || item.category === cat;
+          const afterStart = !start || item.date >= start;
+          const beforeEnd = !end || item.date <= end;
+          return matchesCat && afterStart && beforeEnd;
+        }).sort((a, b) => b.date.localeCompare(a.date));
+      }
+
+      function formatCurrency(num) {
+        return "$" + (Number(num) || 0).toFixed(2);
+      }
+
+      function renderTable(expenses) {
+        els.tableBody.innerHTML = "";
+        if (!expenses.length) {
+          els.emptyState.style.display = "block";
+          return;
+        }
+        els.emptyState.style.display = "none";
+        expenses.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="muted">${item.date}</td>
+            <td>${item.description || "<span class='muted'>No description</span>"}</td>
+            <td><span class="tag">${item.category}</span></td>
+            <td class="amount">${formatCurrency(item.amount)}</td>
+            <td style="text-align:right;">
+              <button class="danger" data-id="${item.id}" title="Delete">✕</button>
+            </td>
+          `;
+          els.tableBody.appendChild(tr);
+        });
+      }
+
+      function renderTotals(expenses) {
+        const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        els.totalAmount.textContent = formatCurrency(total);
+        els.itemCount.textContent = expenses.length;
+      }
+
+      function renderBreakdown(expenses) {
+        const totals = {};
+        categories.forEach(c => totals[c] = 0);
+        expenses.forEach(item => totals[item.category] += Number(item.amount || 0));
+        els.breakdown.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        Object.entries(totals).forEach(([cat, amt]) => {
+          const div = document.createElement("div");
+          div.className = "pill";
+          div.innerHTML = `<span>${cat}</span><span class="amount">${formatCurrency(amt)}</span>`;
+          fragment.appendChild(div);
+        });
+        els.breakdown.appendChild(fragment);
+        drawPie(totals);
+      }
+
+      function drawPie(totals) {
+        ctx.clearRect(0, 0, els.pie.width, els.pie.height);
+        const values = Object.values(totals);
+        const sum = values.reduce((a,b)=>a+b,0);
+        if (sum === 0) {
+          ctx.fillStyle = "#e5e7eb";
+          ctx.font = "16px Segoe UI";
+          ctx.textAlign = "center";
+          ctx.fillText("No data", els.pie.width/2, els.pie.height/2);
+          return;
+        }
+        const colors = ["#4a90e2","#34d399","#f472b6","#f59e0b","#a78bfa","#95a5a6"];
+        let start = -Math.PI / 2;
+        const cats = Object.keys(totals);
+        cats.forEach((cat, idx) => {
+          const val = totals[cat];
+          const slice = (val / sum) * Math.PI * 2;
+          const end = start + slice;
+          ctx.beginPath();
+          ctx.moveTo(els.pie.width/2, els.pie.height/2);
+          ctx.arc(els.pie.width/2, els.pie.height/2, Math.min(els.pie.width, els.pie.height)/2 - 10, start, end);
+          ctx.fillStyle = colors[idx % colors.length];
+          ctx.fill();
+          start = end;
+        });
+        // legend (optional): small dots near slices
+        start = -Math.PI / 2;
+        cats.forEach((cat, idx) => {
+          const val = totals[cat];
+          if (val === 0) return;
+          const mid = start + (val / sum) * Math.PI;
+          const r = Math.min(els.pie.width, els.pie.height)/2 - 25;
+          const x = els.pie.width/2 + Math.cos(mid) * r;
+          const y = els.pie.height/2 + Math.sin(mid) * r;
+          ctx.fillStyle = colors[idx % colors.length];
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle = "#2c3e50";
+          ctx.font = "12px Segoe UI";
+          ctx.textAlign = "center";
+          ctx.fillText(cat, x, y - 10);
+          start += (val / sum) * Math.PI * 2;
+        });
+      }
+
+      function render() {
+        const expenses = filteredExpenses();
+        renderTable(expenses);
+        renderTotals(expenses);
+        renderBreakdown(expenses);
+      }
+
+      function handleAdd(e) {
+        e.preventDefault();
+        const amountVal = parseFloat(els.amount.value);
+        if (isNaN(amountVal) || amountVal <= 0) {
+          alert("Please enter a valid amount.");
+          return;
+        }
+        const expense = {
+          id: Date.now(),
+          amount: amountVal,
+          category: els.category.value,
+          description: els.description.value.trim(),
+          date: els.date.value || todayStr()
+        };
+        addExpense(expense);
+        els.form.reset();
+        els.date.value = todayStr();
+        render();
+      }
+
+      function handleDelete(e) {
+        const btn = e.target.closest("button[data-id]");
+        if (!btn) return;
+        const id = Number(btn.getAttribute("data-id"));
+        if (confirm("Delete this expense?")) {
+          deleteExpense(id);
+          render();
+        }
+      }
+
+      function handleClearAll() {
+        if (confirm("Clear all expenses? This cannot be undone.")) {
+          saveExpenses([]);
+          render();
+        }
+      }
+
+      function init() {
+        initCategorySelects();
+        els.date.value = todayStr();
+
+        els.form.addEventListener("submit", handleAdd);
+        els.tableBody.addEventListener("click", handleDelete);
+        [els.filterCategory, els.filterStart, els.filterEnd].forEach(el => el.addEventListener("input", render));
+        els.clearAll.addEventListener("click", handleClearAll);
+
+        render();
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Speed Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #testText {
+      border: 1px solid #ccc;
+      padding: 15px;
+      font-size: 18px;
+      background: #fff;
+      min-height: 100px;
+    }
+
+    #testText .correct {
+      color: green;
+    }
+
+    #testText .incorrect {
+      color: red;
+    }
+
+    #inputArea {
+      width: 100%;
+      height: 100px;
+      margin-top: 15px;
+      font-size: 18px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    #stats {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    #timer {
+      font-weight: bold;
+    }
+
+    #restartBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Typing Speed Test</h1>
+  <div id="testText"></div>
+  <textarea id="inputArea" placeholder="Start typing here..." disabled></textarea>
+  <div id="stats">
+    <p>Time: <span id="timer">0</span>s</p>
+    <p>WPM: <span id="wpm">0</span></p>
+    <p>Accuracy: <span id="accuracy">100</span>%</p>
+  </div>
+  <button id="restartBtn">Start Test</button>
+
+  <script>
+    const texts = [
+      "The quick brown fox jumps over the lazy dog.",
+      "Typing tests are a great way to improve your speed.",
+      "Practice every day to become faster at typing.",
+      "JavaScript can be used to build interactive websites.",
+      "Coding challenges help sharpen your programming skills.",
+      "This is a simple typing test application built in HTML.",
+      "Frontend development involves HTML, CSS, and JavaScript.",
+      "Accuracy is just as important as speed in typing.",
+      "A journey of a thousand miles begins with a single step.",
+      "Stay focused and keep practicing to get better."
+    ];
+
+    const testTextDiv = document.getElementById("testText");
+    const inputArea = document.getElementById("inputArea");
+    const timerSpan = document.getElementById("timer");
+    const wpmSpan = document.getElementById("wpm");
+    const accuracySpan = document.getElementById("accuracy");
+    const restartBtn = document.getElementById("restartBtn");
+
+    let currentText = "";
+    let timer = 0;
+    let interval = null;
+    let isRunning = false;
+    let maxTime = 30;
+
+    function chooseRandomText() {
+      return texts[Math.floor(Math.random() * texts.length)];
+    }
+
+    function renderTestText() {
+      testTextDiv.innerHTML = "";
+      for (let char of currentText) {
+        const span = document.createElement("span");
+        span.textContent = char;
+        testTextDiv.appendChild(span);
+      }
+    }
+
+    function startTest() {
+      currentText = chooseRandomText();
+      renderTestText();
+      inputArea.value = "";
+      inputArea.disabled = false;
+      inputArea.focus();
+      timer = 0;
+      isRunning = true;
+      timerSpan.textContent = "0";
+      wpmSpan.textContent = "0";
+      accuracySpan.textContent = "100";
+      if (interval) clearInterval(interval);
+      interval = setInterval(updateTimer, 1000);
+    }
+
+    function endTest() {
+      isRunning = false;
+      clearInterval(interval);
+      inputArea.disabled = true;
+    }
+
+    function updateTimer() {
+      timer++;
+      timerSpan.textContent = timer;
+      if (timer >= maxTime) {
+        endTest();
+      }
+    }
+
+    function updateStats() {
+      const input = inputArea.value;
+      const inputLength = input.length;
+      let correctChars = 0;
+      let totalChars = Math.min(inputLength, currentText.length);
+
+      for (let i = 0; i < currentText.length; i++) {
+        const span = testTextDiv.children[i];
+        if (i < inputLength) {
+          if (input[i] === currentText[i]) {
+            span.className = "correct";
+            correctChars++;
+          } else {
+            span.className = "incorrect";
+          }
+        } else {
+          span.className = "";
+        }
+      }
+
+      const wordsTyped = input.trim().split(/\s+/).length;
+      const elapsedMinutes = timer / 60 || 1 / 60;
+      const wpm = Math.round((wordsTyped / elapsedMinutes));
+      const accuracy = inputLength > 0 ? Math.round((correctChars / inputLength) * 100) : 100;
+
+      wpmSpan.textContent = isRunning ? wpm : wpmSpan.textContent;
+      accuracySpan.textContent = isRunning ? accuracy : accuracySpan.textContent;
+    }
+
+    inputArea.addEventListener("input", () => {
+      if (!isRunning) return;
+      updateStats();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      startTest();
+    });
+
+    // Initialize
+    renderTestText();
+  </script>
+</body>
+</html>

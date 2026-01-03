@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Color Palette Generator</title>
+<style>
+    :root {
+        --bg: #0f1115;
+        --panel: #161a21;
+        --text: #f5f6fb;
+        --muted: #97a0b3;
+        --accent: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 20% 20%, #1c2230, #0f1115 40%), radial-gradient(circle at 80% 0%, #1f2735, #0f1115 35%), #0f1115;
+        color: var(--text);
+        min-height: 100vh;
+    }
+    header {
+        padding: 20px 32px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        background: linear-gradient(180deg, rgba(15,17,21,0.92) 0%, rgba(15,17,21,0.72) 80%, rgba(15,17,21,0) 100%);
+        backdrop-filter: blur(8px);
+        z-index: 10;
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: 0.6px; }
+    .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    button {
+        border: none;
+        background: #1f2633;
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.24);
+    }
+    button:hover { transform: translateY(-1px); background: #243043; }
+    button:active { transform: translateY(0); }
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        padding: 8px 12px;
+        background: #1a202c;
+        color: var(--muted);
+        border-radius: 999px;
+    }
+    .palette {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(140px, 1fr));
+        gap: 12px;
+        padding: 0 32px 28px;
+    }
+    .color-card {
+        position: relative;
+        height: 320px;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #222;
+        box-shadow: 0 18px 35px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.04);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.25s ease;
+    }
+    .color-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .color-fill {
+        position: absolute;
+        inset: 0;
+        transition: background 0.4s ease;
+    }
+    .card-footer {
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        padding: 14px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.32) 55%, rgba(0,0,0,0.75) 100%);
+        color: #fff;
+    }
+    .code-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 16px;
+        letter-spacing: 0.8px;
+    }
+    .sub-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        opacity: 0.86;
+    }
+    .lock {
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.16);
+        background: rgba(0,0,0,0.22);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .lock.locked {
+        background: rgba(0,0,0,0.42);
+        border-color: rgba(255,255,255,0.32);
+    }
+    .lock:hover { transform: translateY(-1px); }
+    .badge {
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.14);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+    }
+    .toast {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        background: #161b25;
+        color: #e8f1ff;
+        padding: 12px 14px;
+        border-radius: 10px;
+        box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        pointer-events: none;
+        z-index: 20;
+    }
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .section {
+        padding: 12px 32px 32px;
+    }
+    .section h2 {
+        margin: 6px 0 12px;
+        font-size: 18px;
+        color: var(--text);
+    }
+    .saved-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+    }
+    .saved-card {
+        background: #161b25;
+        border-radius: 14px;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.05);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.24);
+        transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+    .saved-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .swatches {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+    }
+    .swatch {
+        height: 32px;
+        border-radius: 8px;
+    }
+    .saved-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+    .saved-actions button {
+        padding: 8px 10px;
+        font-size: 13px;
+        box-shadow: none;
+    }
+    .empty {
+        color: var(--muted);
+        padding: 8px 0 0;
+    }
+    .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 8px;
+    }
+    @media (max-width: 960px) {
+        .palette { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .color-card { height: 260px; }
+        header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
+</style>
+</head>
+<body>
+<header>
+    <div>
+        <h1>Color Palette Generator</h1>
+        <div class="pill">Press <strong>Space</strong> to generate</div>
+    </div>
+    <div class="controls">
+        <button id="generateBtn">Generate</button>
+        <button id="saveBtn">Save Palette</button>
+    </div>
+</header>
+
+<div class="palette" id="palette"></div>
+
+<div class="section">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h2>Saved Palettes</h2><span class="hint">(Stored locally in your browser)</span>
+    </div>
+    <div id="savedList" class="saved-list"></div>
+    <div id="emptySaved" class="empty" style="display:none;">No saved palettes yet. Save your favorites!</div>
+</div>
+
+<div id="toast" class="toast">Copied!</div>
+
+<script>
+(function() {
+    const paletteEl = document.getElementById('palette');
+    const generateBtn = document.getElementById('generateBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const toastEl = document.getElementById('toast');
+    const savedList = document.getElementById('savedList');
+    const emptySaved = document.getElementById('emptySaved');
+    const LOCAL_KEY = 'paletteGenerator.saved';
+    let colors = Array.from({length:5}, () => ({color: randomHex(), locked:false}));
+
+    function randomHex() {
+        return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6,'0').toUpperCase();
+    }
+    function hexToRgb(hex) {
+        const v = hex.slice(1);
+        const r = parseInt(v.substr(0,2),16);
+        const g = parseInt(v.substr(2,2),16);
+        const b = parseInt(v.substr(4,2),16);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+    function getName(hex) {
+        // basic hue-based name with adjective
+        const v = hex.slice(1);
+        const r = parseInt(v.substr(0,2),16)/255;
+        const g = parseInt(v.substr(2,2),16)/255;
+        const b = parseInt(v.substr(4,2),16)/255;
+        const max = Math.max(r,g,b), min = Math.min(r,g,b);
+        const d = max - min;
+        let h = 0;
+        if (d !== 0) {
+            if (max === r) h = ((g - b)/d) % 6;
+            else if (max === g) h = (b - r)/d + 2;
+            else h = (r - g)/d + 4;
+            h *= 60;
+            if (h < 0) h += 360;
+        }
+        const l = (max + min)/2;
+        const adjectives = l > 0.75 ? ['Soft','Light','Pale','Airy'] :
+                          l < 0.28 ? ['Deep','Dark','Midnight','Moody'] :
+                          ['Vivid','Bold','Bright','Fresh'];
+        const hueNames = [
+            {range:[-20,20], name:'Red'},
+            {range:[20,45], name:'Orange'},
+            {range:[45,70], name:'Gold'},
+            {range:[70,170], name:'Green'},
+            {range:[170,200], name:'Teal'},
+            {range:[200,250], name:'Blue'},
+            {range:[250,290], name:'Indigo'},
+            {range:[290,330], name:'Purple'},
+            {range:[330,361], name:'Crimson'}
+        ];
+        const base = hueNames.find(hn => h >= hn.range[0] && h < hn.range[1]) || {name:'Neutral'};
+        const adj = adjectives[Math.floor(Math.random()*adjectives.length)];
+        return `${adj} ${base.name}`;
+    }
+    function renderPalette() {
+        paletteEl.innerHTML = '';
+        colors.forEach((obj, idx) => {
+            const card = document.createElement('div');
+            card.className = 'color-card';
+            card.dataset.index = idx;
+
+            const fill = document.createElement('div');
+            fill.className = 'color-fill';
+            fill.style.background = obj.color;
+
+            const footer = document.createElement('div');
+            footer.className = 'card-footer';
+
+            const codeRow = document.createElement('div');
+            codeRow.className = 'code-row';
+            const code = document.createElement('div');
+            code.textContent = obj.color;
+            const badge = document.createElement('div');
+            badge.className = 'badge';
+            badge.textContent = obj.locked ? 'Locked' : 'Unlocked';
+            codeRow.appendChild(code);
+            codeRow.appendChild(badge);
+
+            const sub = document.createElement('div');
+            sub.className = 'sub-row';
+            const rgb = document.createElement('div');
+            rgb.textContent = hexToRgb(obj.color);
+            const name = document.createElement('div');
+            name.textContent = getName(obj.color);
+            sub.appendChild(rgb);
+            sub.appendChild(name);
+
+            const lockBtn = document.createElement('button');
+            lockBtn.className = 'lock' + (obj.locked ? ' locked':'');
+            lockBtn.innerHTML = obj.locked ? '🔒 Locked' : '🔓 Lock';
+            lockBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleLock(idx);
+            });
+
+            footer.appendChild(codeRow);
+            footer.appendChild(sub);
+            footer.appendChild(lockBtn);
+
+            card.appendChild(fill);
+            card.appendChild(footer);
+
+            card.addEventListener('click', () => copyColor(obj.color));
+            paletteEl.appendChild(card);
+        });
+    }
+    function toggleLock(index) {
+        colors[index].locked = !colors[index].locked;
+        renderPalette();
+    }
+    function generatePalette() {
+        colors = colors.map(c => c.locked ? c : {color: randomHex(), locked:false});
+        renderPalette();
+    }
+    function copyColor(hex) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(hex);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = hex;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        showToast(`Copied ${hex}`);
+    }
+    function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        setTimeout(() => toastEl.classList.remove('show'), 1600);
+    }
+    function savePalette() {
+        const data = loadSaved();
+        const current = colors.map(c => c.color);
+        data.unshift(current);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(data.slice(0,80)));
+        showToast('Palette saved');
+        renderSaved();
+    }
+    function loadSaved() {
+        try {
+            const raw = localStorage.getItem(LOCAL_KEY);
+            if (!raw) return [];
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return arr;
+        } catch (e) {}
+        return [];
+    }
+    function renderSaved() {
+        const saved = loadSaved();
+        savedList.innerHTML = '';
+        emptySaved.style.display = saved.length ? 'none' : 'block';
+        saved.forEach((palette, idx) => {
+            const card = document.createElement('div');
+            card.className = 'saved-card';
+
+            const swatches = document.createElement('div');
+            swatches.className = 'swatches';
+            palette.forEach(col => {
+                const s = document.createElement('div');
+                s.className = 'swatch';
+                s.style.background = col;
+                swatches.appendChild(s);
+            });
+
+            const actions = document.createElement('div');
+            actions.className = 'saved-actions';
+
+            const applyBtn = document.createElement('button');
+            applyBtn.textContent = 'Apply';
+            applyBtn.addEventListener('click', () => {
+                colors = palette.map(c => ({color:c, locked:false}));
+                renderPalette();
+                showToast('Palette applied');
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Delete';
+            delBtn.style.background = '#262d3c';
+            delBtn.addEventListener('click', () => {
+                const data = loadSaved();
+                data.splice(idx,1);
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+                renderSaved();
+            });
+
+            actions.appendChild(applyBtn);
+            actions.appendChild(delBtn);
+
+            card.appendChild(swatches);
+            card.appendChild(actions);
+            savedList.appendChild(card);
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target.isContentEditable)) {
+            e.preventDefault();
+            generatePalette();
+        }
+    });
+    generateBtn.addEventListener('click', generatePalette);
+    saveBtn.addEventListener('click', savePalette);
+
+    renderPalette();
+    renderSaved();
+})();
+</script>
+</body>
+</html>

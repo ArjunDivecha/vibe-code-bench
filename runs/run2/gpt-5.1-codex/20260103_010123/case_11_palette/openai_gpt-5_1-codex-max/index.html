@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Color Palette Generator</title>
+<style>
+    :root{
+        --bg: #0f1729;
+        --card-radius: 14px;
+        --shadow: 0 10px 25px rgba(0,0,0,0.18);
+        --text: #e9edf5;
+        --muted: #9fb0c8;
+        --accent: #67d5b5;
+    }
+    *{box-sizing:border-box;}
+    body{
+        margin:0;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(120% 120% at 20% 20%, rgba(103,213,181,0.18), transparent),
+                    radial-gradient(120% 120% at 80% 0%, rgba(120,162,255,0.16), transparent),
+                    linear-gradient(135deg, #0b1220, #0f1729);
+        color: var(--text);
+        min-height:100vh;
+        display:flex;
+        justify-content:center;
+        padding:32px 20px 60px;
+    }
+    .container{
+        width: min(1100px, 100%);
+    }
+    header{
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        margin-bottom:22px;
+    }
+    h1{
+        margin:0;
+        font-weight:700;
+        letter-spacing:-0.5px;
+    }
+    .subtitle{
+        color:var(--muted);
+        margin-top:6px;
+        font-size:14px;
+    }
+    .controls{
+        display:flex;
+        flex-wrap:wrap;
+        gap:10px;
+    }
+    button{
+        border:none;
+        outline:none;
+        padding:12px 16px;
+        border-radius:10px;
+        color:#0b1220;
+        font-weight:600;
+        letter-spacing:0.2px;
+        cursor:pointer;
+        background:#dce7ff;
+        transition:transform .12s ease, box-shadow .12s ease, opacity .2s ease;
+        box-shadow:0 10px 18px rgba(0,0,0,0.1);
+    }
+    button:active{
+        transform:translateY(1px) scale(0.99);
+    }
+    .primary{
+        background:linear-gradient(135deg,#8ee6ce,#67d5b5);
+        color:#0c1a2c;
+    }
+    .secondary{
+        background:rgba(255,255,255,0.12);
+        color:var(--text);
+        backdrop-filter: blur(6px);
+        border:1px solid rgba(255,255,255,0.08);
+    }
+    .palette{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+        gap:14px;
+        margin:10px 0 26px;
+    }
+    .color-card{
+        position:relative;
+        border-radius:var(--card-radius);
+        min-height:170px;
+        overflow:hidden;
+        box-shadow:var(--shadow);
+        cursor:pointer;
+        transition:transform .2s ease, box-shadow .2s ease;
+        isolation:isolate;
+    }
+    .color-card:hover{
+        transform:translateY(-5px);
+        box-shadow:0 14px 28px rgba(0,0,0,0.25);
+    }
+    .color-overlay{
+        position:absolute;
+        inset:0;
+        padding:14px;
+        display:flex;
+        flex-direction:column;
+        justify-content:flex-end;
+        gap:8px;
+        backdrop-filter: blur(0px);
+        background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.32) 60%);
+    }
+    .info-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+    }
+    .label{
+        font-weight:700;
+        font-size:16px;
+        letter-spacing:0.4px;
+    }
+    .rgb{
+        font-size:13px;
+        font-weight:600;
+        opacity:0.9;
+    }
+    .name{
+        font-size:14px;
+        opacity:0.9;
+    }
+    .lock-btn{
+        background:rgba(0,0,0,0.18);
+        color:inherit;
+        border:1px solid rgba(255,255,255,0.35);
+        border-radius:50px;
+        padding:6px 12px;
+        font-size:13px;
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        cursor:pointer;
+        transition:background .15s ease, transform .15s ease;
+    }
+    .lock-btn:hover{background:rgba(0,0,0,0.26);}
+    .lock-btn:active{transform:scale(0.97);}
+    .locked .lock-btn{
+        background:rgba(255,255,255,0.18);
+        border-color:rgba(255,255,255,0.45);
+    }
+    .locked .color-card::after{
+        content:"";
+    }
+    .small{
+        font-size:13px;
+        color:var(--muted);
+    }
+    .saved-section{
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:16px;
+        padding:16px;
+        backdrop-filter: blur(4px);
+    }
+    .saved-list{
+        margin-top:12px;
+        display:grid;
+        gap:12px;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    }
+    .saved-card{
+        background:rgba(0,0,0,0.2);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:12px;
+        padding:12px;
+        cursor:pointer;
+        transition:transform .15s ease, box-shadow .2s ease;
+    }
+    .saved-card:hover{
+        transform:translateY(-3px);
+        box-shadow:0 12px 22px rgba(0,0,0,0.22);
+    }
+    .swatch-row{
+        display:grid;
+        grid-template-columns:repeat(5,1fr);
+        border-radius:8px;
+        overflow:hidden;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+        margin-bottom:8px;
+    }
+    .mini-swatch{
+        height:32px;
+    }
+    .saved-meta{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        font-size:12px;
+        color:var(--muted);
+    }
+    .delete-btn{
+        background:rgba(255,255,255,0.08);
+        color:var(--text);
+        border:none;
+        border-radius:8px;
+        padding:4px 8px;
+        cursor:pointer;
+        transition:background .15s ease;
+    }
+    .delete-btn:hover{
+        background:rgba(255,99,99,0.2);
+    }
+    .toast{
+        position:fixed;
+        bottom:22px;
+        left:50%;
+        transform:translateX(-50%) translateY(20px);
+        background:rgba(0,0,0,0.8);
+        color:#fff;
+        padding:10px 14px;
+        border-radius:12px;
+        opacity:0;
+        pointer-events:none;
+        transition:opacity .25s ease, transform .25s ease;
+        box-shadow:0 12px 24px rgba(0,0,0,0.3);
+        font-weight:600;
+        z-index:20;
+    }
+    .toast.show{
+        opacity:1;
+        transform:translateX(-50%) translateY(0);
+    }
+    .hint{
+        font-size:13px;
+        color:var(--muted);
+        margin-top:6px;
+    }
+    @keyframes pulse {
+        0% {transform:scale(1);}
+        50% {transform:scale(1.01);}
+        100% {transform:scale(1);}
+    }
+    .flash{
+        animation:pulse .35s ease;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div>
+            <h1>Color Palette Generator 🎨</h1>
+            <div class="subtitle">Generate, lock, copy, and save your favorite 5-color schemes.</div>
+            <div class="hint">Press <b>Spacebar</b> to roll new colors. Click a color to copy its HEX.</div>
+        </div>
+        <div class="controls">
+            <button id="generateBtn" class="primary">Generate New</button>
+            <button id="saveBtn" class="secondary">Save Palette</button>
+            <button id="clearSavedBtn" class="secondary" title="Remove all saved palettes">Clear Saved</button>
+        </div>
+    </header>
+
+    <section class="palette" id="palette"></section>
+
+    <section class="saved-section">
+        <div class="info-row">
+            <div>
+                <strong>Saved palettes</strong>
+                <div class="small">Stored in your browser (localStorage).</div>
+            </div>
+        </div>
+        <div id="savedList" class="saved-list"></div>
+        <div id="emptySaved" class="hint" style="display:none;">No saved palettes yet. Save one to see it here.</div>
+    </section>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const COLOR_NAMES = [
+ {name:'Black',hex:'#000000'},{name:'White',hex:'#FFFFFF'},{name:'Red',hex:'#FF0000'},
+ {name:'Green',hex:'#008000'},{name:'Blue',hex:'#0000FF'},{name:'Lime',hex:'#00FF00'},
+ {name:'Aqua',hex:'#00FFFF'},{name:'Cyan',hex:'#00FFFF'},{name:'Magenta',hex:'#FF00FF'},
+ {name:'Fuchsia',hex:'#FF00FF'},{name:'Yellow',hex:'#FFFF00'},{name:'Orange',hex:'#FFA500'},
+ {name:'Purple',hex:'#800080'},{name:'Maroon',hex:'#800000'},{name:'Navy',hex:'#000080'},
+ {name:'Olive',hex:'#808000'},{name:'Teal',hex:'#008080'},{name:'Silver',hex:'#C0C0C0'},
+ {name:'Gray',hex:'#808080'},{name:'SkyBlue',hex:'#87CEEB'},{name:'DodgerBlue',hex:'#1E90FF'},
+ {name:'DeepSkyBlue',hex:'#00BFFF'},{name:'SteelBlue',hex:'#4682B4'},{name:'LightBlue',hex:'#ADD8E6'},
+ {name:'PowderBlue',hex:'#B0E0E6'},{name:'RoyalBlue',hex:'#4169E1'},{name:'CornflowerBlue',hex:'#6495ED'},
+ {name:'Indigo',hex:'#4B0082'},{name:'Turquoise',hex:'#40E0D0'},{name:'MediumTurquoise',hex:'#48D1CC'},
+ {name:'LightSeaGreen',hex:'#20B2AA'},{name:'SeaGreen',hex:'#2E8B57'},{name:'ForestGreen',hex:'#228B22'},
+ {name:'LightGreen',hex:'#90EE90'},{name:'PaleGreen',hex:'#98FB98'},{name:'SpringGreen',hex:'#00FF7F'},
+ {name:'Chartreuse',hex:'#7FFF00'},{name:'Goldenrod',hex:'#DAA520'},{name:'Gold',hex:'#FFD700'},
+ {name:'Khaki',hex:'#F0E68C'},{name:'Wheat',hex:'#F5DEB3'},{name:'Tan',hex:'#D2B48C'},
+ {name:'Chocolate',hex:'#D2691E'},{name:'Sienna',hex:'#A0522D'},{name:'SandyBrown',hex:'#F4A460'},
+ {name:'Coral',hex:'#FF7F50'},{name:'Tomato',hex:'#FF6347'},{name:'Salmon',hex:'#FA8072'},
+ {name:'LightSalmon',hex:'#FFA07A'},{name:'Plum',hex:'#DDA0DD'},{name:'Thistle',hex:'#D8BFD8'},
+ {name:'Orchid',hex:'#DA70D6'},{name:'Violet',hex:'#EE82EE'},{name:'MediumPurple',hex:'#9370DB'},
+ {name:'MediumOrchid',hex:'#BA55D3'},{name:'DeepPink',hex:'#FF1493'},{name:'HotPink',hex:'#FF69B4'},
+ {name:'RosyBrown',hex:'#BC8F8F'},{name:'SlateGray',hex:'#708090'},{name:'LightSlateGray',hex:'#778899'},
+ {name:'Lavender',hex:'#E6E6FA'},{name:'Beige',hex:'#F5F5DC'},{name:'MintCream',hex:'#F5FFFA'}
+];
+
+const STORAGE_KEY = 'color-palettes-saved-v1';
+const paletteEl = document.getElementById('palette');
+const toastEl = document.getElementById('toast');
+let palette = [];
+
+function randomHex(){
+    const val = Math.floor(Math.random()*0xFFFFFF);
+    return '#' + val.toString(16).padStart(6,'0').toUpperCase();
+}
+function hexToRgb(hex){
+    let h = hex.replace('#','');
+    if(h.length===3){h = h.split('').map(c=>c+c).join('');}
+    const bigint = parseInt(h,16);
+    return {r:(bigint>>16)&255, g:(bigint>>8)&255, b:bigint&255};
+}
+function rgbString({r,g,b}){return `rgb(${r}, ${g}, ${b})`;}
+function contrastText(hex){
+    const {r,g,b} = hexToRgb(hex);
+    const yiq = (r*299 + g*587 + b*114)/1000;
+    return yiq >= 140 ? '#111827' : '#fdfdfd';
+}
+function distanceSq(c1,c2){
+    return (c1.r-c2.r)**2 + (c1.g-c2.g)**2 + (c1.b-c2.b)**2;
+}
+function nearestColorName(hex){
+    const target = hexToRgb(hex);
+    let closest = COLOR_NAMES[0], min = Infinity;
+    for(const c of COLOR_NAMES){
+        const dist = distanceSq(target, hexToRgb(c.hex));
+        if(dist < min){ min = dist; closest = c; }
+    }
+    return closest.name;
+}
+function buildPaletteUI(){
+    paletteEl.innerHTML = '';
+    for(let i=0;i<5;i++){
+        const card = document.createElement('div');
+        card.className = 'color-card';
+        card.dataset.index = i;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'color-overlay';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'info-row';
+
+        const hexLabel = document.createElement('div');
+        hexLabel.className = 'label hex';
+        topRow.appendChild(hexLabel);
+
+        const lockBtn = document.createElement('button');
+        lockBtn.type = 'button';
+        lockBtn.className = 'lock-btn';
+        lockBtn.innerHTML = '🔓 Lock';
+        lockBtn.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            toggleLock(i);
+        });
+        topRow.appendChild(lockBtn);
+
+        const rgbEl = document.createElement('div');
+        rgbEl.className = 'rgb';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+
+        overlay.appendChild(topRow);
+        overlay.appendChild(rgbEl);
+        overlay.appendChild(nameEl);
+
+        card.appendChild(overlay);
+        card.addEventListener('click',(e)=>{
+            if(e.target.closest('.lock-btn')) return;
+            copyColor(palette[i].hex);
+        });
+
+        paletteEl.appendChild(card);
+    }
+}
+function updateUI(){
+    document.querySelectorAll('.color-card').forEach((card, idx)=>{
+        const color = palette[idx];
+        card.style.background = color.hex;
+        const textColor = contrastText(color.hex);
+        card.querySelector('.label.hex').textContent = color.hex;
+        card.querySelector('.label.hex').style.color = textColor;
+        const rgbVal = rgbString(hexToRgb(color.hex));
+        card.querySelector('.rgb').textContent = rgbVal;
+        card.querySelector('.rgb').style.color = textColor;
+        const name = nearestColorName(color.hex);
+        card.querySelector('.name').textContent = `Closest: ${name}`;
+        card.querySelector('.name').style.color = textColor;
+
+        const lockBtn = card.querySelector('.lock-btn');
+        lockBtn.style.color = textColor;
+        lockBtn.style.borderColor = textColor+'55';
+        lockBtn.innerHTML = color.locked ? '🔒 Locked' : '🔓 Lock';
+        if(color.locked){
+            card.classList.add('locked');
+        }else{
+            card.classList.remove('locked');
+        }
+    });
+}
+function generatePalette(){
+    for(let i=0;i<5;i++){
+        if(!palette[i] || !palette[i].locked){
+            palette[i] = {hex: randomHex(), locked: palette[i]?.locked || false};
+        }
+    }
+    flashCards();
+    updateUI();
+}
+function flashCards(){
+    document.querySelectorAll('.color-card').forEach((card, idx)=>{
+        if(palette[idx].locked) return;
+        card.classList.remove('flash');
+        void card.offsetWidth; // trigger reflow
+        card.classList.add('flash');
+    });
+}
+function toggleLock(idx){
+    palette[idx].locked = !palette[idx].locked;
+    updateUI();
+}
+async function copyColor(hex){
+    try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            await navigator.clipboard.writeText(hex);
+        }else{
+            const temp = document.createElement('textarea');
+            temp.value = hex;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        }
+        showToast(`Copied ${hex}`);
+    }catch(err){
+        showToast('Copy failed');
+    }
+}
+let toastTimer;
+function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toastEl.classList.remove('show'), 1600);
+}
+function savePalette(){
+    const colors = palette.map(c=>c.hex);
+    const saved = getSavedPalettes();
+    saved.unshift({id: Date.now(), colors, time: new Date().toISOString()});
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0,60)));
+    renderSaved();
+    showToast('Palette saved');
+}
+function getSavedPalettes(){
+    try{
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }catch(e){ return []; }
+}
+function clearSaved(){
+    localStorage.removeItem(STORAGE_KEY);
+    renderSaved();
+    showToast('Cleared saved palettes');
+}
+function renderSaved(){
+    const saved = getSavedPalettes();
+    const list = document.getElementById('savedList');
+    const emptyMsg = document.getElementById('emptySaved');
+    list.innerHTML = '';
+    if(!saved.length){
+        emptyMsg.style.display = 'block';
+        return;
+    }
+    emptyMsg.style.display = 'none';
+    saved.forEach(item=>{
+        const card = document.createElement('div');
+        card.className = 'saved-card';
+        const swatches = document.createElement('div');
+        swatches.className = 'swatch-row';
+        item.colors.forEach(c=>{
+            const s = document.createElement('div');
+            s.className = 'mini-swatch';
+            s.style.background = c;
+            swatches.appendChild(s);
+        });
+        const meta = document.createElement('div');
+        meta.className = 'saved-meta';
+        const time = new Date(item.time || Date.now());
+        meta.innerHTML = `<span>${time.toLocaleString()}</span>`;
+        const del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = 'Delete';
+        del.addEventListener('click',(e)=>{
+            e.stopPropagation();
+            removeSaved(item.id);
+        });
+        meta.appendChild(del);
+
+        card.appendChild(swatches);
+        card.appendChild(meta);
+        card.addEventListener('click',()=>applySaved(item.colors));
+        list.appendChild(card);
+    });
+}
+function removeSaved(id){
+    const saved = getSavedPalettes().filter(p=>p.id!==id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    renderSaved();
+}
+function applySaved(colors){
+    palette = colors.map(hex=>({hex, locked:false}));
+    while(palette.length<5) palette.push({hex: randomHex(), locked:false});
+    updateUI();
+    flashCards();
+    showToast('Loaded palette');
+}
+function init(){
+    palette = Array.from({length:5}, ()=>({hex: randomHex(), locked:false}));
+    buildPaletteUI();
+    updateUI();
+    renderSaved();
+}
+document.getElementById('generateBtn').addEventListener('click', generatePalette);
+document.getElementById('saveBtn').addEventListener('click', savePalette);
+document.getElementById('clearSavedBtn').addEventListener('click', clearSaved);
+window.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space'){
+        e.preventDefault();
+        generatePalette();
+    }
+});
+init();
+</script>
+</body>
+</html>

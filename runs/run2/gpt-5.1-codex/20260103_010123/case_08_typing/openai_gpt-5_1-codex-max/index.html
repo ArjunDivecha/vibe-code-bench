@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Typing Speed Test</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --card: #111827;
+        --accent: #38bdf8;
+        --correct: #22c55e;
+        --incorrect: #ef4444;
+        --pending: #94a3b8;
+        --text: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 20% 20%, #111827, #0b1224 40%), #0f172a;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .app {
+        width: min(900px, 100%);
+        background: var(--card);
+        border: 1px solid #1f2937;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1 {
+        margin: 0 0 12px;
+        letter-spacing: 0.4px;
+        color: #f8fafc;
+        text-align: center;
+    }
+    .desc { text-align: center; color: #94a3b8; margin-bottom: 18px; }
+    .text-display {
+        min-height: 160px;
+        line-height: 1.6;
+        font-size: 18px;
+        padding: 16px;
+        border-radius: 12px;
+        background: #0b1220;
+        border: 1px solid #1e293b;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        word-break: break-word;
+    }
+    .text-display span { padding: 2px 1px; border-radius: 4px; }
+    .correct { color: var(--correct); }
+    .incorrect { color: var(--incorrect); background: rgba(239,68,68,0.12); }
+    .current { background: rgba(56,189,248,0.18); color: #e2e8f0; border-bottom: 2px solid var(--accent); }
+    .pending { color: var(--pending); }
+    .extra { color: #f59e0b; background: rgba(245,158,11,0.1); }
+    textarea {
+        width: 100%;
+        margin-top: 16px;
+        padding: 12px 14px;
+        background: #0d1527;
+        border: 1px solid #1f2937;
+        color: #f8fafc;
+        border-radius: 10px;
+        font-size: 16px;
+        min-height: 110px;
+        resize: vertical;
+        outline: none;
+        transition: border 0.2s, box-shadow 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+        gap: 12px;
+        margin: 18px 0 8px;
+    }
+    .stat {
+        padding: 12px;
+        background: #0b1220;
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+    }
+    .label { color: #94a3b8; font-size: 13px; margin-bottom: 6px; }
+    .value { font-size: 24px; font-weight: 700; color: #f8fafc; }
+    .buttons {
+        display: flex; gap: 12px; justify-content: center; margin-top: 14px;
+    }
+    button {
+        border: none; outline: none;
+        padding: 12px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+    }
+    .primary {
+        background: var(--accent);
+        color: #0b1220;
+        box-shadow: 0 10px 30px rgba(56,189,248,0.2);
+    }
+    .primary:hover { transform: translateY(-1px); }
+    .ghost {
+        background: transparent;
+        color: #e5e7eb;
+        border: 1px solid #1f2937;
+    }
+    .notice {
+        text-align: center;
+        color: #cbd5e1;
+        margin-top: 12px;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+<div class="app">
+    <h1>Typing Speed Test</h1>
+    <div class="desc">Type the text below for 30 seconds. Your speed and accuracy update in real time.</div>
+
+    <div id="textDisplay" class="text-display"></div>
+    <textarea id="input" placeholder="Start typing to begin the test..." autofocus></textarea>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="label">Timer</div>
+            <div class="value" id="timer">30.0s</div>
+        </div>
+        <div class="stat">
+            <div class="label">WPM</div>
+            <div class="value" id="wpm">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">Accuracy</div>
+            <div class="value" id="accuracy">100%</div>
+        </div>
+        <div class="stat">
+            <div class="label">Keystrokes</div>
+            <div class="value" id="typed">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">Errors</div>
+            <div class="value" id="errors">0</div>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="primary" id="restartBtn">Try another text</button>
+        <button class="ghost" id="resetBtn">Reset same text</button>
+    </div>
+    <div class="notice" id="finalMsg"></div>
+</div>
+
+<script>
+(() => {
+    const samples = [
+        "The quick brown fox jumps over the lazy dog, testing every letter in the alphabet at once.",
+        "Typing speed improves with practice, focus, and a comfortable posture at the keyboard.",
+        "In the midst of chaos, there is also opportunity if you know where to look for it.",
+        "A smooth sea never made a skilled sailor; challenge builds resilience and calm control.",
+        "Technology moves fast, but clear communication remains the most powerful tool we have.",
+        "Creativity thrives when curiosity meets discipline and consistent daily effort.",
+        "Small habits repeated over time create massive change, slowly shaping who we become.",
+        "Reading widely expands the mind, offering new perspectives and hidden possibilities.",
+        "When deadlines loom, breaking work into tiny steps can make the impossible feel doable.",
+        "Great teams listen actively, share openly, and celebrate wins both big and small."
+    ];
+
+    const textDisplay = document.getElementById('textDisplay');
+    const input = document.getElementById('input');
+    const timerEl = document.getElementById('timer');
+    const wpmEl = document.getElementById('wpm');
+    const accEl = document.getElementById('accuracy');
+    const typedEl = document.getElementById('typed');
+    const errorsEl = document.getElementById('errors');
+    const finalMsg = document.getElementById('finalMsg');
+    const restartBtn = document.getElementById('restartBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const DURATION = 30; // seconds
+    let target = "";
+    let startTime = null;
+    let timerId = null;
+    let isFinished = false;
+
+    function pickSample(newOne = true) {
+        const current = target;
+        if (!newOne || samples.length === 1) return samples[Math.floor(Math.random() * samples.length)];
+        let pick;
+        do { pick = samples[Math.floor(Math.random() * samples.length)]; } while (pick === current);
+        return pick;
+    }
+
+    function setText(text) {
+        target = text;
+        renderText("");
+    }
+
+    function renderText(userInput) {
+        let html = "";
+        const extra = userInput.length - target.length;
+        const len = target.length;
+        for (let i = 0; i < len; i++) {
+            const ch = target[i];
+            if (i < userInput.length) {
+                html += `<span class="${userInput[i] === ch ? 'correct' : 'incorrect'}">${escapeChar(ch)}</span>`;
+            } else if (i === userInput.length && !isFinished) {
+                html += `<span class="current">${escapeChar(ch)}</span>`;
+            } else {
+                html += `<span class="pending">${escapeChar(ch)}</span>`;
+            }
+        }
+        if (extra > 0) {
+            const extras = userInput.slice(target.length).split("").map(c => `<span class="extra">${escapeChar(c)}</span>`).join("");
+            html += extras;
+        }
+        textDisplay.innerHTML = html;
+    }
+
+    function escapeChar(c) {
+        if (c === ' ') return '&nbsp;';
+        if (c === '<') return '&lt;';
+        if (c === '>') return '&gt;';
+        if (c === '&') return '&amp;';
+        return c;
+    }
+
+    function computeStats(userInput) {
+        let correct = 0;
+        const minLen = Math.min(userInput.length, target.length);
+        for (let i = 0; i < minLen; i++) {
+            if (userInput[i] === target[i]) correct++;
+        }
+        return {correct, typed: userInput.length};
+    }
+
+    function updateStats() {
+        const now = performance.now();
+        const elapsed = startTime ? (now - startTime) / 1000 : 0;
+        const remaining = Math.max(0, DURATION - elapsed);
+        timerEl.textContent = remaining.toFixed(1) + "s";
+
+        const val = input.value;
+        const {correct, typed} = computeStats(val);
+        const errors = typed - correct;
+        const minutes = elapsed > 0 ? elapsed / 60 : 1; // avoid div by zero for display
+        const wpm = elapsed > 0 ? Math.round((correct / 5) / minutes) : 0;
+        const accuracy = typed === 0 ? 100 : Math.max(0, (correct / typed) * 100);
+
+        wpmEl.textContent = isFinite(wpm) ? wpm : 0;
+        accEl.textContent = accuracy.toFixed(0) + "%";
+        typedEl.textContent = typed;
+        errorsEl.textContent = errors;
+        renderText(val);
+
+        if (!isFinished && remaining <= 0) {
+            finish();
+        }
+    }
+
+    function startTimer() {
+        if (startTime !== null) return;
+        startTime = performance.now();
+        timerId = setInterval(updateStats, 100);
+    }
+
+    function finish() {
+        isFinished = true;
+        clearInterval(timerId);
+        timerId = null;
+        input.disabled = true;
+        updateStats();
+        finalMsg.textContent = `Time's up! WPM: ${wpmEl.textContent}, Accuracy: ${accEl.textContent}, Keystrokes: ${typedEl.textContent}. Click "Try another text" to play again.`;
+    }
+
+    function reset(newText = false) {
+        clearInterval(timerId);
+        timerId = null;
+        startTime = null;
+        isFinished = false;
+        finalMsg.textContent = "";
+        input.disabled = false;
+        input.value = "";
+        if (newText) setText(pickSample(true));
+        else renderText("");
+        timerEl.textContent = DURATION.toFixed(1) + "s";
+        wpmEl.textContent = "0";
+        accEl.textContent = "100%";
+        typedEl.textContent = "0";
+        errorsEl.textContent = "0";
+        input.focus();
+    }
+
+    input.addEventListener('input', () => {
+        if (isFinished) return;
+        if (startTime === null && input.value.length > 0) startTimer();
+        updateStats();
+    });
+
+    restartBtn.addEventListener('click', () => reset(true));
+    resetBtn.addEventListener('click', () => reset(false));
+
+    // Initialize
+    setText(pickSample(true));
+    renderText("");
+})();
+</script>
+</body>
+</html>

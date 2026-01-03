@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f093fb, #f5576c, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.95rem;
+        }
+
+        .header p kbd {
+            background: #333;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            border: 1px solid #555;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: #2d2d44;
+            color: white;
+            border: 2px solid #444;
+        }
+
+        .btn-secondary:hover {
+            background: #3d3d5c;
+            border-color: #667eea;
+        }
+
+        .palette-container {
+            display: flex;
+            height: calc(100vh - 280px);
+            min-height: 400px;
+        }
+
+        .color-block {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .color-block:hover {
+            flex: 1.3;
+        }
+
+        .color-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0);
+            transition: background 0.3s ease;
+        }
+
+        .color-block:hover::before {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .color-info {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .color-block:hover .color-info {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .color-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .color-hex {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .color-rgb {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .lock-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+        }
+
+        .color-block:hover .lock-btn {
+            opacity: 1;
+        }
+
+        .lock-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .lock-btn.locked {
+            opacity: 1;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .lock-btn svg {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        .copy-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .saved-palettes {
+            padding: 20px;
+            background: #16213e;
+        }
+
+        .saved-palettes h3 {
+            color: white;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .saved-list {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .saved-palette {
+            display: flex;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .saved-palette:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .saved-color {
+            width: 40px;
+            height: 50px;
+        }
+
+        .delete-palette {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .saved-palette:hover .delete-palette {
+            opacity: 1;
+        }
+
+        .empty-state {
+            color: #666;
+            font-style: italic;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .generating {
+            animation: pulse 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .color-block {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .color-block:nth-child(1) { animation-delay: 0s; }
+        .color-block:nth-child(2) { animation-delay: 0.1s; }
+        .color-block:nth-child(3) { animation-delay: 0.2s; }
+        .color-block:nth-child(4) { animation-delay: 0.3s; }
+        .color-block:nth-child(5) { animation-delay: 0.4s; }
+
+        @media (max-width: 768px) {
+            .palette-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .color-block {
+                min-height: 120px;
+                flex: none !important;
+            }
+
+            .color-info {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .lock-btn {
+                opacity: 1;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Color Palette Generator</h1>
+        <p>Press <kbd>Spacebar</kbd> to generate • Click color to copy • 🔒 to lock</p>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-primary" onclick="generatePalette()">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+            </svg>
+            Generate
+        </button>
+        <button class="btn btn-secondary" onclick="savePalette()">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"/>
+            </svg>
+            Save Palette
+        </button>
+    </div>
+
+    <div class="palette-container" id="palette"></div>
+
+    <div class="saved-palettes">
+        <h3>
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2z"/>
+            </svg>
+            Saved Palettes
+        </h3>
+        <div class="saved-list" id="savedList">
+            <p class="empty-state">No saved palettes yet. Generate and save your favorites!</p>
+        </div>
+    </div>
+
+    <div class="copy-toast" id="toast">Copied!</div>
+
+    <script>
+        // Color name database
+        const colorNames = {
+            // Reds
+            '#FF0000': 'Red', '#DC143C': 'Crimson', '#B22222': 'Firebrick',
+            '#8B0000': 'Dark Red', '#FF6347': 'Tomato', '#FF4500': 'Orange Red',
+            '#CD5C5C': 'Indian Red', '#F08080': 'Light Coral', '#E9967A': 'Dark Salmon',
+            '#FA8072': 'Salmon', '#FFA07A': 'Light Salmon', '#FF7F50': 'Coral',
+            
+            // Pinks
+            '#FFC0CB': 'Pink', '#FFB6C1': 'Light Pink', '#FF69B4': 'Hot Pink',
+            '#FF1493': 'Deep Pink', '#DB7093': 'Pale Violet Red', '#C71585': 'Medium Violet Red',
+            
+            // Oranges
+            '#FFA500': 'Orange', '#FF8C00': 'Dark Orange', '#FFD700': 'Gold',
+            '#FFDAB9': 'Peach Puff', '#FFE4B5': 'Moccasin', '#FFEFD5': 'Papaya Whip',
+            
+            // Yellows
+            '#FFFF00': 'Yellow', '#FFFFE0': 'Light Yellow', '#FFFACD': 'Lemon Chiffon',
+            '#FAFAD2': 'Light Goldenrod', '#FFEFD5': 'Papaya Whip', '#FFE4B5': 'Moccasin',
+            '#F0E68C': 'Khaki', '#BDB76B': 'Dark Khaki',
+            
+            // Greens
+            '#00FF00': 'Lime', '#32CD32': 'Lime Green', '#90EE90': 'Light Green',
+            '#98FB98': 'Pale Green', '#00FA9A': 'Medium Spring', '#00FF7F': 'Spring Green',
+            '#3CB371': 'Medium Sea', '#2E8B57': 'Sea Green', '#228B22': 'Forest Green',
+            '#008000': 'Green', '#006400': 'Dark Green', '#9ACD32': 'Yellow Green',
+            '#6B8E23': 'Olive Drab', '#808000': 'Olive', '#556B2F': 'Dark Olive',
+            '#66CDAA': 'Medium Aqua', '#8FBC8F': 'Dark Sea Green', '#20B2AA': 'Light Sea',
+            
+            // Cyans
+            '#00FFFF': 'Cyan', '#00CED1': 'Dark Turquoise', '#40E0D0': 'Turquoise',
+            '#48D1CC': 'Medium Turquoise', '#AFEEEE': 'Pale Turquoise', '#7FFFD4': 'Aquamarine',
+            '#E0FFFF': 'Light Cyan',
+            
+            // Blues
+            '#0000FF': 'Blue', '#0000CD': 'Medium Blue', '#00008B': 'Dark Blue',
+            '#000080': 'Navy', '#191970': 'Midnight Blue', '#4169E1': 'Royal Blue',
+            '#4682B4': 'Steel Blue', '#1E90FF': 'Dodger Blue', '#00BFFF': 'Deep Sky',
+            '#87CEEB': 'Sky Blue', '#87CEFA': 'Light Sky', '#ADD8E6': 'Light Blue',
+            '#B0C4DE': 'Light Steel', '#B0E0E6': 'Powder Blue', '#6495ED': 'Cornflower',
+            '#5F9EA0': 'Cadet Blue',
+            
+            // Purples
+            '#800080': 'Purple', '#8B008B': 'Dark Magenta', '#9400D3': 'Dark Violet',
+            '#9932CC': 'Dark Orchid', '#BA55D3': 'Medium Orchid', '#FF00FF': 'Magenta',
+            '#EE82EE': 'Violet', '#DA70D6': 'Orchid', '#DDA0DD': 'Plum',
+            '#D8BFD8': 'Thistle', '#E6E6FA': 'Lavender', '#8A2BE2': 'Blue Violet',
+            '#9370DB': 'Medium Purple', '#7B68EE': 'Medium Slate', '#6A5ACD': 'Slate Blue',
+            '#483D8B': 'Dark Slate', '#663399': 'Rebecca Purple', '#4B0082': 'Indigo',
+            
+            // Browns
+            '#A52A2A': 'Brown', '#8B4513': 'Saddle Brown', '#A0522D': 'Sienna',
+            '#D2691E': 'Chocolate', '#CD853F': 'Peru', '#DEB887': 'Burlywood',
+            '#F4A460': 'Sandy Brown', '#D2B48C': 'Tan', '#BC8F8F': 'Rosy Brown',
+            
+            // Neutrals
+            '#FFFFFF': 'White', '#FFFAFA': 'Snow', '#F0FFF0': 'Honeydew',
+            '#F5FFFA': 'Mint Cream', '#F0FFFF': 'Azure', '#F0F8FF': 'Alice Blue',
+            '#FFF8DC': 'Cornsilk', '#FFFFF0': 'Ivory', '#FFFAF0': 'Floral White',
+            '#FAF0E6': 'Linen', '#FDF5E6': 'Old Lace', '#FAEBD7': 'Antique White',
+            '#FFE4C4': 'Bisque', '#FFDEAD': 'Navajo White', '#F5DEB3': 'Wheat',
+            '#C0C0C0': 'Silver', '#A9A9A9': 'Dark Gray', '#808080': 'Gray',
+            '#696969': 'Dim Gray', '#778899': 'Light Slate', '#708090': 'Slate Gray',
+            '#2F4F4F': 'Dark Slate Gray', '#000000': 'Black'
+        };
+
+        // Creative name prefixes and suffixes for generated names
+        const prefixes = ['Mystic', 'Royal', 'Sunset', 'Ocean', 'Forest', 'Desert', 'Arctic', 'Tropical', 'Vintage', 'Modern', 'Soft', 'Bold', 'Deep', 'Light', 'Warm', 'Cool', 'Electric', 'Pastel', 'Dusty', 'Vivid'];
+        const suffixes = ['Dream', 'Mist', 'Glow', 'Shade', 'Haze', 'Bloom', 'Dusk', 'Dawn', 'Breeze', 'Storm', 'Whisper', 'Echo', 'Spark', 'Flame', 'Wave', 'Stone', 'Silk', 'Velvet', 'Frost', 'Ember'];
+
+        let currentPalette = [];
+        let lockedColors = [false, false, false, false, false];
+
+        function generateRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function getColorName(hex) {
+            // Check if exact match exists
+            const upperHex = hex.toUpperCase();
+            if (colorNames[upperHex]) {
+                return colorNames[upperHex];
+            }
+
+            // Find closest color
+            const rgb = hexToRgb(hex);
+            let closestName = '';
+            let closestDistance = Infinity;
+
+            for (const [colorHex, name] of Object.entries(colorNames)) {
+                const colorRgb = hexToRgb(colorHex);
+                if (colorRgb) {
+                    const distance = Math.sqrt(
+                        Math.pow(rgb.r - colorRgb.r, 2) +
+                        Math.pow(rgb.g - colorRgb.g, 2) +
+                        Math.pow(rgb.b - colorRgb.b, 2)
+                    );
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestName = name;
+                    }
+                }
+            }
+
+            // If close enough, use the base name; otherwise generate creative name
+            if (closestDistance < 50) {
+                return closestName;
+            } else {
+                const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+                return `${prefix} ${suffix}`;
+            }
+        }
+
+        function getLuminance(hex) {
+            const rgb = hexToRgb(hex);
+            return (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+        }
+
+        function getTextColor(hex) {
+            return getLuminance(hex) > 0.5 ? '#000000' : '#FFFFFF';
+        }
+
+        function generatePalette() {
+            const container = document.getElementById('palette');
+            container.classList.add('generating');
+            
+            for (let i = 0; i < 5; i++) {
+                if (!lockedColors[i]) {
+                    currentPalette[i] = generateRandomColor();
+                }
+            }
+
+            renderPalette();
+            
+            setTimeout(() => {
+                container.classList.remove('generating');
+            }, 300);
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('palette');
+            container.innerHTML = '';
+
+            currentPalette.forEach((color, index) => {
+                const rgb = hexToRgb(color);
+                const textColor = getTextColor(color);
+                const colorName = getColorName(color);
+
+                const block = document.createElement('div');
+                block.className = 'color-block';
+                block.style.backgroundColor = color;
+                block.style.color = textColor;
+                block.onclick = (e) => {
+                    if (!e.target.closest('.lock-btn')) {
+                        copyToClipboard(color);
+                    }
+                };
+
+                block.innerHTML = `
+                    <button class="lock-btn ${lockedColors[index] ? 'locked' : ''}" onclick="toggleLock(${index}, event)" style="color: ${textColor}">
+                        ${lockedColors[index] ? 
+                            '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>' : 
+                            '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4a.5.5 0 0 1-1 0V3a2 2 0 0 0-2-2z"/></svg>'
+                        }
+                    </button>
+                    <div class="color-info">
+                        <div class="color-name">${colorName}</div>
+                        <div class="color-hex">${color.toUpperCase()}</div>
+                        <div class="color-rgb">RGB(${rgb.r}, ${rgb.g}, ${rgb.b})</div>
+                    </div>
+                `;
+
+                container.appendChild(block);
+            });
+        }
+
+        function toggleLock(index, event) {
+            event.stopPropagation();
+            lockedColors[index] = !lockedColors[index];
+            renderPalette();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${text.toUpperCase()} to clipboard!`);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(`Copied ${text.toUpperCase()} to clipboard!`);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function savePalette() {
+            const savedPalettes = JSON.parse(localStorage.getItem('colorPalettes') || '[]');
+            const paletteString = currentPalette.join(',');
+            
+            // Check if palette already exists
+            if (savedPalettes.some(p => p.join(',') === paletteString)) {
+                showToast('This palette is already saved!');
+                return;
+            }
+
+            savedPalettes.push([...currentPalette]);
+            localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+            renderSavedPalettes();
+            showToast('Palette saved! ❤️');
+        }
+
+        function loadPalette(index) {
+            const savedPalettes = JSON.parse(localStorage.getItem('colorPalettes') || '[]');
+            if (savedPalettes[index]) {
+                currentPalette = [...savedPalettes[index]];
+                lockedColors = [false, false, false, false, false];
+                renderPalette();
+                showToast('Palette loaded!');
+            }
+        }
+
+        function deletePalette(index, event) {
+            event.stopPropagation();
+            const savedPalettes = JSON.parse(localStorage.getItem('colorPalettes') || '[]');
+            savedPalettes.splice(index, 1);
+            localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+            renderSavedPalettes();
+            showToast('Palette deleted!');
+        }
+
+        function renderSavedPalettes() {
+            const container = document.getElementById('savedList');
+            const savedPalettes = JSON.parse(localStorage.getItem('colorPalettes') || '[]');
+
+            if (savedPalettes.length === 0) {
+                container.innerHTML = '<p class="empty-state">No saved palettes yet. Generate and save your favorites!</p>';
+                return;
+            }
+
+            container.innerHTML = savedPalettes.map((palette, index) => `
+                <div class="saved-palette" onclick="loadPalette(${index})">
+                    ${palette.map(color => `<div class="saved-color" style="background-color: ${color}"></div>`).join('')}
+                    <button class="delete-palette" onclick="deletePalette(${index}, event)">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Keyboard event listener for spacebar
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+                e.preventDefault();
+                generatePalette();
+            }
+        });
+
+        // Initialize
+        function init() {
+            generatePalette();
+            renderSavedPalettes();
+        }
+
+        init();
+    </script>
+</body>
+</html>

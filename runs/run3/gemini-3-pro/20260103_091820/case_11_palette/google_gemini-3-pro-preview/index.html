@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromaGen - Color Palette Generator</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-generate {
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 4px 0 #2980b9;
+        }
+
+        .btn-generate:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-library {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            color: #555;
+        }
+
+        .btn-library:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .btn-save {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background-color: #c0392b;
+        }
+
+        /* Palette Area */
+        .palette-container {
+            flex: 1;
+            display: flex;
+            width: 100%;
+        }
+
+        .color-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: background-color 0.4s ease;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .color-col:hover .col-controls {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .color-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            pointer-events: none; /* Let clicks pass through to column for copy */
+        }
+
+        .color-hex {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+
+        .color-name {
+            font-size: 1rem;
+            color: white;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            opacity: 0.9;
+        }
+
+        .col-controls {
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .btn-lock {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .btn-lock:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .btn-lock.locked {
+            background: rgba(255,255,255,0.3);
+            border-color: white;
+        }
+
+        .btn-lock svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Library Sidebar */
+        .library-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .library-panel.active {
+            transform: translateX(0);
+        }
+
+        .library-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-close-library {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #555;
+        }
+
+        .library-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .saved-palette {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .saved-palette:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+
+        .palette-preview {
+            display: flex;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        .preview-color {
+            flex: 1;
+        }
+
+        .palette-info {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .palette-date {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .btn-delete-palette {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .palette-container {
+                flex-direction: column;
+            }
+            
+            .color-col {
+                min-height: 20vh;
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 0 20px;
+            }
+
+            .color-content {
+                flex-direction: row;
+                background: none;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .color-hex {
+                font-size: 1.2rem;
+            }
+            
+            .color-name {
+                display: none;
+            }
+
+            .col-controls {
+                margin-top: 0;
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .btn-lock {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.69l5.74 5.74a8 8 0 1 1-11.31 0z"></path>
+            </svg>
+            ChromaGen
+        </h1>
+        <div class="controls">
+            <button class="btn-library" id="libraryBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                Library
+            </button>
+            <button class="btn-save" id="saveBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save
+            </button>
+            <button class="btn-generate" id="generateBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                Generate
+            </button>
+        </div>
+    </header>
+
+    <div class="palette-container" id="paletteContainer">
+        <!-- Columns injected by JS -->
+    </div>
+
+    <div class="library-panel" id="libraryPanel">
+        <div class="library-header">
+            <h2>Saved Palettes</h2>
+            <button class="btn-close-library" id="closeLibraryBtn">&times;</button>
+        </div>
+        <div class="library-content" id="libraryContent">
+            <!-- Saved palettes injected by JS -->
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <div class="toast-color-circle" id="toastColor"></div>
+        <span id="toastMsg">Color copied to clipboard!</span>
+    </div>
+
+    <script>
+        // --- Data & State ---
+        const colorNames = {
+            "#000000": "Black", "#000080": "Navy", "#0000FF": "Blue", "#008000": "Green", 
+            "#008080": "Teal", "#00FF00": "Lime", "#00FFFF": "Aqua", "#4B0082": "Indigo", 
+            "#800000": "Maroon", "#800080": "Purple", "#808000": "Olive", "#808080": "Gray", 
+            "#C0C0C0": "Silver", "#FF0000": "Red", "#FF00FF": "Fuchsia", "#FFFF00": "Yellow", 
+            "#FFFFFF": "White", "#F0F8FF": "AliceBlue", "#FAEBD7": "AntiqueWhite", "#7FFFD4": "Aquamarine",
+            "#F5F5DC": "Beige", "#FFE4C4": "Bisque", "#FFEBCD": "BlanchedAlmond", "#8A2BE2": "BlueViolet",
+            "#A52A2A": "Brown", "#DEB887": "BurlyWood", "#5F9EA0": "CadetBlue", "#7FFF00": "Chartreuse",
+            "#D2691E": "Chocolate", "#FF7F50": "Coral", "#6495ED": "CornflowerBlue", "#FFF8DC": "Cornsilk",
+            "#DC143C": "Crimson", "#00FFFF": "Cyan", "#00008B": "DarkBlue", "#008B8B": "DarkCyan",
+            "#B8860B": "DarkGoldenRod", "#A9A9A9": "DarkGray", "#006400": "DarkGreen", "#BDB76B": "DarkKhaki",
+            "#8B008B": "DarkMagenta", "#556B2F": "DarkOliveGreen", "#FF8C00": "DarkOrange", "#9932CC": "DarkOrchid",
+            "#8B0000": "DarkRed", "#E9967A": "DarkSalmon", "#8FBC8F": "DarkSeaGreen", "#483D8B": "DarkSlateBlue",
+            "#2F4F4F": "DarkSlateGray", "#00CED1": "DarkTurquoise", "#9400D3": "DarkViolet", "#FF1493": "DeepPink",
+            "#00BFFF": "DeepSkyBlue", "#696969": "DimGray", "#1E90FF": "DodgerBlue", "#B22222": "FireBrick",
+            "#FFFAF0": "FloralWhite", "#228B22": "ForestGreen", "#DCDCDC": "Gainsboro", "#F8F8FF": "GhostWhite",
+            "#FFD700": "Gold", "#DAA520": "GoldenRod", "#ADFF2F": "GreenYellow", "#F0FFF0": "HoneyDew",
+            "#FF69B4": "HotPink", "#CD5C5C": "IndianRed", "#FFFFF0": "Ivory", "#F0E68C": "Khaki",
+            "#E6E6FA": "Lavender", "#FFF0F5": "LavenderBlush", "#7CFC00": "LawnGreen", "#FFFACD": "LemonChiffon",
+            "#ADD8E6": "LightBlue", "#F08080": "LightCoral", "#E0FFFF": "LightCyan", "#FAFAD2": "LightGoldenRodYellow",
+            "#D3D3D3": "LightGray", "#90EE90": "LightGreen", "#FFB6C1": "LightPink", "#FFA07A": "LightSalmon",
+            "#20B2AA": "LightSeaGreen", "#87CEFA": "LightSkyBlue", "#778899": "LightSlateGray", "#B0C4DE": "LightSteelBlue",
+            "#FFFFE0": "LightYellow", "#32CD32": "LimeGreen", "#FAF0E6": "Linen", "#66CDAA": "MediumAquaMarine",
+            "#0000CD": "MediumBlue", "#BA55D3": "MediumOrchid", "#9370DB": "MediumPurple", "#3CB371": "MediumSeaGreen",
+            "#7B68EE": "MediumSlateBlue", "#00FA9A": "MediumSpringGreen", "#48D1CC": "MediumTurquoise", "#C71585": "MediumVioletRed",
+            "#191970": "MidnightBlue", "#F5FFFA": "MintCream", "#FFE4E1": "MistyRose", "#FFE4B5": "Moccasin",
+            "#FFDEAD": "NavajoWhite", "#FDF5E6": "OldLace", "#6B8E23": "OliveDrab", "#FFA500": "Orange",
+            "#FF4500": "OrangeRed", "#DA70D6": "Orchid", "#EEE8AA": "PaleGoldenRod", "#98FB98": "PaleGreen",
+            "#AFEEEE": "PaleTurquoise", "#DB7093": "PaleVioletRed", "#FFEFD5": "PapayaWhip", "#FFDAB9": "PeachPuff",
+            "#CD853F": "Peru", "#FFC0CB": "Pink", "#DDA0DD": "Plum", "#B0E0E6": "PowderBlue",
+            "#BC8F8F": "RosyBrown", "#4169E1": "RoyalBlue", "#8B4513": "SaddleBrown", "#FA8072": "Salmon",
+            "#F4A460": "SandyBrown", "#2E8B57": "SeaGreen", "#FFF5EE": "SeaShell", "#A0522D": "Sienna",
+            "#87CEEB": "SkyBlue", "#6A5ACD": "SlateBlue", "#708090": "SlateGray", "#FFFAFA": "Snow",
+            "#00FF7F": "SpringGreen", "#4682B4": "SteelBlue", "#D2B48C": "Tan", "#D8BFD8": "Thistle",
+            "#FF6347": "Tomato", "#40E0D0": "Turquoise", "#EE82EE": "Violet", "#F5DEB3": "Wheat",
+            "#F5F5F5": "WhiteSmoke", "#9ACD32": "YellowGreen", "#333333": "Jet", "#2C3E50": "Midnight"
+        };
+
+        const state = {
+            colors: [], // Array of { hex: string, locked: boolean }
+            savedPalettes: JSON.parse(localStorage.getItem('chromaGenPalettes')) || []
+        };
+
+        const NUM_COLORS = 5;
+
+        // --- DOM Elements ---
+        const paletteContainer = document.getElementById('paletteContainer');
+        const generateBtn = document.getElementById('generateBtn');
+        const libraryBtn = document.getElementById('libraryBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const libraryPanel = document.getElementById('libraryPanel');
+        const closeLibraryBtn = document.getElementById('closeLibraryBtn');
+        const libraryContent = document.getElementById('libraryContent');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const toastColor = document.getElementById('toastColor');
+
+        // --- Initialization ---
+        function init() {
+            // Initialize empty color slots
+            for (let i = 0; i < NUM_COLORS; i++) {
+                state.colors.push({ hex: chromaRandom(), locked: false });
+            }
+            renderPalette();
+            renderLibrary();
+        }
+
+        // --- Core Logic ---
+
+        function chromaRandom() {
+            // HSL random for better aesthetic distribution
+            const h = Math.floor(Math.random() * 360);
+            const s = Math.floor(Math.random() * 40) + 60; // 60-100% saturation
+            const l = Math.floor(Math.random() * 40) + 30; // 30-70% lightness
+            return hslToHex(h, s, l);
+        }
+
+        function generatePalette() {
+            state.colors.forEach((color, index) => {
+                if (!color.locked) {
+                    color.hex = chromaRandom();
+                }
+            });
+            updatePaletteUI();
+        }
+
+        function toggleLock(index) {
+            state.colors[index].locked = !state.colors[index].locked;
+            const btn = document.querySelector(`button[data-index="${index}"]`);
+            const icon = btn.querySelector('svg');
+            
+            if (state.colors[index].locked) {
+                btn.classList.add('locked');
+                icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>';
+            } else {
+                btn.classList.remove('locked');
+                icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>';
+            }
+        }
+
+        function copyColor(hex) {
+            navigator.clipboard.writeText(hex).then(() => {
+                showToast(hex);
+            });
+        }
+
+        function showToast(hex) {
+            toastMsg.textContent = `Copied ${hex} to clipboard!`;
+            toastColor.style.backgroundColor = hex;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function savePalette() {
+            const palette = {
+                id: Date.now(),
+                colors: state.colors.map(c => c.hex),
+                date: new Date().toLocaleDateString()
+            };
+            state.savedPalettes.unshift(palette);
+            localStorage.setItem('chromaGenPalettes', JSON.stringify(state.savedPalettes));
+            
+            // Animation feedback for save button
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = 'Saved!';
+            saveBtn.style.backgroundColor = '#27ae60';
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+                saveBtn.style.backgroundColor = '';
+            }, 1000);
+
+            renderLibrary();
+        }
+
+        function deletePalette(id) {
+            state.savedPalettes = state.savedPalettes.filter(p => p.id !== id);
+            localStorage.setItem('chromaGenPalettes', JSON.stringify(state.savedPalettes));
+            renderLibrary();
+        }
+
+        function loadPalette(id) {
+            const palette = state.savedPalettes.find(p => p.id === id);
+            if (palette) {
+                state.colors = palette.colors.map(hex => ({ hex, locked: false }));
+                updatePaletteUI();
+                libraryPanel.classList.remove('active');
+            }
+        }
+
+        // --- Color Utils ---
+
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Find nearest color name using Euclidean distance in RGB space
+        function getNearestColorName(hex) {
+            const rgb = hexToRgb(hex);
+            if (!rgb) return "Color";
+
+            let minDistance = Infinity;
+            let nearestName = "Color";
+
+            for (const [nameHex, name] of Object.entries(colorNames)) {
+                const targetRgb = hexToRgb(nameHex);
+                const distance = Math.sqrt(
+                    Math.pow(rgb.r - targetRgb.r, 2) +
+                    Math.pow(rgb.g - targetRgb.g, 2) +
+                    Math.pow(rgb.b - targetRgb.b, 2)
+                );
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestName = name;
+                }
+            }
+            return nearestName;
+        }
+
+        // Determine text color (black or white) based on luminance
+        function getContrastColor(hex) {
+            const rgb = hexToRgb(hex);
+            // Calculate luminance
+            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        }
+
+        // --- Rendering ---
+
+        function renderPalette() {
+            paletteContainer.innerHTML = '';
+            state.colors.forEach((color, index) => {
+                const col = document.createElement('div');
+                col.className = 'color-col';
+                col.style.backgroundColor = color.hex;
+                col.dataset.index = index;
+
+                // Determine text color for contrast
+                const textColor = getContrastColor(color.hex);
+                
+                // SVG for Open Lock
+                const openLockSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
+                
+                const name = getNearestColorName(color.hex);
+
+                col.innerHTML = `
+                    <div class="color-content">
+                        <span class="color-hex" style="color: ${textColor}">${color.hex}</span>
+                        <span class="color-name" style="color: ${textColor}">${name}</span>
+                    </div>
+                    <div class="col-controls">
+                        <button class="btn-lock" data-index="${index}" style="color: ${textColor}; border-color: ${textColor}80">
+                            ${openLockSvg}
+                        </button>
+                    </div>
+                `;
+
+                // Event Listeners
+                col.addEventListener('click', (e) => {
+                    // If clicking lock button, don't copy
+                    if (e.target.closest('.btn-lock')) return;
+                    copyColor(color.hex);
+                });
+
+                const lockBtn = col.querySelector('.btn-lock');
+                lockBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent copy
+                    toggleLock(index);
+                });
+
+                paletteContainer.appendChild(col);
+            });
+        }
+
+        function updatePaletteUI() {
+            const cols = document.querySelectorAll('.color-col');
+            cols.forEach((col, index) => {
+                const color = state.colors[index];
+                const hexSpan = col.querySelector('.color-hex');
+                const nameSpan = col.querySelector('.color-name');
+                const lockBtn = col.querySelector('.btn-lock');
+                
+                col.style.backgroundColor = color.hex;
+                
+                const textColor = getContrastColor(color.hex);
+                hexSpan.style.color = textColor;
+                nameSpan.style.color = textColor;
+                lockBtn.style.color = textColor;
+                lockBtn.style.borderColor = textColor + '80'; // Add transparency to border
+
+                hexSpan.textContent = color.hex;
+                nameSpan.textContent = getNearestColorName(color.hex);
+            });
+        }
+
+        function renderLibrary() {
+            libraryContent.innerHTML = '';
+            if (state.savedPalettes.length === 0) {
+                libraryContent.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">No saved palettes yet.</p>';
+                return;
+            }
+
+            state.savedPalettes.forEach(palette => {
+                const div = document.createElement('div');
+                div.className = 'saved-palette';
+                
+                const preview = document.createElement('div');
+                preview.className = 'palette-preview';
+                palette.colors.forEach(c => {
+                    const cDiv = document.createElement('div');
+                    cDiv.className = 'preview-color';
+                    cDiv.style.backgroundColor = c;
+                    preview.appendChild(cDiv);
+                });
+                
+                preview.addEventListener('click', () => loadPalette(palette.id));
+
+                const info = document.createElement('div');
+                info.className = 'palette-info';
+                info.innerHTML = `
+                    <span class="palette-date">${palette.date}</span>
+                    <button class="btn-delete-palette" data-id="${palette.id}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                `;
+
+                div.appendChild(preview);
+                div.appendChild(info);
+                libraryContent.appendChild(div);
+            });
+
+            // Add delete listeners
+            document.querySelectorAll('.btn-delete-palette').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    deletePalette(id);
+                });
+            });
+        }
+
+        // --- Event Listeners ---
+
+        generateBtn.addEventListener('click', generatePalette);
+        
+        saveBtn.addEventListener('click', savePalette);
+        
+        libraryBtn.addEventListener('click', () => {
+            libraryPanel.classList.add('active');
+        });
+        
+        closeLibraryBtn.addEventListener('click', () => {
+            libraryPanel.classList.remove('active');
+        });
+
+        // Spacebar to generate
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevent scrolling
+                generatePalette();
+            }
+        });
+
+        // Initialize App
+        init();
+
+    </script>
+</body>
+</html>

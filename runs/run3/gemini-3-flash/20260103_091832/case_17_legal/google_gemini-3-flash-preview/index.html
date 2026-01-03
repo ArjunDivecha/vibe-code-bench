@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Intelligence Workspace</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-sidebar: #020617;
+            --accent: #38bdf8;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --highlight: #fbbf24;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--bg-sidebar);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -0.025em;
+            color: var(--accent);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+            position: relative;
+        }
+
+        #caseSearch {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Main Layout */
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Pane: Results List */
+        #resultsPane {
+            width: 400px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            background-color: var(--bg-sidebar);
+        }
+
+        .case-card {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .case-card:hover { background: #1e293b; }
+        .case-card.active { border-left: 4px solid var(--accent); background: #1e293b; }
+
+        .case-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
+        .case-meta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+        .case-snippet { font-size: 0.85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Middle Pane: Detail View */
+        #detailPane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            padding: 1rem 2rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            gap: 2rem;
+        }
+
+        .tab {
+            padding-bottom: 0.75rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .detail-header { margin-bottom: 2rem; }
+        .detail-header h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+
+        .actions-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        button:hover { background: var(--border); }
+        button.primary { background: var(--accent); color: var(--bg-sidebar); border: none; font-weight: bold; }
+
+        /* Right Pane: Notes */
+        #notesPane {
+            width: 300px;
+            border-left: 1px solid var(--border);
+            padding: 1.5rem;
+            background: var(--bg-sidebar);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .note-item {
+            background: var(--bg-card);
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 0.75rem;
+            position: relative;
+            border-left: 2px solid var(--accent);
+        }
+
+        .note-item .delete-note {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .entity-highlight {
+            background: rgba(56, 189, 248, 0.2);
+            border-bottom: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0 2px;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        pre { white-space: pre-wrap; font-family: inherit; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">VIBE-LAW</div>
+        <div class="search-container">
+            <input type="text" id="caseSearch" placeholder="Search by case title, citation, or legal principle...">
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted)">Workspace v1.0.4</div>
+    </header>
+
+    <main>
+        <aside id="resultsPane">
+            <!-- Results injected here -->
+        </aside>
+
+        <section id="detailPane">
+            <div id="noSelection" class="empty-state">
+                <div>
+                    <h2 style="margin-bottom: 1rem">No Case Selected</h2>
+                    <p>Select a case from the left panel to begin legal analysis.</p>
+                </div>
+            </div>
+            <div id="caseDetail" style="display: none; height: 100%; flex-direction: column;">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('summary')">SUMMARY</div>
+                    <div class="tab" onclick="switchTab('full')">FULL TEXT</div>
+                </div>
+                <div class="content-area">
+                    <div class="detail-header">
+                        <div id="detMeta" class="case-meta"></div>
+                        <h1 id="detTitle"></h1>
+                        <div class="actions-bar">
+                            <button class="primary" onclick="extractEntities()">Extract Entities</button>
+                            <button onclick="saveSelectionAsNote()">Save Selection to Notes</button>
+                        </div>
+                    </div>
+                    <div id="textContent"></div>
+                </div>
+            </div>
+        </section>
+
+        <aside id="notesPane">
+            <h3 style="font-size: 0.9rem; letter-spacing: 1px; color: var(--text-muted)">RESEARCH NOTES</h3>
+            <div id="notesList" class="notes-list">
+                <!-- Notes injected here -->
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem;">
+                Select text in the document and click "Save Selection" to bookmark snippets.
+            </p>
+        </aside>
+    </main>
+
+    <script>
+        // Mock Database
+        const cases = [
+            {
+                id: 1,
+                title: "Anderson v. Pacifica Corp.",
+                court: "Supreme Court of California",
+                date: "Oct 12, 2023",
+                citation: "452 P.3d 112",
+                summary: "A landmark case regarding the liability of digital platforms for algorithmically generated content. The court ruled that Section 230 does not provide blanket immunity for generated outputs.",
+                fullText: "The Petitioner, Anderson, argues that Pacifica Corp's AI system generated defamatory content. Justice Roberts delivered the opinion: 'The digital landscape has evolved beyond mere hosting. When an entity creates or significantly modifies content via automated systems, it assumes the mantle of a publisher.' The court finds that Pacifica Corp exercised editorial control through its proprietary weighting algorithms. DATE: 10/12/2023. SIGNED: Judge Sarah Jenkins."
+            },
+            {
+                id: 2,
+                title: "State of New York v. Blockchain Tech LLC",
+                court: "NY Court of Appeals",
+                date: "Jan 05, 2024",
+                citation: "2024 NY Slip Op 0012",
+                summary: "Investigation into the classification of DAO governance tokens as securities under the Martin Act. Focuses on the 'expectation of profit' from managerial efforts.",
+                fullText: "This matter involves the DAO-X protocol. The Attorney General alleges that the distribution of 'GOV' tokens constitutes an unregistered securities offering. Under the Howey test, we must determine if investors relied on the efforts of others. The record shows that the founders, Michael Chen and David Vance, maintained keys to the treasury until late 2023. DECIDED: January 5, 2024."
+            },
+            {
+                id: 3,
+                title: "United States v. Thorne",
+                court: "U.S. District Court, S.D.N.Y.",
+                date: "Nov 20, 2022",
+                citation: "122 F.Supp.3d 890",
+                summary: "Criminal procedure case involving the use of geo-fence warrants. The court suppressed evidence obtained through a broad Google location data request.",
+                fullText: "Defendant Thorne moves to suppress location data. The Fourth Amendment protects against 'general warrants.' A request for every device within a 3-block radius for a 4-hour window is overly broad. FBI Special Agent Miller testified that no other leads were available. However, privacy interests in aggregate movement data are significant. DATED: 11/20/2022."
+            },
+            {
+                id: 4,
+                title: "Miller v. Horizon Logistics",
+                court: "9th Circuit Court of Appeals",
+                date: "Mar 15, 2023",
+                citation: "88 F.4th 211",
+                summary: "Employment law dispute regarding the status of independent contractors in the gig economy and the 'ABC' test application.",
+                fullText: "The appellants, a class of delivery drivers, seek classification as employees. Horizon Logistics contends they are independent contractors. Under the ABC test, the employer must prove the worker is free from control. Evidence suggests the 'Horizon Dispatch' app strictly controls routes and timing. DECISION: Vacated and Remanded."
+            },
+            {
+                id: 5,
+                title: "BioGenix v. PharmaLink Solutions",
+                court: "Delaware Chancery Court",
+                date: "Feb 14, 2024",
+                citation: "2024-DE-8832",
+                summary: "Breach of contract and trade secret theft regarding mRNA sequencing protocols.",
+                fullText: "BioGenix alleges that former CTO Linda Wu transferred proprietary sequences to PharmaLink. The non-disclosure agreement (NDA) signed on June 1, 2021, is clear. The court finds that the 'Sequence-X' protocol constitutes a trade secret under Delaware law. DAMAGES: $45M."
+            },
+            {
+                id: 6,
+                title: "City of Austin v. ClearSky Energy",
+                court: "Texas Supreme Court",
+                date: "Dec 02, 2023",
+                citation: "677 S.W.3d 401",
+                summary: "Environmental regulation challenge concerning water usage rights for hydrogen production facilities.",
+                fullText: "ClearSky Energy seeks to draw 5 million gallons daily from the Edwards Aquifer. The City argues this violates the 2018 Conservation Act. Justice Morales: 'Water is the lifeblood of our state, but economic development requires infrastructure.' JUDGMENT: Affirmed in part."
+            }
+        ];
+
+        let currentCase = null;
+        let activeTab = 'summary';
+
+        // Initialize
+        function init() {
+            renderResults(cases);
+            loadNotes();
+            
+            document.getElementById('caseSearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = cases.filter(c => 
+                    c.title.toLowerCase().includes(query) || 
+                    c.summary.toLowerCase().includes(query) ||
+                    c.citation.toLowerCase().includes(query)
+                );
+                renderResults(filtered);
+            });
+        }
+
+        function renderResults(list) {
+            const container = document.getElementById('resultsPane');
+            container.innerHTML = '';
+            list.forEach(c => {
+                const div = document.createElement('div');
+                div.className = `case-card ${currentCase?.id === c.id ? 'active' : ''}`;
+                div.onclick = () => selectCase(c);
+                div.innerHTML = `
+                    <div class="case-meta">${c.citation} • ${c.date}</div>
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-snippet">${c.summary}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function selectCase(c) {
+            currentCase = c;
+            document.getElementById('noSelection').style.display = 'none';
+            document.getElementById('caseDetail').style.display = 'flex';
+            
+            // UI Update
+            document.querySelectorAll('.case-card').forEach(el => el.classList.remove('active'));
+            renderResults(cases); // Refresh to show active state
+
+            document.getElementById('detTitle').innerText = c.title;
+            document.getElementById('detMeta').innerText = `${c.court} | ${c.citation} | ${c.date}`;
+            
+            switchTab(activeTab);
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            const tabs = document.querySelectorAll('.tab');
+            tabs[0].classList.toggle('active', tab === 'summary');
+            tabs[1].classList.toggle('active', tab === 'full');
+
+            const content = document.getElementById('textContent');
+            if (tab === 'summary') {
+                content.innerHTML = `<p>${currentCase.summary}</p>`;
+            } else {
+                content.innerHTML = `<pre>${currentCase.fullText}</pre>`;
+            }
+        }
+
+        function extractEntities() {
+            if (!currentCase) return;
+            let text = activeTab === 'summary' ? currentCase.summary : currentCase.fullText;
+            
+            // Simulated NLP: Highlight Names (Capitalized words) and Dates
+            // This is a simple regex for demo purposes
+            const dateRegex = /(\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}\b)/g;
+            const nameRegex = /\b([A-Z][a-z]+ (?:[A-Z][a-z]+|Corp|LLC|Inc|Ltd))\b/g;
+
+            let highlighted = text
+                .replace(dateRegex, '<span class="entity-highlight">$1</span>')
+                .replace(nameRegex, '<span class="entity-highlight">$1</span>');
+
+            document.getElementById('textContent').innerHTML = activeTab === 'full' ? `<pre>${highlighted}</pre>` : `<p>${highlighted}</p>`;
+        }
+
+        // Notes Logic
+        function saveSelectionAsNote() {
+            const selection = window.getSelection().toString().trim();
+            if (!selection) {
+                alert("Please highlight some text in the document first.");
+                return;
+            }
+
+            const note = {
+                id: Date.now(),
+                caseTitle: currentCase.title,
+                text: selection
+            };
+
+            const notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+            notes.unshift(note);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        function loadNotes() {
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+            const container = document.getElementById('notesList');
+            container.innerHTML = '';
+
+            notes.forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'note-item';
+                div.innerHTML = `
+                    <span class="delete-note" onclick="deleteNote(${n.id})">&times;</span>
+                    <div style="font-size: 0.65rem; color: var(--accent); margin-bottom: 4px; font-weight: bold;">${n.caseTitle}</div>
+                    <div>"${n.text}"</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteNote(id) {
+            let notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        init();
+    </script>
+</body>
+</html>

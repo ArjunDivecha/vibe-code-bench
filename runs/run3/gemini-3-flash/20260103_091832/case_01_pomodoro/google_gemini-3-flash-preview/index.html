@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        :root {
+            --tomato-red: #ff6347;
+            --tomato-dark: #e5533d;
+            --bg-color: #fff5f5;
+            --text-color: #2d3436;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+
+        #session-label {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--tomato-red);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #timer-display {
+            font-size: 5rem;
+            font-weight: 800;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        #start-pause {
+            background-color: var(--tomato-red);
+            color: white;
+            flex-grow: 2;
+        }
+
+        #start-pause:hover {
+            background-color: var(--tomato-dark);
+        }
+
+        #reset {
+            background-color: #dfe6e9;
+            color: #636e72;
+            flex-grow: 1;
+        }
+
+        #reset:hover {
+            background-color: #b2bec3;
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--tomato-red);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="session-label">Work 1</div>
+        <div id="timer-display">25:00</div>
+        
+        <div class="controls">
+            <button id="start-pause">Start</button>
+            <button id="reset">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const WORK_TIME = 25 * 60;
+        const BREAK_TIME = 5 * 60;
+
+        let timeLeft = WORK_TIME;
+        let timerId = null;
+        let isWorking = true;
+        let workSessionCount = 1;
+        let breakSessionCount = 1;
+
+        const display = document.getElementById('timer-display');
+        const label = document.getElementById('session-label');
+        const startPauseBtn = document.getElementById('start-pause');
+        const resetBtn = document.getElementById('reset');
+
+        // Audio context for the beep sound
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playBeep() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update page title too
+            document.title = `(${display.textContent}) Pomodoro`;
+        }
+
+        function updateLabel() {
+            if (isWorking) {
+                label.textContent = `Work ${workSessionCount}`;
+                document.body.style.backgroundColor = "#fff5f5";
+            } else {
+                label.textContent = `Break ${breakSessionCount}`;
+                document.body.style.backgroundColor = "#f0fff4"; // Light green for break
+            }
+        }
+
+        function toggleTimer() {
+            if (timerId) {
+                // Pause
+                clearInterval(timerId);
+                timerId = null;
+                startPauseBtn.textContent = 'Start';
+            } else {
+                // Resume/Start
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                startPauseBtn.textContent = 'Pause';
+                timerId = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft < 0) {
+                        handleSessionEnd();
+                    }
+                    updateDisplay();
+                }, 1000);
+            }
+        }
+
+        function handleSessionEnd() {
+            playBeep();
+            if (isWorking) {
+                isWorking = false;
+                timeLeft = BREAK_TIME;
+                workSessionCount++;
+            } else {
+                isWorking = true;
+                timeLeft = WORK_TIME;
+                breakSessionCount++;
+            }
+            updateLabel();
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            timerId = null;
+            isWorking = true;
+            workSessionCount = 1;
+            breakSessionCount = 1;
+            timeLeft = WORK_TIME;
+            startPauseBtn.textContent = 'Start';
+            updateDisplay();
+            updateLabel();
+        }
+
+        startPauseBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Initialize display
+        updateDisplay();
+        updateLabel();
+    </script>
+</body>
+</html>

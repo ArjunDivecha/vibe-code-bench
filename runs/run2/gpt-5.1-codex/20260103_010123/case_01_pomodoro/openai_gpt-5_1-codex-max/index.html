@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pomodoro Timer</title>
+  <style>
+    :root {
+      --tomato: #ff6b6b;
+      --tomato-dark: #ff5252;
+      --break: #2ecc71;
+      --break-dark: #27ae60;
+      --text: #2b2b2b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 50%, #ffc371 100%);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+    }
+    .container {
+      width: min(520px, 92vw);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: #d84315;
+      letter-spacing: 0.4px;
+    }
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fff;
+      background: linear-gradient(120deg, var(--tomato), #ff7b7b);
+      box-shadow: 0 10px 24px rgba(255, 107, 107, 0.35);
+    }
+    .mode-chip svg { width: 18px; height: 18px; }
+    .timer {
+      text-align: center;
+      margin: 10px 0 18px;
+    }
+    .time-display {
+      font-size: 4.3rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #e53935;
+      text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .session-label {
+      margin-top: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #444;
+    }
+    .progress-track {
+      margin: 18px auto 0;
+      height: 10px;
+      width: 100%;
+      border-radius: 999px;
+      background: #ffeae3;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(120deg, #ff6b6b, #ff8e53);
+      transition: width 0.2s linear;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 22px;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-primary {
+      background: linear-gradient(120deg, #ff6b6b, #ff8e53);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(255, 107, 107, 0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(255, 107, 107, 0.35);
+    }
+    .btn-secondary {
+      background: #fff1ed;
+      color: #e53935;
+      border: 1px solid #ffd2c7;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(255, 107, 107, 0.15);
+    }
+    .btn-reset {
+      background: #2d3436;
+      color: #fff;
+    }
+    .btn-reset:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.28);
+    }
+    .footer {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #5d4037;
+      opacity: 0.8;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    .pulse { animation: pulse 0.6s ease; }
+    body.break-mode .time-display { color: #2e7d32; }
+    body.break-mode .mode-chip {
+      background: linear-gradient(120deg, var(--break), var(--break-dark));
+      box-shadow: 0 10px 24px rgba(39, 174, 96, 0.3);
+    }
+    body.break-mode .btn-primary {
+      background: linear-gradient(120deg, var(--break), var(--break-dark));
+      box-shadow: 0 10px 22px rgba(39, 174, 96, 0.28);
+    }
+    body.break-mode .btn-secondary {
+      color: #1b5e20;
+      border-color: #c5f0d1;
+      background: #ecffef;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">Pomodoro Focus</div>
+      <div id="modeChip" class="mode-chip" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v18M3 12h18" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <span id="modeText">Work</span>
+      </div>
+    </div>
+
+    <div class="timer">
+      <div class="time-display" id="timeDisplay">25:00</div>
+      <div class="session-label" id="sessionLabel">Work 1</div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="startBtn">Start</button>
+      <button class="btn-secondary" id="pauseBtn" disabled>Pause</button>
+      <button class="btn-reset" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="footer">Tomato time! 25 minutes of focus followed by a 5 minute break.</div>
+  </div>
+
+  <script>
+    (() => {
+      const WORK_DURATION = 25 * 60;
+      const BREAK_DURATION = 5 * 60;
+
+      let mode = 'work';
+      let workCount = 1;
+      let breakCount = 0;
+      let remainingSeconds = WORK_DURATION;
+      let isRunning = false;
+      let timerInterval = null;
+      let targetTime = null;
+      let audioCtx = null;
+
+      const timeDisplay = document.getElementById('timeDisplay');
+      const sessionLabel = document.getElementById('sessionLabel');
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const modeText = document.getElementById('modeText');
+      const modeChip = document.getElementById('modeChip');
+      const progressBar = document.getElementById('progressBar');
+
+      function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      }
+
+      function updateDisplay() {
+        timeDisplay.textContent = formatTime(remainingSeconds);
+        sessionLabel.textContent = mode === 'work' ? `Work ${workCount}` : `Break ${breakCount}`;
+        modeText.textContent = mode === 'work' ? 'Work' : 'Break';
+        document.body.classList.toggle('break-mode', mode === 'break');
+        const total = mode === 'work' ? WORK_DURATION : BREAK_DURATION;
+        const progress = 100 - ((remainingSeconds / total) * 100);
+        progressBar.style.width = progress + '%';
+      }
+
+      function startTimer() {
+        if (isRunning) return;
+        isRunning = true;
+        startBtn.disabled = true;
+        startBtn.textContent = 'Start';
+        pauseBtn.disabled = false;
+        const now = Date.now();
+        targetTime = now + remainingSeconds * 1000 + 30; // slight cushion
+        timerInterval = setInterval(tick, 200);
+      }
+
+      function tick() {
+        const now = Date.now();
+        const diff = targetTime - now;
+        const secLeft = Math.max(0, Math.round(diff / 1000));
+        if (secLeft !== remainingSeconds) {
+          remainingSeconds = secLeft;
+          updateDisplay();
+        }
+        if (diff <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          isRunning = false;
+          pauseBtn.disabled = true;
+          startBtn.disabled = false;
+          remainingSeconds = 0;
+          updateDisplay();
+          beep();
+          setTimeout(() => switchMode(true), 150); // brief pause before next session
+        }
+      }
+
+      function pauseTimer() {
+        if (!isRunning) return;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        const now = Date.now();
+        remainingSeconds = Math.max(0, Math.round((targetTime - now) / 1000));
+        isRunning = false;
+        startBtn.disabled = false;
+        startBtn.textContent = 'Resume';
+        pauseBtn.disabled = true;
+        updateDisplay();
+      }
+
+      function resetTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        isRunning = false;
+        mode = 'work';
+        workCount = 1;
+        breakCount = 0;
+        remainingSeconds = WORK_DURATION;
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start';
+        pauseBtn.disabled = true;
+        updateDisplay();
+      }
+
+      function switchMode(autoStart = false) {
+        if (mode === 'work') {
+          mode = 'break';
+          breakCount += 1;
+        } else {
+          mode = 'work';
+          workCount += 1;
+        }
+        remainingSeconds = mode === 'work' ? WORK_DURATION : BREAK_DURATION;
+        modeChip.classList.remove('pulse');
+        // trigger pulse animation
+        void modeChip.offsetWidth;
+        modeChip.classList.add('pulse');
+        updateDisplay();
+        if (autoStart) startTimer();
+      }
+
+      function beep() {
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const duration = 0.45;
+          const oscillator = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+          oscillator.connect(gain).connect(audioCtx.destination);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+          console.warn('Beep failed:', e);
+        }
+      }
+
+      startBtn.addEventListener('click', startTimer);
+      pauseBtn.addEventListener('click', pauseTimer);
+      resetBtn.addEventListener('click', resetTimer);
+
+      updateDisplay();
+    })();
+  </script>
+</body>
+</html>

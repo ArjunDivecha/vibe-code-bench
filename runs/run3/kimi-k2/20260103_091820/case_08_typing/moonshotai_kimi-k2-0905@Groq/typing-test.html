@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .text-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .text-display {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .char {
+            position: relative;
+            transition: background-color 0.1s ease;
+        }
+
+        .char.correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .char.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .char.current {
+            background-color: #fff3cd;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+
+        .typing-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        .typing-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .typing-input:disabled {
+            background-color: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .start-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .start-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .new-text-btn {
+            background: #007bff;
+            color: white;
+        }
+
+        .new-text-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .results {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .results h2 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+
+        .results p {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .difficulty-selector label {
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .difficulty-selector select {
+            padding: 8px 15px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⌨️ Typing Speed Test</h1>
+        
+        <div class="difficulty-selector">
+            <label for="difficulty">Difficulty:</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+
+        <div class="timer" id="timer">00:00</div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-label">WPM</div>
+                <div class="stat-value" id="wpm">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value" id="accuracy">100%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Characters</div>
+                <div class="stat-value" id="chars">0/0</div>
+            </div>
+        </div>
+
+        <div class="text-container">
+            <div class="text-display" id="textDisplay"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="typingInput" class="typing-input" placeholder="Click 'Start Test' and begin typing here..." disabled>
+        </div>
+
+        <div class="button-container">
+            <button id="startBtn" class="start-btn">Start Test</button>
+            <button id="resetBtn" class="reset-btn">Reset</button>
+            <button id="newTextBtn" class="new-text-btn">New Text</button>
+        </div>
+
+        <div class="results" id="results">
+            <h2>🎉 Test Complete!</h2>
+            <p id="finalWPM"></p>
+            <p id="finalAccuracy"></p>
+            <p id="finalTime"></p>
+            <p id="finalErrors"></p>
+        </div>
+    </div>
+
+    <script>
+        class TypingTest {
+            constructor() {
+                this.texts = {
+                    easy: [
+                        "The cat sat on the mat. It was a warm day and the sun was shining. Birds sang in the trees.",
+                        "I like to eat pizza. It is my favorite food. I eat it every week with my friends.",
+                        "The dog runs fast. It likes to play ball. We go to the park every day.",
+                        "Books are fun to read. I read every night before bed. Stories take me to new places.",
+                        "Apples are red and green. They are good to eat. I like them in my lunch.",
+                        "The sky is blue. Clouds float by. Sometimes it rains and we stay inside.",
+                        "My bike is fast. I ride it to school. It has two wheels and a bell.",
+                        "Fish swim in the water. They come in many colors. I like to watch them.",
+                        "The sun is bright. It gives us light. We need it to grow plants.",
+                        "Music makes me happy. I like to sing and dance. It is fun to listen to songs."
+                    ],
+                    medium: [
+                        "Technology has transformed how we communicate with each other across vast distances. Instant messaging and video calls have made the world feel smaller.",
+                        "The scientific method involves careful observation, forming hypotheses, and conducting experiments to test theories about the natural world.",
+                        "Environmental conservation requires collective effort from governments, businesses, and individuals to protect our planet's biodiversity.",
+                        "Learning a new language opens doors to different cultures and perspectives, enhancing cognitive abilities and creating new opportunities.",
+                        "Regular exercise and a balanced diet are essential components of a healthy lifestyle that promotes physical and mental wellbeing.",
+                        "Climate change affects weather patterns globally, causing extreme events like floods, droughts, and rising sea levels.",
+                        "Space exploration has led to numerous technological advances that benefit our daily lives, from satellite communications to medical imaging.",
+                        "The internet has revolutionized education by providing access to vast amounts of information and enabling remote learning opportunities.",
+                        "Artificial intelligence is transforming industries by automating tasks, analyzing data, and creating new possibilities for innovation.",
+                        "Reading books regularly improves vocabulary, enhances empathy, and provides mental stimulation that keeps the brain active."
+                    ],
+                    hard: [
+                        "Quantum mechanics challenges our intuitive understanding of reality, presenting phenomena like entanglement and superposition that defy classical physics.",
+                        "The anthropological study of ancient civilizations reveals complex social structures, religious practices, and technological innovations that shaped human development.",
+                        "Neuroplasticity demonstrates the brain's remarkable ability to reorganize itself by forming new neural connections throughout life, challenging previous assumptions about cognitive development.",
+                        "Cryptocurrency represents a paradigm shift in financial systems, utilizing blockchain technology to create decentralized, peer-to-peer transaction networks without traditional banking intermediaries.",
+                        "Photosynthesis, the process by which plants convert light energy into chemical energy, is fundamental to life on Earth, producing oxygen and forming the base of most food chains.",
+                        "The Renaissance period marked a cultural rebirth in Europe, characterized by revolutionary developments in art, science, literature, and philosophy that transformed Western civilization.",
+                        "Epigenetics explores how environmental factors can influence gene expression without altering DNA sequences, revealing the complex interplay between nature and nurture.",
+                        "Globalization has created interconnected economies and cultures, facilitating the exchange of goods, services, and ideas while also presenting challenges to local traditions and environments.",
+                        "The theory of relativity revolutionized our understanding of space, time, and gravity, demonstrating that measurements of these quantities depend on the observer's frame of reference.",
+                        "Biodiversity encompasses the variety of life at genetic, species, and ecosystem levels, providing essential services like pollination, water purification, and climate regulation that support human survival."
+                    ]
+                };
+
+                this.currentText = '';
+                this.currentIndex = 0;
+                this.startTime = null;
+                this.timerInterval = null;
+                this.isTestActive = false;
+                this.correctChars = 0;
+                this.totalChars = 0;
+                this.errors = 0;
+
+                this.initializeElements();
+                this.bindEvents();
+                this.loadText();
+            }
+
+            initializeElements() {
+                this.textDisplay = document.getElementById('textDisplay');
+                this.typingInput = document.getElementById('typingInput');
+                this.startBtn = document.getElementById('startBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.newTextBtn = document.getElementById('newTextBtn');
+                this.timer = document.getElementById('timer');
+                this.wpm = document.getElementById('wpm');
+                this.accuracy = document.getElementById('accuracy');
+                this.chars = document.getElementById('chars');
+                this.results = document.getElementById('results');
+                this.difficulty = document.getElementById('difficulty');
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startTest());
+                this.resetBtn.addEventListener('click', () => this.resetTest());
+                this.newTextBtn.addEventListener('click', () => this.loadNewText());
+                this.typingInput.addEventListener('input', (e) => this.handleInput(e));
+                this.difficulty.addEventListener('change', () => this.loadText());
+            }
+
+            loadText() {
+                const difficulty = this.difficulty.value;
+                const textArray = this.texts[difficulty];
+                this.currentText = textArray[Math.floor(Math.random() * textArray.length)];
+                this.displayText();
+                this.resetTest();
+            }
+
+            loadNewText() {
+                this.loadText();
+            }
+
+            displayText() {
+                this.textDisplay.innerHTML = this.currentText
+                    .split('')
+                    .map((char, index) => `<span class="char" data-index="${index}">${char === ' ' ? '&nbsp;' : char}</span>`)
+                    .join('');
+            }
+
+            startTest() {
+                this.isTestActive = true;
+                this.startTime = Date.now();
+                this.typingInput.disabled = false;
+                this.typingInput.focus();
+                this.startBtn.disabled = true;
+                this.startTimer();
+            }
+
+            startTimer() {
+                this.timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    this.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    if (elapsed > 0) {
+                        this.updateWPM();
+                    }
+                }, 100);
+            }
+
+            handleInput(e) {
+                if (!this.isTestActive) return;
+
+                const inputText = e.target.value;
+                const inputLength = inputText.length;
+
+                // Clear previous highlighting
+                document.querySelectorAll('.char').forEach(char => {
+                    char.classList.remove('correct', 'incorrect', 'current');
+                });
+
+                // Update highlighting
+                for (let i = 0; i < Math.min(inputLength, this.currentText.length); i++) {
+                    const charSpan = document.querySelector(`[data-index="${i}"]`);
+                    if (charSpan) {
+                        if (inputText[i] === this.currentText[i]) {
+                            charSpan.classList.add('correct');
+                            if (i === inputLength - 1) {
+                                this.correctChars++;
+                            }
+                        } else {
+                            charSpan.classList.add('incorrect');
+                            if (i === inputLength - 1) {
+                                this.errors++;
+                            }
+                        }
+                    }
+                }
+
+                // Highlight current position
+                if (inputLength < this.currentText.length) {
+                    const currentChar = document.querySelector(`[data-index="${inputLength}"]`);
+                    if (currentChar) {
+                        currentChar.classList.add('current');
+                    }
+                }
+
+                // Update stats
+                this.totalChars = inputLength;
+                this.updateStats();
+
+                // Check if test is complete
+                if (inputLength >= this.currentText.length) {
+                    this.completeTest();
+                }
+            }
+
+            updateWPM() {
+                if (this.startTime && this.totalChars > 0) {
+                    const timeElapsed = (Date.now() - this.startTime) / 1000 / 60; // in minutes
+                    const wordsTyped = this.totalChars / 5; // standard: 5 characters = 1 word
+                    const wpm = Math.round(wordsTyped / timeElapsed);
+                    this.wpm.textContent = wpm;
+                }
+            }
+
+            updateStats() {
+                const accuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
+                this.accuracy.textContent = `${accuracy}%`;
+                this.chars.textContent = `${this.correctChars}/${this.totalChars}`;
+            }
+
+            completeTest() {
+                this.isTestActive = false;
+                clearInterval(this.timerInterval);
+                this.typingInput.disabled = true;
+                this.startBtn.disabled = false;
+
+                const timeElapsed = (Date.now() - this.startTime) / 1000;
+                const wpm = Math.round((this.totalChars / 5) / (timeElapsed / 60));
+                const accuracy = Math.round((this.correctChars / this.totalChars) * 100);
+
+                this.showResults(wpm, accuracy, timeElapsed);
+            }
+
+            showResults(wpm, accuracy, timeElapsed) {
+                this.results.style.display = 'block';
+                document.getElementById('finalWPM').textContent = `Words Per Minute: ${wpm} WPM`;
+                document.getElementById('finalAccuracy').textContent = `Accuracy: ${accuracy}%`;
+                document.getElementById('finalTime').textContent = `Time: ${Math.floor(timeElapsed / 60)}:${Math.floor(timeElapsed % 60).toString().padStart(2, '0')}`;
+                document.getElementById('finalErrors').textContent = `Total Errors: ${this.errors}`;
+            }
+
+            resetTest() {
+                this.isTestActive = false;
+                this.currentIndex = 0;
+                this.correctChars = 0;
+                this.totalChars = 0;
+                this.errors = 0;
+                this.startTime = null;
+                
+                clearInterval(this.timerInterval);
+                this.timer.textContent = '00:00';
+                this.wpm.textContent = '0';
+                this.accuracy.textContent = '100%';
+                this.chars.textContent = '0/0';
+                this.typingInput.value = '';
+                this.typingInput.disabled = true;
+                this.startBtn.disabled = false;
+                this.results.style.display = 'none';
+                
+                // Clear highlighting
+                document.querySelectorAll('.char').forEach(char => {
+                    char.classList.remove('correct', 'incorrect', 'current');
+                });
+
+                // Highlight first character
+                const firstChar = document.querySelector('[data-index="0"]');
+                if (firstChar) {
+                    firstChar.classList.add('current');
+                }
+            }
+        }
+
+        // Initialize the typing test when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TypingTest();
+        });
+    </script>
+</body>
+</html>

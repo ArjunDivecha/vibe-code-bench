@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Playful Quiz App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+    --bg1:#1c1f2b;
+    --bg2:#131524;
+    --accent:#6c63ff;
+    --accent2:#ff6bcb;
+    --good:#2ecc71;
+    --bad:#e74c3c;
+    --card:#ffffff0f;
+    --text:#e9ecf5;
+}
+*{box-sizing:border-box;}
+body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: radial-gradient(circle at 20% 20%, #20263b, #0e0f18 50%);
+    color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    overflow:hidden;
+}
+#bg-anim{
+    position:fixed;
+    width:200vw;
+    height:200vh;
+    top:-50vh; left:-50vw;
+    background:conic-gradient(from 0deg, rgba(108,99,255,.3), rgba(255,107,203,.25), rgba(108,99,255,.3));
+    filter:blur(80px);
+    animation:spin 18s linear infinite;
+    z-index:0;
+    opacity:0.5;
+}
+@keyframes spin { to{transform:rotate(360deg);} }
+main{
+    position:relative;
+    z-index:1;
+    width:clamp(320px, 90vw, 760px);
+}
+.card{
+    background:var(--card);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;
+    padding:28px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+    backdrop-filter:blur(12px);
+    transform:translateY(10px);
+    opacity:0;
+    pointer-events:none;
+    transition:transform .5s ease, opacity .5s ease;
+}
+.card.active{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:all;
+}
+h1{
+    margin:0 0 14px;
+    font-weight:700;
+    letter-spacing:0.5px;
+}
+p.lead{
+    margin-top:0;
+    color:#b7c0d8;
+}
+button{
+    cursor:pointer;
+    border:none;
+    border-radius:12px;
+    padding:14px 18px;
+    font-size:16px;
+    font-weight:600;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:white;
+    box-shadow:0 10px 30px rgba(108,99,255,.35);
+    transition:transform .2s ease, box-shadow .2s ease, filter .3s ease;
+}
+button:hover{
+    transform:translateY(-1px) scale(1.01);
+    box-shadow:0 12px 34px rgba(108,99,255,.45);
+    filter:brightness(1.05);
+}
+button:active{
+    transform:translateY(0) scale(.99);
+}
+.controls{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+#quiz-screen, #end-screen{margin-top:8px;}
+.progress-wrap{
+    background:rgba(255,255,255,.06);
+    border-radius:999px;
+    overflow:hidden;
+    height:9px;
+    margin:16px 0 22px;
+}
+#progress-bar{
+    height:100%;
+    width:0%;
+    border-radius:inherit;
+    background:linear-gradient(90deg, var(--accent), var(--accent2));
+    transition:width .35s ease;
+}
+.top-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    color:#c6cee3;
+    font-size:14px;
+}
+#question-text{
+    font-size:22px;
+    margin:12px 0 18px;
+    line-height:1.35;
+}
+#choices{
+    display:grid;
+    gap:12px;
+}
+.choice{
+    background:rgba(255,255,255,.04);
+    color:var(--text);
+    text-align:left;
+    border:1px solid rgba(255,255,255,.08);
+    padding:15px 16px;
+    transition:all .18s ease;
+    position:relative;
+    overflow:hidden;
+}
+.choice::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(120deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+    transform:translateX(-100%);
+    transition:transform .4s ease;
+}
+.choice:hover::after{transform:translateX(0);}
+.choice.correct{
+    background:rgba(46,204,113,.14);
+    color:#e9fff0;
+    border-color:rgba(46,204,113,.7);
+    box-shadow:0 10px 30px rgba(46,204,113,.25);
+    animation:pulse .35s ease;
+}
+.choice.wrong{
+    background:rgba(231,76,60,.18);
+    color:#ffe9e9;
+    border-color:rgba(231,76,60,.7);
+    box-shadow:0 10px 30px rgba(231,76,60,.2);
+    animation:shake .25s ease;
+}
+.choice.disabled{
+    pointer-events:none;
+    opacity:0.7;
+}
+@keyframes pulse { from{transform:scale(.99);} to{transform:scale(1);} }
+@keyframes shake { 0%{transform:translateX(0);} 25%{transform:translateX(-4px);} 50%{transform:translateX(4px);} 75%{transform:translateX(-3px);} 100%{transform:translateX(0);} }
+#feedback{
+    min-height:22px;
+    margin-top:12px;
+    font-weight:600;
+    letter-spacing:0.1px;
+}
+.badge{
+    padding:6px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.08);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+}
+#next-btn{
+    margin-top:14px;
+    display:none;
+}
+.hidden{display:none;}
+#final-score{
+    font-size:26px;
+    margin:10px 0 18px;
+}
+.confetti{
+    position:fixed;
+    top:-10px;
+    width:6px; height:14px;
+    background:linear-gradient(180deg, var(--accent), var(--accent2));
+    border-radius:2px;
+    opacity:0.8;
+    animation:fall linear forwards;
+    z-index:2;
+}
+@keyframes fall {
+    to{
+        transform:translate3d(var(--x), 110vh, 0) rotate(320deg);
+        opacity:0;
+    }
+}
+small.tip{
+    color:#a9b6d4;
+}
+</style>
+</head>
+<body>
+<div id="bg-anim"></div>
+<main>
+    <div id="start-screen" class="card active">
+        <h1>✨ Quickfire Quiz</h1>
+        <p class="lead">Ten bite-sized trivia questions. Test your memory, follow the hints, and race your way to a perfect score!</p>
+        <div class="controls">
+            <button id="start-btn">Begin Quiz</button>
+            <span class="badge">10 Questions · Multiple Choice</span>
+        </div>
+        <p class="lead" style="margin-top:12px;"><small class="tip">Tip: Answers light up right after you click.</small></p>
+    </div>
+
+    <div id="quiz-screen" class="card">
+        <div class="top-row">
+            <div>Question <span id="q-number">1</span>/<span id="q-total">10</span></div>
+            <div>Score: <strong id="score">0</strong></div>
+        </div>
+        <div class="progress-wrap"><div id="progress-bar"></div></div>
+        <div id="question-text"></div>
+        <div id="choices"></div>
+        <div id="feedback"></div>
+        <button id="next-btn">Next Question</button>
+    </div>
+
+    <div id="end-screen" class="card">
+        <h1>🎉 Quiz Finished</h1>
+        <div id="final-score"></div>
+        <p id="final-message" class="lead"></p>
+        <div class="controls">
+            <button id="restart-btn">Play Again</button>
+            <span class="badge" id="best-badge"></span>
+        </div>
+    </div>
+</main>
+
+<script>
+const questions = [
+    { q:"Which planet is famous for sometimes raining diamonds?", options:["Mars","Venus","Saturn","Mercury"], answer:2 },
+    { q:"What mythical creature is the national animal of Scotland?", options:["Dragon","Unicorn","Griffin","Stag"], answer:1 },
+    { q:"Which instrument typically has 47 strings and 7 pedals?", options:["Grand Piano","Harp","Cello","Accordion"], answer:1 },
+    { q:"In aviation, what color is a flight recorder's “black box”?", options:["Neon green","Silver","Bright orange","Matte black"], answer:2 },
+    { q:"Point Nemo, the most remote ocean spot, sits in which ocean?", options:["Indian Ocean","Arctic Ocean","Atlantic Ocean","Pacific Ocean"], answer:3 },
+    { q:"Which city is home to a famously leaning bell tower?", options:["Florence","Pisa","Seville","Vienna"], answer:1 },
+    { q:"What gas makes up most of Earth's atmosphere?", options:["Nitrogen","Oxygen","Carbon Dioxide","Hydrogen"], answer:0 },
+    { q:"Which animal can sleep for up to three years without eating?", options:["Koala","Snail","Crocodile","Sloth"], answer:1 },
+    { q:"What is the only food known not to spoil?", options:["Rice","Honey","Salted butter","Olive oil"], answer:1 },
+    { q:"Which metal is liquid at room temperature?", options:["Mercury","Aluminium","Titanium","Zinc"], answer:0 },
+];
+
+const startScreen = document.getElementById('start-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const endScreen = document.getElementById('end-screen');
+const qNumber = document.getElementById('q-number');
+const qTotal = document.getElementById('q-total');
+const questionText = document.getElementById('question-text');
+const choicesDiv = document.getElementById('choices');
+const feedback = document.getElementById('feedback');
+const nextBtn = document.getElementById('next-btn');
+const scoreEl = document.getElementById('score');
+const finalScoreEl = document.getElementById('final-score');
+const finalMsg = document.getElementById('final-message');
+const bestBadge = document.getElementById('best-badge');
+const progressBar = document.getElementById('progress-bar');
+
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+
+qTotal.textContent = questions.length;
+
+document.getElementById('start-btn').addEventListener('click', startQuiz);
+document.getElementById('restart-btn').addEventListener('click', resetQuiz);
+nextBtn.addEventListener('click', nextQuestion);
+
+function switchTo(screen){
+    [startScreen, quizScreen, endScreen].forEach(el=>{
+        if(el===screen){
+            el.classList.add('active');
+        }else{
+            el.classList.remove('active');
+        }
+    });
+}
+function startQuiz(){
+    score = 0;
+    currentIndex = 0;
+    scoreEl.textContent = score;
+    switchTo(quizScreen);
+    setTimeout(()=>showQuestion(), 150);
+}
+function showQuestion(){
+    answered = false;
+    feedback.textContent = '';
+    nextBtn.style.display = 'none';
+    const data = questions[currentIndex];
+    qNumber.textContent = currentIndex+1;
+    progressBar.style.width = `${((currentIndex)/questions.length)*100}%`;
+    questionText.textContent = data.q;
+    choicesDiv.innerHTML = '';
+    data.options.forEach((opt, idx)=>{
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.textContent = opt;
+        btn.dataset.index = idx;
+        btn.addEventListener('click', ()=> selectAnswer(btn, idx));
+        choicesDiv.appendChild(btn);
+    });
+    animateIn(questionText);
+    animateIn(choicesDiv);
+}
+function selectAnswer(btn, idx){
+    if(answered) return;
+    answered = true;
+    const correctIdx = questions[currentIndex].answer;
+    const choiceButtons = [...choicesDiv.children];
+    choiceButtons.forEach((b, i)=>{
+        b.classList.add('disabled');
+        if(i===correctIdx) b.classList.add('correct');
+        if(i===idx && idx!==correctIdx) b.classList.add('wrong');
+    });
+    if(idx === correctIdx){
+        score++;
+        scoreEl.textContent = score;
+        feedback.style.color = "var(--good)";
+        feedback.textContent = "Nice! That's correct.";
+    }else{
+        feedback.style.color = "var(--bad)";
+        feedback.textContent = `Oops! The answer was "${questions[currentIndex].options[correctIdx]}".`;
+    }
+    nextBtn.style.display = 'inline-block';
+    progressBar.style.width = `${((currentIndex+1)/questions.length)*100}%`;
+    if(currentIndex === questions.length-1){
+        nextBtn.textContent = "See Results";
+    }else{
+        nextBtn.textContent = "Next Question";
+    }
+}
+function nextQuestion(){
+    if(!answered) return;
+    currentIndex++;
+    if(currentIndex >= questions.length){
+        endQuiz();
+    }else{
+        showQuestion();
+    }
+}
+function endQuiz(){
+    switchTo(endScreen);
+    finalScoreEl.textContent = `You scored ${score} / ${questions.length}`;
+    const ratio = score/questions.length;
+    let message = "";
+    if(ratio === 1) message = "Flawless victory! You're a trivia legend.";
+    else if(ratio >= .8) message = "So close to perfect. Stellar job!";
+    else if(ratio >= .5) message = "Solid effort! Keep practicing.";
+    else message = "Every genius starts somewhere. Try again!";
+    finalMsg.textContent = message;
+    bestBadge.textContent = ratio>=.8 ? "Gold Streak" : ratio>=.5 ? "Silver Spark" : "Try Again";
+    burstConfetti();
+}
+function resetQuiz(){
+    switchTo(startScreen);
+    finalScoreEl.textContent = '';
+    finalMsg.textContent = '';
+    feedback.textContent = '';
+    choicesDiv.innerHTML = '';
+    progressBar.style.width = "0%";
+}
+function animateIn(el){
+    el.style.opacity = 0;
+    el.style.transform = "translateY(8px)";
+    requestAnimationFrame(()=>{
+        el.style.transition = "opacity .4s ease, transform .4s ease";
+        el.style.opacity = 1;
+        el.style.transform = "translateY(0)";
+    });
+}
+function burstConfetti(){
+    const colors = ["#ff6bcb","#6c63ff","#2ecc71","#f6c90e","#ff7f50"];
+    for(let i=0;i<50;i++){
+        const conf = document.createElement('div');
+        conf.className = 'confetti';
+        conf.style.background = colors[Math.floor(Math.random()*colors.length)];
+        conf.style.left = Math.random()*100 + "vw";
+        conf.style.setProperty('--x', (Math.random()*60-30)+'vw');
+        conf.style.animationDuration = (Math.random()*2+2.5)+'s';
+        document.body.appendChild(conf);
+        setTimeout(()=>conf.remove(), 3500);
+    }
+}
+// allow Enter to start
+document.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+        if(startScreen.classList.contains('active')) startQuiz();
+        else if(endScreen.classList.contains('active')) resetQuiz();
+    }
+});
+</script>
+</body>
+</html>

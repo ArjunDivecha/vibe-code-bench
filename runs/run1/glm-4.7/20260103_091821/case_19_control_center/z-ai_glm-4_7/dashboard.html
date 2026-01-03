@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --blur: 20px;
+        }
+
+        body {
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* Animated Background */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+            z-index: -1;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #8b5cf6;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -10s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #ec4899;
+            top: 50%;
+            left: 50%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(20px, 50px) scale(1.05); }
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border-right: 1px solid var(--glass-border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-text-fill-color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-info h4 {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .widget {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .widget:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .widget-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .widget-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+        }
+
+        /* Active Projects Widget */
+        .projects-widget {
+            grid-column: span 2;
+        }
+
+        .project-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .project-name {
+            font-weight: 500;
+        }
+
+        .project-status {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .project-status.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .project-status.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #8b5cf6);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Quick Links Widget */
+        .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .quick-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .quick-link:hover {
+            background: rgba(99, 102, 241, 0.15);
+            transform: scale(1.02);
+        }
+
+        .quick-link-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .quick-link span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Activity Timeline */
+        .activity-widget {
+            grid-column: span 1;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg-secondary);
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-content h4 {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .timeline-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .timeline-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Task List Widget */
+        .tasks-widget {
+            grid-column: span 1;
+        }
+
+        .task-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .task-input input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .task-input input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .task-input button {
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            width: 44px;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-input button:hover {
+            background: var(--accent-hover);
+        }
+
+        .task-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--glass-border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            font-size: 12px;
+            color: white;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .task-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover .task-delete {
+            opacity: 1;
+        }
+
+        .task-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            width: 90%;
+            max-width: 480px;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.4rem;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .form-group select option {
+            background: var(--bg-secondary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 28px;
+        }
+
+        /* Projects View */
+        .projects-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card-large {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .project-card-large:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .project-card-large .project-header {
+            margin-bottom: 16px;
+        }
+
+        .project-card-large .progress-bar {
+            height: 8px;
+        }
+
+        /* Settings View */
+        .settings-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .settings-section h3 {
+            margin-bottom: 24px;
+            font-size: 1.2rem;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-info h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .settings-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle {
+            width: 52px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle.active {
+            background: var(--accent);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle.active::after {
+            left: 27px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                z-index: 100;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .projects-widget {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">◈</div>
+                Control Center
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-view="home">
+                        <span class="nav-icon">⌂</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-view="projects">
+                        <span class="nav-icon">◉</span>
+                        Projects
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-view="settings">
+                        <span class="nav-icon">⚙</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+            <div class="user-profile">
+                <div class="avatar">JD</div>
+                <div class="user-info">
+                    <h4>John Doe</h4>
+                    <p>Administrator</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Home View -->
+            <div class="view active" id="home-view">
+                <div class="header">
+                    <h1>Welcome back, John</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary">↻ Refresh</button>
+                        <button class="btn btn-primary" id="new-project-btn">+ New Project</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Active Projects Widget -->
+                    <div class="widget projects-widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">Active Projects</h3>
+                            <div class="widget-icon">▤</div>
+                        </div>
+                        <div class="projects-list" id="projects-list">
+                            <!-- Projects will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Links Widget -->
+                    <div class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">Quick Links</h3>
+                            <div class="widget-icon">⚡</div>
+                        </div>
+                        <div class="quick-links-grid">
+                            <div class="quick-link">
+                                <div class="quick-link-icon">📊</div>
+                                <span>Analytics</span>
+                            </div>
+                            <div class="quick-link">
+                                <div class="quick-link-icon">📁</div>
+                                <span>Documents</span>
+                            </div>
+                            <div class="quick-link">
+                                <div class="quick-link-icon">👥</div>
+                                <span>Team</span>
+                            </div>
+                            <div class="quick-link">
+                                <div class="quick-link-icon">💬</div>
+                                <span>Messages</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Timeline Widget -->
+                    <div class="widget activity-widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">Recent Activity</h3>
+                            <div class="widget-icon">◷</div>
+                        </div>
+                        <div class="timeline" id="activity-timeline">
+                            <!-- Timeline items will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Task List Widget -->
+                    <div class="widget tasks-widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">Task List</h3>
+                            <div class="widget-icon">✓</div>
+                        </div>
+                        <div class="task-input">
+                            <input type="text" id="new-task-input" placeholder="Add a new task...">
+                            <button id="add-task-btn">+</button>
+                        </div>
+                        <div class="task-list" id="task-list">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects View -->
+            <div class="view" id="projects-view">
+                <div class="projects-view-header">
+                    <h1>All Projects</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="new-project-btn-2">+ New Project</button>
+                    </div>
+                </div>
+                <div class="projects-grid" id="all-projects-grid">
+                    <!-- All projects will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div class="view" id="settings-view">
+                <div class="header">
+                    <h1>Settings</h1>
+                </div>
+                <div class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Dark Mode</h4>
+                            <p>Enable dark theme for the interface</p>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Reduce Motion</h4>
+                            <p>Minimize animations throughout the app</p>
+                        </div>
+                        <div class="toggle"></div>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Glass Effect</h4>
+                            <p>Enable glassmorphism blur effects</p>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Notifications</h3>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Push Notifications</h4>
+                            <p>Receive notifications for important updates</p>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Email Digest</h4>
+                            <p>Get weekly summary via email</p>
+                        </div>
+                        <div class="toggle"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Project Modal -->
+    <div class="modal-overlay" id="project-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Create New Project</h2>
+                <button class="modal-close" id="close-modal">×</button>
+            </div>
+            <form id="project-form">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="project-name" placeholder="Enter project name..." required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="project-status">
+                        <option value="active">Active</option>
+                        <option value="warning">At Risk</option>
+                        <option value="danger">Delayed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Progress (%)</label>
+                    <input type="number" id="project-progress" min="0" max="100" value="0" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Data Store
+        let projects = [
+            { id: 1, name: 'Website Redesign', status: 'active', progress: 75, team: 5 },
+            { id: 2, name: 'Mobile App v2.0', status: 'warning', progress: 45, team: 8 },
+            { id: 3, name: 'Database Migration', status: 'active', progress: 90, team: 3 },
+            { id: 4, name: 'API Integration', status: 'danger', progress: 20, team: 4 },
+        ];
+
+        let activities = [
+            { id: 1, text: 'Website Redesign milestone completed', detail: 'Design phase finished', time: '2 hours ago' },
+            { id: 2, text: 'New team member added', detail: 'Sarah joined Mobile App team', time: '5 hours ago' },
+            { id: 3, text: 'Database backup completed', detail: 'Automatic backup successful', time: '1 day ago' },
+            { id: 4, text: 'Sprint meeting scheduled', detail: 'Tomorrow at 10:00 AM', time: '2 days ago' },
+        ];
+
+        // Load tasks from localStorage
+        let tasks = JSON.parse(localStorage.getItem('dashboard-tasks')) || [
+            { id: 1, text: 'Review project proposal', completed: false },
+            { id: 2, text: 'Update documentation', completed: true },
+            { id: 3, text: 'Schedule team meeting', completed: false },
+        ];
+
+        // DOM Elements
+        const navLinks = document.querySelectorAll('.nav-link');
+        const views = document.querySelectorAll('.view');
+        const projectsList = document.getElementById('projects-list');
+        const allProjectsGrid = document.getElementById('all-projects-grid');
+        const activityTimeline = document.getElementById('activity-timeline');
+        const taskList = document.getElementById('task-list');
+        const newTaskInput = document.getElementById('new-task-input');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const projectModal = document.getElementById('project-modal');
+        const newProjectBtns = document.querySelectorAll('#new-project-btn, #new-project-btn-2');
+        const closeModalBtn = document.getElementById('close-modal');
+        const cancelModalBtn = document.getElementById('cancel-modal');
+        const projectForm = document.getElementById('project-form');
+
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                const viewId = link.dataset.view + '-view';
+                views.forEach(view => {
+                    view.classList.remove('active');
+                    if (view.id === viewId) {
+                        view.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // Render Projects
+        function renderProjects() {
+            const projectsHTML = projects.map(project => `
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">${project.name}</span>
+                        <span class="project-status ${project.status}">
+                            ${project.status === 'active' ? 'On Track' : project.status === 'warning' ? 'At Risk' : 'Delayed'}
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.progress}%"></div>
+                    </div>
+                    <div class="project-meta">
+                        <span>${project.progress}% complete</span>
+                        <span>${project.team} team members</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            projectsList.innerHTML = projectsHTML;
+            
+            // Render all projects view
+            const allProjectsHTML = projects.map(project => `
+                <div class="project-card-large">
+                    <div class="project-header">
+                        <span class="project-name">${project.name}</span>
+                        <span class="project-status ${project.status}">
+                            ${project.status === 'active' ? 'On Track' : project.status === 'warning' ? 'At Risk' : 'Delayed'}
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${project.progress}%"></div>
+                    </div>
+                    <div class="project-meta">
+                        <span>${project.progress}% complete</span>
+                        <span>${project.team} team members</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            allProjectsGrid.innerHTML = allProjectsHTML;
+        }
+
+        // Render Activities
+        function renderActivities() {
+            const html = activities.map(activity => `
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h4>${activity.text}</h4>
+                        <p>${activity.detail}</p>
+                        <span class="timeline-time">${activity.time}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            activityTimeline.innerHTML = html;
+        }
+
+        // Render Tasks
+        function renderTasks() {
+            const html = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-id="${task.id}"></div>
+                    <span class="task-text">${task.text}</span>
+                    <button class="task-delete" data-id="${task.id}">×</button>
+                </div>
+            `).join('');
+            
+            taskList.innerHTML = html;
+            saveTasks();
+        }
+
+        // Save Tasks to localStorage
+        function saveTasks() {
+            localStorage.setItem('dashboard-tasks', JSON.stringify(tasks));
+        }
+
+        // Add Task
+        function addTask() {
+            const text = newTaskInput.value.trim();
+            if (text) {
+                tasks.unshift({
+                    id: Date.now(),
+                    text: text,
+                    completed: false
+                });
+                newTaskInput.value = '';
+                renderTasks();
+            }
+        }
+
+        addTaskBtn.addEventListener('click', addTask);
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Task Click Handlers
+        taskList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('task-checkbox')) {
+                const id = parseInt(e.target.dataset.id);
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    renderTasks();
+                }
+            }
+            
+            if (e.target.classList.contains('task-delete')) {
+                const id = parseInt(e.target.dataset.id);
+                tasks = tasks.filter(t => t.id !== id);
+                renderTasks();
+            }
+        });
+
+        // Modal Handlers
+        function openModal() {
+            projectModal.classList.add('active');
+        }
+
+        function closeModal() {
+            projectModal.classList.remove('active');
+            projectForm.reset();
+        }
+
+        newProjectBtns.forEach(btn => btn.addEventListener('click', openModal));
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+
+        projectModal.addEventListener('click', (e) => {
+            if (e.target === projectModal) closeModal();
+        });
+
+        // Create Project
+        projectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newProject = {
+                id: Date.now(),
+                name: document.getElementById('project-name').value,
+                status: document.getElementById('project-status').value,
+                progress: parseInt(document.getElementById('project-progress').value),
+                team: Math.floor(Math.random() * 6) + 2
+            };
+            
+            projects.unshift(newProject);
+            renderProjects();
+            closeModal();
+            
+            // Add activity
+            activities.unshift({
+                id: Date.now(),
+                text: `New project created: ${newProject.name}`,
+                detail: 'Project added to dashboard',
+                time: 'Just now'
+            });
+            renderActivities();
+        });
+
+        // Toggle Switches
+        document.querySelectorAll('.toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+            });
+        });
+
+        // Initialize
+        renderProjects();
+        renderActivities();
+        renderTasks();
+    </script>
+</body>
+</html>

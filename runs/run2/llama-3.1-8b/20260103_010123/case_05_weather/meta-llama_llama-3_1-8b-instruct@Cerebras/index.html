@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        .city {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .city:hover {
+            background-color: #ddd;
+        }
+        
+        .condition {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .temperature {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        .humidity {
+            font-size: 18px;
+        }
+        
+        .chart {
+            width: 100%;
+            height: 200px;
+        }
+        
+        .chart canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .city {
+                width: 100%;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Weather Dashboard</h1>
+    <div id="cities">
+        <div class="city" data-city="New York">
+            <div class="condition"></div>
+            <div class="temperature"></div>
+            <div class="humidity"></div>
+        </div>
+        <div class="city" data-city="London">
+            <div class="condition"></div>
+            <div class="temperature"></div>
+            <div class="humidity"></div>
+        </div>
+        <div class="city" data-city="Tokyo">
+            <div class="condition"></div>
+            <div class="temperature"></div>
+            <div class="humidity"></div>
+        </div>
+        <div class="city" data-city="Sydney">
+            <div class="condition"></div>
+            <div class="temperature"></div>
+            <div class="humidity"></div>
+        </div>
+        <div class="city" data-city="Paris">
+            <div class="condition"></div>
+            <div class="temperature"></div>
+            <div class="humidity"></div>
+        </div>
+    </div>
+    <div id="details">
+        <div class="city-name"></div>
+        <div class="condition"></div>
+        <div class="temperature"></div>
+        <div class="humidity"></div>
+    </div>
+    <canvas id="chart" class="chart"></canvas>
+    <script>
+        const cities = [
+            { name: "New York", temperature: 22, condition: "sunny", humidity: 60 },
+            { name: "London", temperature: 18, condition: "cloudy", humidity: 70 },
+            { name: "Tokyo", temperature: 25, condition: "rainy", humidity: 80 },
+            { name: "Sydney", temperature: 28, condition: "sunny", humidity: 50 },
+            { name: "Paris", temperature: 20, condition: "cloudy", humidity: 65 }
+        ];
+        
+        const details = document.getElementById("details");
+        const chart = document.getElementById("chart");
+        const ctx = chart.getContext("2d");
+        
+        ctx.fillStyle = "#f0f0f0";
+        ctx.fillRect(0, 0, chart.width, chart.height);
+        
+        const drawChart = () => {
+            ctx.clearRect(0, 0, chart.width, chart.height);
+            ctx.fillStyle = "#f0f0f0";
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            cities.forEach((city, index) => {
+                ctx.fillStyle = "#000";
+                ctx.font = "14px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                ctx.fillText(city.name, chart.width / 2, index * 20 + 10);
+                ctx.fillText(city.temperature, chart.width / 2, index * 20 + 25);
+            });
+        };
+        
+        drawChart();
+        
+        document.querySelectorAll(".city").forEach(city => {
+            city.addEventListener("click", () => {
+                const cityName = city.getAttribute("data-city");
+                const cityData = cities.find(c => c.name === cityName);
+                details.style.display = "block";
+                details.querySelector(".city-name").textContent = cityData.name;
+                details.querySelector(".condition").textContent = cityData.condition;
+                details.querySelector(".temperature").textContent = `${cityData.temperature}°C`;
+                details.querySelector(".humidity").textContent = `${cityData.humidity}%`;
+                if (cityData.condition === "sunny") {
+                    details.querySelector(".condition").style.color = "#ffff00";
+                } else if (cityData.condition === "cloudy") {
+                    details.querySelector(".condition").style.color = "#808080";
+                } else if (cityData.condition === "rainy") {
+                    details.querySelector(".condition").style.color = "#0000ff";
+                }
+                details.querySelector(".city-name").style.background = cityData.condition === "sunny" ? "#ffff00" : cityData.condition === "cloudy" ? "#808080" : "#0000ff";
+                details.querySelector(".city-name").style.color = "#fff";
+            });
+        });
+        
+        document.getElementById("cities").addEventListener("click", e => {
+            if (e.target.classList.contains("city")) {
+                return;
+            }
+            details.style.display = "none";
+        });
+    </script>
+</body>
+</html>

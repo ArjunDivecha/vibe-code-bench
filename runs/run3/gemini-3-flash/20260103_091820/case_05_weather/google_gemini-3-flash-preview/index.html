@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCast Weather Dashboard</title>
+    <style>
+        :root {
+            --bg-sunny: linear-gradient(135deg, #fceeb5 0%, #f39c12 100%);
+            --bg-cloudy: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+            --bg-rainy: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            --card-glass: rgba(255, 255, 255, 0.2);
+            --text-main: #2d3436;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: all 0.4s ease;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-sunny);
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* City Grid */
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .city-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .city-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.35);
+        }
+
+        .city-card.active {
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        .city-card h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
+        .city-card .temp { font-size: 2rem; font-weight: bold; }
+        .city-card .icon { font-size: 3rem; margin: 10px 0; }
+
+        /* Detail Section */
+        .details-panel {
+            background: rgba(0,0,0,0.15);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .detail-info { flex: 1; min-width: 250px; }
+        .detail-info h3 { margin-top: 0; font-size: 2rem; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .stat-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; }
+        .stat-label { font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; }
+
+        /* Chart Section */
+        .chart-container {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 15px;
+            color: #333;
+        }
+
+        .chart-bar-wrap {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            gap: 15px;
+            padding-top: 20px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .bar {
+            width: 100%;
+            background: #3498db;
+            border-radius: 5px 5px 0 0;
+            position: relative;
+        }
+
+        .bar-label { font-size: 0.7rem; margin-top: 8px; text-align: center; font-weight: bold; }
+        .bar-val { font-size: 0.7rem; margin-bottom: 4px; }
+
+        @media (max-width: 600px) {
+            .city-grid { grid-template-columns: 1fr 1fr; }
+            .details-panel { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>SkyCast Dashboard</h1>
+            <p id="current-time"></p>
+        </header>
+
+        <div class="city-grid" id="city-grid">
+            <!-- Cities injected here -->
+        </div>
+
+        <div class="details-panel" id="details-panel">
+            <!-- Details injected here -->
+        </div>
+
+        <div class="chart-container">
+            <h4 style="margin-top: 0;">Temperature Comparison (°C)</h4>
+            <div class="chart-bar-wrap" id="chart-wrap">
+                <!-- Chart bars injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const weatherData = [
+            { id: 0, name: 'New York', temp: 22, condition: 'Sunny', icon: '☀️', humidity: 45, wind: '12 km/h', pressure: '1012 hPa', bg: 'var(--bg-sunny)' },
+            { id: 1, name: 'London', temp: 15, condition: 'Cloudy', icon: '☁️', humidity: 78, wind: '18 km/h', pressure: '1008 hPa', bg: 'var(--bg-cloudy)' },
+            { id: 2, name: 'Tokyo', temp: 28, condition: 'Sunny', icon: '☀️', humidity: 60, wind: '8 km/h', pressure: '1015 hPa', bg: 'var(--bg-sunny)' },
+            { id: 3, name: 'Sydney', temp: 19, condition: 'Rainy', icon: '🌧️', humidity: 85, wind: '25 km/h', pressure: '1002 hPa', bg: 'var(--bg-rainy)' },
+            { id: 4, name: 'Paris', temp: 17, condition: 'Cloudy', icon: '🌥️', humidity: 65, wind: '10 km/h', pressure: '1010 hPa', bg: 'var(--bg-cloudy)' }
+        ];
+
+        let activeCityId = 0;
+
+        function init() {
+            renderGrid();
+            renderDetails(0);
+            renderChart();
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleString();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('city-grid');
+            grid.innerHTML = weatherData.map(city => `
+                <div class="city-card ${city.id === activeCityId ? 'active' : ''}" onclick="selectCity(${city.id})">
+                    <h2>${city.name}</h2>
+                    <div class="icon">${city.icon}</div>
+                    <div class="temp">${city.temp}°C</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9">${city.condition}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderDetails(id) {
+            const city = weatherData.find(c => c.id === id);
+            const panel = document.getElementById('details-panel');
+            
+            // Change body background
+            document.body.style.background = city.bg;
+
+            panel.innerHTML = `
+                <div class="detail-info">
+                    <h3>${city.name} ${city.icon}</h3>
+                    <p>Current conditions in ${city.name} are ${city.condition.toLowerCase()} with a temperature of ${city.temp}°C.</p>
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div class="stat-label">Humidity</div>
+                            <div class="stat-val">${city.humidity}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Wind Speed</div>
+                            <div class="stat-val">${city.wind}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Condition</div>
+                            <div class="stat-val">${city.condition}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Pressure</div>
+                            <div class="stat-val">${city.pressure}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; font-size: 8rem;">
+                    ${city.icon}
+                </div>
+            `;
+        }
+
+        function renderChart() {
+            const wrap = document.getElementById('chart-wrap');
+            const maxTemp = Math.max(...weatherData.map(c => c.temp));
+            
+            wrap.innerHTML = weatherData.map(city => {
+                const height = (city.temp / maxTemp) * 100;
+                let barColor = '#f39c12';
+                if(city.condition === 'Rainy') barColor = '#3498db';
+                if(city.condition === 'Cloudy') barColor = '#7f8c8d';
+
+                return `
+                <div class="bar-group">
+                    <span class="bar-val">${city.temp}°</span>
+                    <div class="bar" style="height: ${height}%; background-color: ${barColor}"></div>
+                    <span class="bar-label">${city.name}</span>
+                </div>
+            `}).join('');
+        }
+
+        window.selectCity = function(id) {
+            activeCityId = id;
+            renderGrid();
+            renderDetails(id);
+        }
+
+        init();
+    </script>
+</body>
+</html>

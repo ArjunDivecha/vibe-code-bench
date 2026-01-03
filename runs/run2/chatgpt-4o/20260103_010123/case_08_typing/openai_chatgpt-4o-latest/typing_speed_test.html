@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Speed Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    #textDisplay {
+      border: 1px solid #ccc;
+      padding: 20px;
+      font-size: 18px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      margin-bottom: 20px;
+      min-height: 100px;
+    }
+    #textDisplay span.correct {
+      color: green;
+    }
+    #textDisplay span.incorrect {
+      color: red;
+    }
+    #inputArea {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      box-sizing: border-box;
+    }
+    #stats {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    #timer {
+      font-weight: bold;
+    }
+    #restartBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Typing Speed Test</h1>
+  <div id="textDisplay"></div>
+  <textarea id="inputArea" rows="5" placeholder="Start typing here..." disabled></textarea>
+  <div id="stats">
+    <div>Time: <span id="timer">0</span> seconds</div>
+    <div>WPM: <span id="wpm">0</span></div>
+    <div>Accuracy: <span id="accuracy">100</span>%</div>
+  </div>
+  <button id="restartBtn">Start Test</button>
+
+  <script>
+    const texts = [
+      "The quick brown fox jumps over the lazy dog.",
+      "Typing fast requires practice and concentration.",
+      "A journey of a thousand miles begins with a single step.",
+      "She sells seashells by the seashore on sunny days.",
+      "In the middle of difficulty lies opportunity.",
+      "Creativity is intelligence having fun.",
+      "Stay hungry, stay foolish.",
+      "Success is not final, failure is not fatal.",
+      "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.",
+      "Do not go where the path may lead, go instead where there is no path and leave a trail."
+    ];
+
+    const textDisplay = document.getElementById('textDisplay');
+    const inputArea = document.getElementById('inputArea');
+    const timerEl = document.getElementById('timer');
+    const wpmEl = document.getElementById('wpm');
+    const accuracyEl = document.getElementById('accuracy');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let timer = null;
+    let time = 0;
+    let currentText = '';
+    let started = false;
+    let totalTyped = 0;
+    let correctTyped = 0;
+    const TIME_LIMIT = 30;
+
+    function pickRandomText() {
+      return texts[Math.floor(Math.random() * texts.length)];
+    }
+
+    function renderText(text) {
+      textDisplay.innerHTML = '';
+      for (let char of text) {
+        const span = document.createElement('span');
+        span.textContent = char;
+        textDisplay.appendChild(span);
+      }
+    }
+
+    function startTest() {
+      currentText = pickRandomText();
+      renderText(currentText);
+      inputArea.value = '';
+      inputArea.disabled = false;
+      inputArea.focus();
+      time = 0;
+      totalTyped = 0;
+      correctTyped = 0;
+      started = false;
+      timerEl.textContent = '0';
+      wpmEl.textContent = '0';
+      accuracyEl.textContent = '100';
+      if (timer) clearInterval(timer);
+    }
+
+    function updateStats() {
+      const minutes = time / 60;
+      const words = correctTyped / 5;
+      const wpm = minutes > 0 ? Math.round(words / minutes) : 0;
+      const accuracy = totalTyped > 0 ? Math.round((correctTyped / totalTyped) * 100) : 100;
+      wpmEl.textContent = wpm;
+      accuracyEl.textContent = accuracy;
+    }
+
+    function endTest() {
+      inputArea.disabled = true;
+      clearInterval(timer);
+    }
+
+    inputArea.addEventListener('input', () => {
+      if (!started) {
+        started = true;
+        timer = setInterval(() => {
+          time++;
+          timerEl.textContent = time;
+          updateStats();
+          if (time >= TIME_LIMIT) {
+            endTest();
+          }
+        }, 1000);
+      }
+
+      const input = inputArea.value;
+      const spans = textDisplay.querySelectorAll('span');
+      totalTyped = input.length;
+      correctTyped = 0;
+      for (let i = 0; i < spans.length; i++) {
+        const char = input[i];
+        const span = spans[i];
+        if (char == null) {
+          span.classList.remove('correct', 'incorrect');
+        } else if (char === span.textContent) {
+          span.classList.add('correct');
+          span.classList.remove('incorrect');
+          correctTyped++;
+        } else {
+          span.classList.add('incorrect');
+          span.classList.remove('correct');
+        }
+      }
+      updateStats();
+    });
+
+    restartBtn.addEventListener('click', startTest);
+
+    // Initialize
+    startTest();
+  </script>
+</body>
+</html>

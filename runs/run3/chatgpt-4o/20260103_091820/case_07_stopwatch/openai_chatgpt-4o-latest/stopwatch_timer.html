@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stopwatch & Timer</title>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .mode-toggle {
+      margin-bottom: 20px;
+    }
+
+    .display {
+      font-size: 48px;
+      background-color: #222;
+      padding: 20px 40px;
+      border: 2px solid #0f0;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    .controls button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 5px;
+      background-color: #0f0;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .controls button:disabled {
+      background-color: #444;
+      color: #aaa;
+    }
+
+    .lap-times, .timer-set {
+      margin-top: 20px;
+    }
+
+    .lap-times ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .lap-times li {
+      margin: 5px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      font-size: 16px;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Stopwatch & Timer</h1>
+
+  <div class="mode-toggle">
+    <button id="switchToStopwatch">Stopwatch</button>
+    <button id="switchToTimer">Timer</button>
+  </div>
+
+  <div class="display" id="display">00:00:00.000</div>
+
+  <div class="controls" id="stopwatchControls">
+    <button id="startStopwatch">Start</button>
+    <button id="stopStopwatch" disabled>Stop</button>
+    <button id="lapStopwatch" disabled>Lap</button>
+    <button id="resetStopwatch">Reset</button>
+  </div>
+
+  <div class="lap-times" id="lapTimes"></div>
+
+  <div class="controls hidden" id="timerControls">
+    <div class="timer-set">
+      <label>Set Timer:
+        <input type="number" id="timerHours" min="0" value="0"> h
+        <input type="number" id="timerMinutes" min="0" max="59" value="0"> m
+        <input type="number" id="timerSeconds" min="0" max="59" value="0"> s
+      </label>
+    </div>
+    <div style="margin-top:10px;">
+      <button id="startTimer">Start</button>
+      <button id="pauseTimer" disabled>Pause</button>
+      <button id="resumeTimer" disabled>Resume</button>
+      <button id="resetTimer">Reset</button>
+    </div>
+  </div>
+
+  <audio id="timerAlarm" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+
+  <script>
+    const display = document.getElementById('display');
+
+    const switchToStopwatchBtn = document.getElementById('switchToStopwatch');
+    const switchToTimerBtn = document.getElementById('switchToTimer');
+
+    const stopwatchControls = document.getElementById('stopwatchControls');
+    const timerControls = document.getElementById('timerControls');
+
+    const startStopwatchBtn = document.getElementById('startStopwatch');
+    const stopStopwatchBtn = document.getElementById('stopStopwatch');
+    const lapStopwatchBtn = document.getElementById('lapStopwatch');
+    const resetStopwatchBtn = document.getElementById('resetStopwatch');
+    const lapTimes = document.getElementById('lapTimes');
+
+    const startTimerBtn = document.getElementById('startTimer');
+    const pauseTimerBtn = document.getElementById('pauseTimer');
+    const resumeTimerBtn = document.getElementById('resumeTimer');
+    const resetTimerBtn = document.getElementById('resetTimer');
+
+    const timerHoursInput = document.getElementById('timerHours');
+    const timerMinutesInput = document.getElementById('timerMinutes');
+    const timerSecondsInput = document.getElementById('timerSeconds');
+
+    const timerAlarm = document.getElementById('timerAlarm');
+
+    let mode = 'stopwatch';
+
+    function switchMode(newMode) {
+      mode = newMode;
+      if (mode === 'stopwatch') {
+        stopwatchControls.classList.remove('hidden');
+        timerControls.classList.add('hidden');
+        lapTimes.classList.remove('hidden');
+        display.textContent = '00:00:00.000';
+      } else {
+        stopwatchControls.classList.add('hidden');
+        timerControls.classList.remove('hidden');
+        lapTimes.classList.add('hidden');
+        updateTimerDisplay(timerRemaining);
+      }
+      resetStopwatch();
+      resetTimer();
+    }
+
+    switchToStopwatchBtn.onclick = () => switchMode('stopwatch');
+    switchToTimerBtn.onclick = () => switchMode('timer');
+
+    // Stopwatch
+    let stopwatchStartTime = null;
+    let stopwatchInterval = null;
+    let stopwatchElapsed = 0;
+    let lapList = [];
+
+    function formatTime(ms) {
+      let milliseconds = ms % 1000;
+      let totalSeconds = Math.floor(ms / 1000);
+      let seconds = totalSeconds % 60;
+      let totalMinutes = Math.floor(totalSeconds / 60);
+      let minutes = totalMinutes % 60;
+      let hours = Math.floor(totalMinutes / 60);
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:` +
+             `${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+    }
+
+    function updateStopwatchDisplay() {
+      const now = Date.now();
+      const elapsed = now - stopwatchStartTime + stopwatchElapsed;
+      display.textContent = formatTime(elapsed);
+    }
+
+    function startStopwatch() {
+      stopwatchStartTime = Date.now();
+      stopwatchInterval = setInterval(updateStopwatchDisplay, 31);
+      startStopwatchBtn.disabled = true;
+      stopStopwatchBtn.disabled = false;
+      lapStopwatchBtn.disabled = false;
+    }
+
+    function stopStopwatch() {
+      clearInterval(stopwatchInterval);
+      stopwatchElapsed += Date.now() - stopwatchStartTime;
+      startStopwatchBtn.disabled = false;
+      stopStopwatchBtn.disabled = true;
+      lapStopwatchBtn.disabled = true;
+    }
+
+    function resetStopwatch() {
+      clearInterval(stopwatchInterval);
+      stopwatchStartTime = null;
+      stopwatchElapsed = 0;
+      display.textContent = '00:00:00.000';
+      lapList = [];
+      lapTimes.innerHTML = '';
+      startStopwatchBtn.disabled = false;
+      stopStopwatchBtn.disabled = true;
+      lapStopwatchBtn.disabled = true;
+    }
+
+    function lapStopwatch() {
+      const now = Date.now();
+      const elapsed = now - stopwatchStartTime + stopwatchElapsed;
+      lapList.push(formatTime(elapsed));
+      let html = '<ul>';
+      lapList.forEach((lap, index) => {
+        html += `<li>Lap ${index + 1}: ${lap}</li>`;
+      });
+      html += '</ul>';
+      lapTimes.innerHTML = html;
+    }
+
+    startStopwatchBtn.onclick = startStopwatch;
+    stopStopwatchBtn.onclick = stopStopwatch;
+    resetStopwatchBtn.onclick = resetStopwatch;
+    lapStopwatchBtn.onclick = lapStopwatch;
+
+    // Timer
+    let timerDuration = 0;
+    let timerRemaining = 0;
+    let timerInterval = null;
+    let timerEndTime = null;
+
+    function updateTimerDisplay(ms) {
+      display.textContent = formatTime(ms);
+    }
+
+    function tickTimer() {
+      const remaining = timerEndTime - Date.now();
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        timerRemaining = 0;
+        updateTimerDisplay(0);
+        timerAlarm.play();
+        pauseTimerBtn.disabled = true;
+        resumeTimerBtn.disabled = true;
+        startTimerBtn.disabled = false;
+        return;
+      }
+      timerRemaining = remaining;
+      updateTimerDisplay(remaining);
+    }
+
+    function startTimer() {
+      const h = parseInt(timerHoursInput.value) || 0;
+      const m = parseInt(timerMinutesInput.value) || 0;
+      const s = parseInt(timerSecondsInput.value) || 0;
+      timerDuration = ((h * 3600) + (m * 60) + s) * 1000;
+      if (timerDuration <= 0) return;
+      timerRemaining = timerDuration;
+      timerEndTime = Date.now() + timerDuration;
+      timerInterval = setInterval(tickTimer, 200);
+      tickTimer();
+
+      startTimerBtn.disabled = true;
+      pauseTimerBtn.disabled = false;
+      resumeTimerBtn.disabled = true;
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerRemaining = timerEndTime - Date.now();
+      pauseTimerBtn.disabled = true;
+      resumeTimerBtn.disabled = false;
+    }
+
+    function resumeTimer() {
+      timerEndTime = Date.now() + timerRemaining;
+      timerInterval = setInterval(tickTimer, 200);
+      pauseTimerBtn.disabled = false;
+      resumeTimerBtn.disabled = true;
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerDuration = 0;
+      timerRemaining = 0;
+      updateTimerDisplay(0);
+      timerHoursInput.value = 0;
+      timerMinutesInput.value = 0;
+      timerSecondsInput.value = 0;
+      startTimerBtn.disabled = false;
+      pauseTimerBtn.disabled = true;
+      resumeTimerBtn.disabled = true;
+    }
+
+    startTimerBtn.onclick = startTimer;
+    pauseTimerBtn.onclick = pauseTimer;
+    resumeTimerBtn.onclick = resumeTimer;
+    resetTimerBtn.onclick = resetTimer;
+
+    // Initialize with stopwatch mode
+    switchMode('stopwatch');
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law Legal Case Search</title>
+    <style>
+        :root {
+            --primary: #0d1b2a;
+            --secondary: #1b263b;
+            --accent: #415a77;
+            --highlight: #778da9;
+            --text: #e0e1dd;
+            --text-secondary: #a9a9a9;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--secondary);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .logo span {
+            color: var(--highlight);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .search-bar::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-bar:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--highlight);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        .results-pane {
+            width: 40%;
+            border-right: 1px solid var(--accent);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .detail-pane {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .case-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--accent);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .case-item:hover {
+            background-color: var(--secondary);
+        }
+
+        .case-item.active {
+            background-color: var(--accent);
+        }
+
+        .case-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .case-meta {
+            display: flex;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .case-meta div {
+            margin-right: 1rem;
+        }
+
+        .case-snippet {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .detail-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .detail-meta {
+            display: flex;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .detail-meta div {
+            margin-right: 1rem;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid var(--highlight);
+            color: var(--highlight);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .tab-content.hidden {
+            display: none;
+        }
+
+        .actions {
+            padding: 1rem;
+            border-top: 1px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            background-color: var(--accent);
+            color: var(--text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--highlight);
+        }
+
+        .btn-extract {
+            background-color: var(--success);
+        }
+
+        .btn-extract:hover {
+            background-color: #388e3c;
+        }
+
+        .sidebar {
+            width: 300px;
+            border-left: 1px solid var(--accent);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        .note-item {
+            padding: 0.75rem;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .note-snippet {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .note-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-remove {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.8rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .highlight {
+            background-color: rgba(255, 193, 7, 0.3);
+            padding: 0.1rem 0.2rem;
+            border-radius: 2px;
+        }
+
+        .split-view {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .detail-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">Vibe-<span>Law</span></div>
+        <div class="search-container">
+            <input type="text" class="search-bar" id="searchBar" placeholder="Search case law by keyword, court, or date...">
+        </div>
+        <div class="user-actions">
+            <!-- User actions could go here -->
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="results-pane" id="resultsPane">
+            <!-- Results will be populated here -->
+        </div>
+        <div class="detail-pane" id="detailPane">
+            <!-- Detail view will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        // Mock legal cases data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Smith v. State of California",
+                court: "California Supreme Court",
+                date: "2023-05-15",
+                snippet: "The court ruled on the admissibility of digital evidence in criminal proceedings, establishing new precedents for search and seizure in cyberspace.",
+                summary: "This landmark case addressed the Fourth Amendment implications of digital searches and established a framework for law enforcement access to cloud-based data. The court balanced privacy rights against legitimate investigative needs.",
+                fullText: "THE PEOPLE, Plaintiff and Respondent, v. JOHN SMITH, Defendant and Appellant. Supreme Court of California. In this case, the defendant was charged with multiple counts of fraud related to unauthorized access to digital financial records. The primary issue before the court was whether law enforcement's acquisition of data from a third-party cloud service provider constituted a 'search' under the Fourth Amendment. The court found that individuals maintain a reasonable expectation of privacy in their digital communications, even when stored with third parties. The ruling established that law enforcement must obtain a warrant based on probable cause before compelling third-party providers to disclose private digital communications. This decision has significant implications for digital privacy rights and law enforcement procedures in the digital age."
+            },
+            {
+                id: 2,
+                title: "Anderson v. TechCorp",
+                court: "Federal Circuit Court",
+                date: "2023-03-22",
+                snippet: "Intellectual property dispute concerning software patent infringement and the scope of algorithmic patentability in artificial intelligence systems.",
+                summary: "The Federal Circuit examined the boundaries of software patent eligibility under 35 U.S.C. § 101, specifically addressing machine learning algorithms. The court clarified that abstract ideas implemented on generic computers are not patentable.",
+                fullText: "ANDERSON, Plaintiff, v. TECHCORP, Defendant. United States Court of Appeals for the Federal Circuit. This appeal involves a dispute over the validity of Patent No. 9,876,543, which claims methods for training neural networks. Plaintiff Anderson challenged the district court's ruling that the patent was invalid under 35 U.S.C. § 101 as claiming patent-ineligible subject matter. The Federal Circuit affirmed, finding that the claimed methods were directed to abstract mathematical concepts without significantly more. The court emphasized that simply implementing an abstract idea on a computer does not transform it into patent-eligible subject matter. The decision reinforces the principle that patent claims must demonstrate a technical improvement to be eligible for protection."
+            },
+            {
+                id: 3,
+                title: "Williams v. Metropolitan Hospital",
+                court: "New York Appellate Division",
+                date: "2023-01-30",
+                snippet: "Medical malpractice case involving informed consent and disclosure requirements for experimental treatments in oncology.",
+                summary: "The appellate court addressed the standard for informed consent in experimental cancer treatments, determining that physicians must disclose all material risks, including those related to investigational therapies.",
+                fullText: "WILLIAMS, Appellant, v. METROPOLITAN HOSPITAL, Respondent. Appellate Division of the Supreme Court of New York. Plaintiff Williams underwent an experimental immunotherapy treatment for pancreatic cancer after providing informed consent. Following severe adverse reactions, Williams sued for medical malpractice, claiming inadequate disclosure of risks. The trial court granted summary judgment to the hospital. The Appellate Division reversed, holding that the hospital failed to meet its duty to disclose all material risks associated with the experimental treatment. The court emphasized that patients must be fully informed of both the nature and risks of experimental treatments to make truly informed decisions about their care."
+            },
+            {
+                id: 4,
+                title: "Brown v. National Bank",
+                court: "Seventh Circuit Court of Appeals",
+                date: "2022-11-12",
+                snippet: "Class action lawsuit concerning predatory lending practices and violations of the Truth in Lending Act in subprime mortgage loans.",
+                summary: "The Seventh Circuit affirmed the certification of a class action against National Bank for failing to provide required disclosures under TILA, resulting in borrowers paying excessive fees and interest rates.",
+                fullText: "BROWN, et al., Plaintiffs-Appellees, v. NATIONAL BANK, Defendant-Appellant. United States Court of Appeals for the Seventh Circuit. This consolidated appeal involves a class action alleging violations of the Truth in Lending Act (TILA) in connection with subprime mortgage lending. Plaintiffs, representing a class of borrowers, claimed that National Bank failed to provide required disclosures, leading to excessive finance charges. The district court certified the class and granted partial summary judgment for plaintiffs. The Seventh Circuit affirmed, finding that National Bank's disclosures were materially misleading and did not comply with TILA's requirements. The decision clarifies lenders' obligations under TILA and strengthens consumer protections in mortgage lending."
+            },
+            {
+                id: 5,
+                title: "Davis v. City Police Department",
+                court: "Ninth Circuit Court of Appeals",
+                date: "2022-09-05",
+                snippet: "Section 1983 civil rights action alleging excessive force during arrest and failure to intervene by supervisory officers.",
+                summary: "The Ninth Circuit addressed qualified immunity for police officers in excessive force cases, holding that clearly established law prohibited the use of force under the circumstances presented.",
+                fullText: "DAVIS, Plaintiff-Appellant, v. CITY POLICE DEPARTMENT, et al., Defendants-Appellees. United States Court of Appeals for the Ninth Circuit. Plaintiff Davis brought this Section 1983 action against police officers for excessive force during his arrest. The district court granted summary judgment to defendants based on qualified immunity. The Ninth Circuit reversed in part, finding that the officers violated clearly established law when they used force against an unarmed, restrained individual. The court emphasized that officers cannot use force to punish or retaliate against individuals who are no longer resisting arrest or posing a threat. The decision reinforces constitutional protections against excessive force by law enforcement officers."
+            },
+            {
+                id: 6,
+                title: "Miller v. Global Manufacturing",
+                court: "Eastern District of Michigan",
+                date: "2022-07-18",
+                snippet: "Product liability case involving defective automotive parts and the learned intermediary doctrine in pharmaceutical manufacturing.",
+                summary: "The district court addressed the learned intermediary doctrine in the context of prescription medical devices, determining that manufacturers must warn physicians of known risks.",
+                fullText: "MILLER, Plaintiff, v. GLOBAL MANUFACTURING, Defendant. United States District Court for the Eastern District of Michigan. Plaintiff Miller suffered adverse reactions after receiving a prescription medical device manufactured by defendant. The case centered on whether defendant adequately warned prescribing physicians of known risks. The court applied the learned intermediary doctrine, holding that manufacturers of prescription medical devices must provide adequate warnings to physicians who act as intermediaries between the manufacturer and patient. The court found that defendant's warnings were inadequate as a matter of law, creating a genuine issue of material fact precluding summary judgment."
+            },
+            {
+                id: 7,
+                title: "Johnson v. State Education Board",
+                court: "Eleventh Circuit Court of Appeals",
+                date: "2022-04-25",
+                snippet: "Constitutional challenge to state education funding formula and equal protection claims under the Fourteenth Amendment.",
+                summary: "The Eleventh Circuit addressed equal protection challenges to state education funding, finding that disparities did not violate the Fourteenth Amendment without evidence of discriminatory intent.",
+                fullText: "JOHNSON, et al., Plaintiffs-Appellants, v. STATE EDUCATION BOARD, Defendant-Appellee. United States Court of Appeals for the Eleventh Circuit. Plaintiffs, representing school districts and students, challenged Florida's education funding formula as violating the Equal Protection Clause of the Fourteenth Amendment. The district court granted judgment for defendants. The Eleventh Circuit affirmed, holding that education funding disparities alone do not violate equal protection without evidence of discriminatory intent or purpose. The court emphasized that legislative funding decisions are entitled to strong deference unless shown to be invidiously discriminatory."
+            },
+            {
+                id: 8,
+                title: "Thompson v. Renewable Energy Corp",
+                court: "Texas Supreme Court",
+                date: "2022-02-10",
+                snippet: "Environmental tort case concerning wind turbine noise pollution and nuisance claims in residential areas.",
+                summary: "The Texas Supreme Court addressed nuisance claims related to wind energy facilities, balancing renewable energy development against property owners' rights.",
+                fullText: "THOMPSON, Petitioner, v. RENEWABLE ENERGY CORP, Respondent. Supreme Court of Texas. This case involves nuisance claims by homeowners against a wind energy facility. Plaintiffs alleged that noise from wind turbines constituted a private nuisance interfering with their use and enjoyment of property. The court balanced the public interest in renewable energy development against private property rights. The court held that while wind energy facilities are generally beneficial to the public, they may still be enjoined if they create a substantial and unreasonable interference with neighboring properties. The decision establishes a framework for evaluating nuisance claims in the context of renewable energy development."
+            },
+            {
+                id: 9,
+                title: "Roberts v. Social Media Platform",
+                court: "Northern District of California",
+                date: "2021-12-03",
+                snippet: "Section 230 immunity challenge and defamation claims against social media platforms for user-generated content.",
+                summary: "The district court addressed the scope of Section 230 immunity for social media platforms, finding that platforms are generally immune from liability for user-generated content.",
+                fullText: "ROBERTS, Plaintiff, v. SOCIAL MEDIA PLATFORM, Defendant. United States District Court for the Northern District of California. Plaintiff Roberts brought defamation claims against defendant social media platform for user-generated content posted on its platform. The court granted defendant's motion to dismiss based on Section 230 immunity. The court found that defendant was a provider of an interactive computer service and that the complained-of content was created by third-party users. The court emphasized that Section 230 provides broad immunity to interactive computer services for third-party content, with limited exceptions. The decision reinforces the scope of Section 230 protection for social media platforms."
+            },
+            {
+                id: 10,
+                title: "Clark v. Federal Communications Commission",
+                court: "D.C. Circuit Court of Appeals",
+                date: "2021-10-15",
+                snippet: "Administrative law challenge to net neutrality regulations and agency authority under the Communications Act.",
+                summary: "The D.C. Circuit addressed the scope of FCC authority to regulate internet service providers, upholding certain net neutrality provisions while striking others.",
+                fullText: "CLARK, et al., Petitioners, v. FEDERAL COMMUNICATIONS COMMISSION, Respondent. United States Court of Appeals for the District of Columbia Circuit. Petitioners challenged the FCC's 2017 Restoring Internet Freedom Order, which repealed net neutrality rules. The court upheld the FCC's conclusion that it lacked authority to impose common carrier obligations on broadband providers. However, the court vacated portions of the order that preempted state net neutrality laws, finding that the FCC failed to provide adequate justification for such preemption. The decision clarifies the boundaries of federal and state authority over internet regulation."
+            },
+            {
+                id: 11,
+                title: "Adams v. Insurance Company",
+                court: "Seventh Circuit Court of Appeals",
+                date: "2021-08-22",
+                snippet: "Insurance coverage dispute involving business interruption claims related to pandemic-related business closures.",
+                summary: "The Seventh Circuit addressed insurance coverage for pandemic-related business losses, finding that most policies did not cover viral contamination.",
+                fullText: "ADAMS, et al., Plaintiffs-Appellants, v. INSURANCE COMPANY, Defendant-Appellee. United States Court of Appeals for the Seventh Circuit. Plaintiffs, representing businesses closed during the pandemic, brought claims for business interruption coverage under various commercial insurance policies. The district court granted judgment for defendant insurers. The Seventh Circuit affirmed, holding that most policies required direct physical loss or damage to property, which viral contamination does not constitute. The court emphasized that courts must enforce insurance contracts as written, even during unprecedented circumstances. The decision has significant implications for pandemic-related insurance coverage disputes."
+            },
+            {
+                id: 12,
+                title: "White v. Employment Agency",
+                court: "Second Circuit Court of Appeals",
+                date: "2021-06-30",
+                snippet: "Employment discrimination case involving algorithmic bias in hiring processes and Title VII compliance.",
+                summary: "The Second Circuit addressed the application of Title VII to algorithmic hiring tools, finding that disparate impact claims can apply to automated employment decisions.",
+                fullText: "WHITE, Plaintiff-Appellant, v. EMPLOYMENT AGENCY, Defendant-Appellee. United States Court of Appeals for the Second Circuit. Plaintiff White brought Title VII claims challenging defendant's use of an automated hiring algorithm that allegedly discriminated against female applicants. The district court dismissed the claims for failure to state a cause of action. The Second Circuit reversed, holding that Title VII's disparate impact framework applies to algorithmic employment decisions. The court emphasized that employers using algorithmic tools must ensure they do not have discriminatory effects, regardless of intent. The decision is significant for the developing law on artificial intelligence in employment."
+            }
+        ];
+
+        // DOM Elements
+        const searchBar = document.getElementById('searchBar');
+        const resultsPane = document.getElementById('resultsPane');
+        const detailPane = document.getElementById('detailPane');
+
+        // State
+        let currentCase = null;
+        let activeTab = 'summary';
+        let notes = JSON.parse(localStorage.getItem('vibeLawNotes') || '[]');
+
+        // Initialize the application
+        function init() {
+            renderResults(mockCases);
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            searchBar.addEventListener('input', handleSearch);
+        }
+
+        // Handle search input
+        function handleSearch() {
+            const query = searchBar.value.toLowerCase();
+            if (query.length === 0) {
+                renderResults(mockCases);
+                return;
+            }
+
+            const filteredCases = mockCases.filter(c => 
+                c.title.toLowerCase().includes(query) ||
+                c.court.toLowerCase().includes(query) ||
+                c.snippet.toLowerCase().includes(query) ||
+                c.date.includes(query)
+            );
+
+            renderResults(filteredCases);
+        }
+
+        // Render search results
+        function renderResults(cases) {
+            if (cases.length === 0) {
+                resultsPane.innerHTML = '<div class="no-results">No cases found matching your search.</div>';
+                return;
+            }
+
+            resultsPane.innerHTML = cases.map(c => `
+                <div class="case-item" data-id="${c.id}">
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-meta">
+                        <div>${c.court}</div>
+                        <div>${c.date}</div>
+                    </div>
+                    <div class="case-snippet">${c.snippet}</div>
+                </div>
+            `).join('');
+
+            // Add click event listeners to case items
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const caseId = parseInt(item.getAttribute('data-id'));
+                    showCaseDetail(caseId);
+                });
+            });
+        }
+
+        // Show case detail view
+        function showCaseDetail(caseId) {
+            currentCase = mockCases.find(c => c.id === caseId);
+            if (!currentCase) return;
+
+            // Update active state in results
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.classList.toggle('active', parseInt(item.getAttribute('data-id')) === caseId);
+            });
+
+            // Render detail pane
+            detailPane.innerHTML = `
+                <div class="detail-header">
+                    <div>
+                        <div class="detail-title">${currentCase.title}</div>
+                        <div class="detail-meta">
+                            <div>${currentCase.court}</div>
+                            <div>${currentCase.date}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-main">
+                        <div class="tabs">
+                            <div class="tab ${activeTab === 'summary' ? 'active' : ''}" data-tab="summary">Summary</div>
+                            <div class="tab ${activeTab === 'full' ? 'active' : ''}" data-tab="full">Full Text</div>
+                        </div>
+                        <div class="tab-content ${activeTab !== 'summary' ? 'hidden' : ''}" id="summaryTab">
+                            ${currentCase.summary}
+                        </div>
+                        <div class="tab-content ${activeTab !== 'full' ? 'hidden' : ''}" id="fullTextTab">
+                            ${currentCase.fullText}
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-extract" id="extractBtn">Extract Entities</button>
+                            <button class="btn" id="saveNoteBtn">Save Selection as Note</button>
+                        </div>
+                    </div>
+                    <div class="sidebar">
+                        <h3>Notes</h3>
+                        <div id="notesList">
+                            <!-- Notes will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add tab switching functionality
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    activeTab = tab.getAttribute('data-tab');
+                    showCaseDetail(caseId); // Re-render with new active tab
+                });
+            });
+
+            // Add extract entities functionality
+            document.getElementById('extractBtn').addEventListener('click', extractEntities);
+
+            // Add save note functionality
+            document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
+
+            // Render notes
+            renderNotes();
+        }
+
+        // Extract entities (simulate highlighting)
+        function extractEntities() {
+            const contentElement = document.getElementById(activeTab === 'summary' ? 'summaryTab' : 'fullTextTab');
+            let text = contentElement.innerHTML;
+
+            // Simulate entity extraction - highlight names and dates
+            text = text.replace(/\b[A-Z][a-z]+ v\. [A-Z][a-z]+/g, '<span class="highlight">$&</span>');
+            text = text.replace(/\b(19|20)\d{2}(-\d{2})?(-\d{2})?\b/g, '<span class="highlight">$&</span>');
+            text = text.replace(/\bSupreme Court\b/g, '<span class="highlight">$&</span>');
+            text = text.replace(/\bCourt of Appeals\b/g, '<span class="highlight">$&</span>');
+            text = text.replace(/\bDistrict Court\b/g, '<span class="highlight">$&</span>');
+
+            contentElement.innerHTML = text;
+        }
+
+        // Save selected text as note
+        function saveNote() {
+            const contentElement = document.getElementById(activeTab === 'summary' ? 'summaryTab' : 'fullTextTab');
+            const selectedText = window.getSelection().toString().trim();
+
+            if (selectedText.length === 0) {
+                alert('Please select some text to save as a note.');
+                return;
+            }
+
+            const newNote = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: selectedText,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            notes.push(newNote);
+            localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        // Render notes in sidebar
+        function renderNotes() {
+            const notesList = document.getElementById('notesList');
+            if (!notesList) return;
+
+            const caseNotes = notes.filter(note => note.caseId === currentCase.id);
+
+            if (caseNotes.length === 0) {
+                notesList.innerHTML = '<p>No notes for this case.</p>';
+                return;
+            }
+
+            notesList.innerHTML = caseNotes.map(note => `
+                <div class="note-item">
+                    <div class="note-snippet">${note.text}</div>
+                    <div class="note-meta">
+                        <span>${note.date}</span>
+                        <button class="btn-remove" data-id="${note.id}">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add remove functionality
+            document.querySelectorAll('.btn-remove').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const noteId = parseInt(e.target.getAttribute('data-id'));
+                    notes = notes.filter(note => note.id !== noteId);
+                    localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+                    renderNotes();
+                });
+            });
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

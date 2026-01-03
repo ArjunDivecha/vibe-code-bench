@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law Legal Case Search</title>
+    <style>
+        :root {
+            --primary-dark: #0a192f;
+            --secondary-dark: #112240;
+            --accent-blue: #5d9bff;
+            --accent-light: #ccd6f6;
+            --accent-green: #64ffda;
+            --text-primary: #e6f1ff;
+            --text-secondary: #8892b0;
+            --border-color: #233554;
+            --highlight: #ffd700;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--secondary-dark);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .logo span {
+            color: var(--accent-blue);
+        }
+
+        .search-container {
+            padding: 1.5rem 2rem;
+            background-color: var(--secondary-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            background-color: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .results-pane {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .result-count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .case-item {
+            background-color: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .case-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .case-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-light);
+        }
+
+        .case-meta {
+            display: flex;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.7rem;
+        }
+
+        .case-court {
+            margin-right: 1rem;
+        }
+
+        .case-snippet {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-pane {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--secondary-dark);
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-light);
+        }
+
+        .detail-meta {
+            display: flex;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            background-color: var(--secondary-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .detail-text {
+            line-height: 1.8;
+        }
+
+        .highlight {
+            background-color: rgba(255, 215, 0, 0.2);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .controls {
+            padding: 1rem 1.5rem;
+            background-color: var(--secondary-dark);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            background-color: transparent;
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: rgba(93, 155, 255, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: var(--primary-dark);
+        }
+
+        .btn-primary:hover {
+            background-color: #4a8ae5;
+        }
+
+        .notes-sidebar {
+            width: 300px;
+            background-color: var(--secondary-dark);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .note-item {
+            background-color: var(--primary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .note-text {
+            margin-bottom: 0.5rem;
+        }
+
+        .note-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .note-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .note-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .note-btn:hover {
+            color: var(--accent-blue);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .results-pane {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .notes-sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Vibe-<span>Law</span></div>
+        <div class="user-info">Legal Research Workspace</div>
+    </header>
+
+    <div class="search-container">
+        <input type="text" class="search-bar" id="searchInput" placeholder="Search case law by keyword, court, or date...">
+    </div>
+
+    <div class="main-content">
+        <div class="results-pane">
+            <div class="results-header">
+                <h2>Case Results</h2>
+                <div class="result-count" id="resultCount">15 cases found</div>
+            </div>
+            <div id="resultsList">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+
+        <div class="detail-pane hidden" id="detailPane">
+            <div class="detail-header">
+                <h2 class="detail-title" id="detailTitle">Case Title</h2>
+                <div class="detail-meta">
+                    <span class="case-court" id="detailCourt">Court Name</span>
+                    <span class="case-date" id="detailDate">Date</span>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="summary">Summary</div>
+                <div class="tab" data-tab="fulltext">Full Text</div>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="summaryPane">
+                    <div class="detail-text" id="summaryText">
+                        <!-- Summary content -->
+                    </div>
+                </div>
+                <div class="tab-pane" id="fulltextPane">
+                    <div class="detail-text" id="fullText">
+                        <!-- Full text content -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="extractEntities">Extract Entities</button>
+                <button class="btn btn-primary" id="addNote">Add to Notes</button>
+            </div>
+        </div>
+
+        <div class="notes-sidebar">
+            <div class="notes-header">
+                <h3>Research Notes</h3>
+                <button class="note-btn" id="clearNotes">Clear All</button>
+            </div>
+            <div class="notes-list" id="notesList">
+                <!-- Notes will be populated here -->
+            </div>
+            <div class="note-actions">
+                <button class="btn" id="saveNotes">Save Notes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock legal cases data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson",
+                court: "Supreme Court of California",
+                date: "2023-05-15",
+                snippet: "Landmark decision on property rights and adverse possession. The court ruled that continuous occupation for 10 years establishes ownership.",
+                summary: "This case addressed the legal principles of adverse possession in California. The plaintiff, Smith, had occupied a parcel of land for over 12 years without objection from the registered owner. The Supreme Court ruled in favor of Smith, establishing that continuous, open, and notorious possession for the statutory period creates a presumption of ownership. The decision reinforces the importance of property owners actively protecting their rights.",
+                fullText: "IN THE SUPREME COURT OF CALIFORNIA\n\nSMITH v. JOHNSON\nNo. S234567\n\nOpinion by Justice Martinez\n\nThis case comes before us to determine whether adverse possession can be established when a party has continuously occupied land for more than the statutory period without the registered owner's consent or objection.\n\nI. FACTS\nPlaintiff Mary Smith began occupying a 5-acre parcel in Sonoma County in 2011. The land was registered to defendant Robert Johnson, who had inherited it from his uncle. Smith built a fence, cultivated a garden, and maintained the property as her own. Johnson, residing in Los Angeles, was unaware of Smith's presence until 2022 when he decided to sell the land.\n\nII. PROCEDURAL HISTORY\nJohnson filed an unlawful detainer action in 2022. Smith counterclaimed for adverse possession. The trial court found in favor of Johnson, but the Court of Appeal reversed, finding all elements of adverse possession met.\n\nIII. DISCUSSION\nCalifornia Civil Code section 325 establishes that adverse possession requires: (1) actual possession, (2) open and notorious use, (3) exclusive possession, (4) hostile claim, and (5) continuous possession for five years. The evidence clearly shows all elements were satisfied.\n\nCONCLUSION\nThe judgment of the Court of Appeal is affirmed. Smith is entitled to quiet title to the property."
+            },
+            {
+                id: 2,
+                title: "State v. Rodriguez",
+                court: "New York Court of Appeals",
+                date: "2023-03-22",
+                snippet: "Digital privacy rights and search warrants for electronic devices. The court established new precedent for Fourth Amendment protections in cybercrime investigations.",
+                summary: "The New York Court of Appeals addressed the scope of search warrants for digital devices in criminal investigations. Defendant Rodriguez was charged with financial fraud after authorities seized his smartphone and laptop. The court ruled that digital searches require specific particularity regarding the data sought, and that blanket searches of electronic devices violate the Fourth Amendment. The decision establishes important precedents for digital privacy rights.",
+                fullText: "NEW YORK COURT OF APPEALS\n\nTHE PEOPLE OF THE STATE OF NEW YORK, Respondent,\nv.\nCARLOS RODRIGUEZ, Appellant.\n\nCourt of Appeals No. 123\n\nOpinion by Judge Thompson\n\nThis appeal requires us to determine the scope of search warrants for digital devices under the Fourth Amendment.\n\nFACTS\nDefendant Carlos Rodriguez was arrested for wire fraud. Police obtained a warrant to search his apartment, which included seizing his laptop and smartphone. At trial, the prosecution introduced evidence from these devices, including financial records and communications.\n\nRodriguez moved to suppress this evidence, arguing the warrant was overbroad and lacked particularity for digital searches. The motion was denied.\n\nANALYSIS\nThe Fourth Amendment requires warrants to particularly describe the place to be searched and the persons or things to be seized. Digital devices contain vast amounts of personal information, requiring heightened particularity.\n\nWe hold that search warrants for electronic devices must specify the types of data sought and the timeframes relevant to the investigation. General warrants to search entire devices violate constitutional protections.\n\nCONCLUSION\nThe order of the Appellate Division should be reversed, and the case remanded for further proceedings consistent with this opinion."
+            },
+            {
+                id: 3,
+                title: "Anderson v. Metro Transit Authority",
+                court: "Seventh Circuit Court of Appeals",
+                date: "2023-01-10",
+                snippet: "ADA compliance for public transportation and wheelchair accessibility. The ruling expanded definition of reasonable accommodation.",
+                summary: "The Seventh Circuit addressed whether public transportation authorities must provide wheelchair-accessible vehicles on all routes. Plaintiff Anderson, a wheelchair user, was unable to access bus service on several routes. The court ruled that the ADA requires transit authorities to make reasonable modifications to policies, practices, and procedures to avoid discrimination. The decision expands the definition of reasonable accommodation in public transportation.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE SEVENTH CIRCUIT\n\nDIANE P. ANDERSON,\nPlaintiff-Appellant,\nv.\nMETRO TRANSIT AUTHORITY,\nDefendant-Appellee.\n\nNo. 22-3456\n\nBefore EASTERBROOK, ROVNER, and BRENNAN, Circuit Judges.\n\nEASTERBROOK, Circuit Judge.\n\nThe Americans with Disabilities Act requires public entities to make reasonable modifications to avoid discrimination. This appeal tests the scope of that obligation.\n\nFACTS\nDiane Anderson uses a wheelchair and sought to use Metro's bus service. Several routes operated buses without wheelchair lifts. Anderson requested accommodation, but Metro declined, citing cost and operational constraints.\n\nAnderson filed suit under Title II of the ADA. The district court granted summary judgment to Metro, finding that providing accessible vehicles on all routes was not a reasonable modification.\n\nANALYSIS\nTitle II requires public entities to make reasonable modifications to policies, practices, or procedures when necessary to avoid discrimination. The central question is whether providing accessible vehicles on all routes is a reasonable modification.\n\nWe conclude that it is. While cost is a factor, Metro has not shown that accommodation would fundamentally alter its service. The ADA's remedial purpose requires broad interpretation of reasonable modifications.\n\nCONCLUSION\nThe judgment is REVERSED, and the case is REMANDED for further proceedings."
+            },
+            {
+                id: 4,
+                title: "Global Tech Corp. v. Innovate LLC",
+                court: "Federal Circuit",
+                date: "2022-11-30",
+                snippet: "Patent infringement in software algorithms and artificial intelligence. The decision clarified standards for obviousness in machine learning patents.",
+                summary: "The Federal Circuit addressed patentability of machine learning algorithms in a dispute between technology companies. Global Tech accused Innovate of infringing patents related to neural network optimization. The court found the patents valid, rejecting arguments of obviousness. The decision clarifies legal standards for evaluating obviousness in artificial intelligence patents and provides guidance for future AI-related intellectual property disputes.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE FEDERAL CIRCUIT\n\nGLOBAL TECH CORP.,\nPlaintiff-Appellant,\nv.\nINNOVATE LLC,\nDefendant-Appellee.\n\n2022-1234\n\nLOURIE, Circuit Judge.\n\nThis appeal concerns the validity of patents claiming machine learning algorithms. The district court found the asserted claims invalid as obvious. We reverse.\n\nBACKGROUND\nGlobal Tech owns patents directed to methods for optimizing neural network training. Innovate developed competing software and was sued for infringement.\n\nThe district court construed key terms and found the claims obvious under 35 U.S.C. § 103, concluding that a person of ordinary skill would have combined prior art references.\n\nDISCUSSION\nObviousness requires consideration of four factors: scope and content of prior art, differences between prior art and claims, level of ordinary skill, and secondary considerations.\n\nHere, the prior art disclosed neural networks but not the specific optimization techniques claimed. The district court erred in finding the combination of references would have been obvious to one skilled in the art.\n\nThe patents demonstrate commercial success and long-felt need. These secondary considerations support non-obviousness.\n\nCONCLUSION\nThe district court's judgment is REVERSED. The case is REMANDED for entry of judgment in favor of Global Tech."
+            },
+            {
+                id: 5,
+                title: "Commonwealth v. Bennett",
+                court: "Massachusetts Supreme Judicial Court",
+                date: "2022-09-18",
+                snippet: "Criminal law and self-defense claims in domestic violence cases. The ruling established new standards for evaluating battered person syndrome evidence.",
+                summary: "The Massachusetts high court addressed the admissibility of battered person syndrome evidence in self-defense claims. Defendant Bennett was charged with assault for defending herself against an abusive partner. The court ruled that expert testimony on battered person syndrome is admissible to help jurors understand the psychological state of abuse victims. The decision provides important protections for domestic violence survivors in the criminal justice system.",
+                fullText: "SUPREME JUDICIAL COURT OF MASSACHUSETTS\n\nCOMMONWEALTH,\nRespondent,\nv.\nSARAH BENNETT,\nPetitioner.\n\nSJC-12345\n\nPresent: Gants, C.J., Gaziano, Lowy, Cypher, & Kafker, JJ.\n\nGAZIANO, J.\n\nWe consider whether expert testimony on battered person syndrome is admissible in cases where a defendant claims self-defense in a domestic violence context.\n\nBACKGROUND\nSarah Bennett was charged with assault after she stabbed her partner during an altercation. Bennett claimed self-defense, asserting that years of abuse affected her perception of danger.\n\nThe defense sought to introduce expert testimony on battered person syndrome. The Commonwealth objected, arguing the testimony would improperly comment on the defendant's credibility.\n\nA judge in the Superior Court allowed the testimony. The jury acquitted Bennett.\n\nDISCUSSION\nBattered person syndrome is a recognized psychological condition. Expert testimony explaining this syndrome assists jurors in understanding why battered persons may act in seemingly disproportionate ways.\n\nSuch testimony does not invade the province of the jury regarding credibility. Rather, it provides context for evaluating the reasonableness of a defendant's belief in imminent danger.\n\nThe testimony must be limited to explaining the syndrome and its effects, not opining on whether the defendant actually suffered from it.\n\nCONCLUSION\nThe order allowing expert testimony is affirmed. The case is remanded for further proceedings consistent with this opinion."
+            },
+            {
+                id: 6,
+                title: "Rivera v. City Planning Commission",
+                court: "New Jersey Supreme Court",
+                date: "2022-07-05",
+                snippet: "Environmental law and wetlands protection under state regulations. The decision strengthened enforcement mechanisms for ecological preservation.",
+                summary: "The New Jersey Supreme Court addressed the scope of wetlands protection under state environmental laws. Plaintiffs Rivera challenged a development permit that would impact protected wetlands. The court ruled that the State's wetlands protection statutes require strict scrutiny of any activity that could harm these ecosystems. The decision strengthens environmental enforcement mechanisms and clarifies the state's commitment to ecological preservation.",
+                fullText: "SUPREME COURT OF NEW JERSEY\n\nMIGUEL RIVERA, et al.,\nPlaintiffs-Appellants,\nv.\nNEW JERSEY STATE PLANNING COMMISSION,\nDefendant-Respondent.\n\nA-45/46 September Term 2021\n\nPER CURIAM.\n\nThis appeal involves interpretation of the New Jersey Wetlands Act and regulations protecting ecologically sensitive areas.\n\nFACTS\nPlaintiffs own property adjacent to wetlands. The City Planning Commission approved a development application that would impact 0.5 acres of Category One wetlands.\n\nPlaintiffs challenged the approval, arguing it violated the Wetlands Act's prohibition on filling or altering wetlands without a Department of Environmental Protection permit.\n\nThe Appellate Division affirmed the Commission's decision, finding the impact de minimis.\n\nANALYSIS\nThe Wetlands Act declares Category One wetlands to be of exceptional ecological value. Any filling or alteration requires a DEP permit.\n\nThe Act contains no de minimis exception. Even small impacts require strict compliance with permitting requirements.\n\nThe Commission's approval without a DEP permit violates the Act. Environmental protection statutes are to be construed broadly in favor of conservation.\n\nCONCLUSION\nThe judgment of the Appellate Division is reversed. The matter is remanded for proceedings consistent with this opinion."
+            },
+            {
+                id: 7,
+                title: "Employers Mutual v. Workers' Compensation Board",
+                court: "Pennsylvania Commonwealth Court",
+                date: "2022-04-12",
+                snippet: "Workers' compensation and repetitive stress injuries in office environments. The ruling expanded coverage for remote work injuries.",
+                summary: "The Pennsylvania Commonwealth Court addressed workers' compensation coverage for repetitive stress injuries in remote work settings. Employee Martinez developed carpal tunnel syndrome while working from home for Employer Mutual. The court ruled that the Workers' Compensation Act covers injuries arising from work activities regardless of location. The decision expands protections for remote workers and clarifies that home office environments are compensable workspaces.",
+                fullText: "COMMONWEALTH COURT OF PENNSYLVANIA\n\nEMPLOYERS MUTUAL INSURANCE COMPANY,\nPetitioner,\nv.\nWORKERS' COMPENSATION APPEAL BOARD (MARTINEZ),\nRespondent.\n\nNo. 123 C.D. 2021\n\nOPINION BY Judge Smith\n\nThis workers' compensation appeal concerns coverage for repetitive stress injuries in remote work settings.\n\nFACTS\nMaria Martinez worked as a data entry clerk for Employer Mutual. During the pandemic, she worked from home three days per week.\n\nIn 2021, Martinez was diagnosed with carpal tunnel syndrome. She filed a claim for workers' compensation benefits. Employer Mutual denied coverage, arguing that home offices are not covered workspaces.\n\nThe Workers' Compensation Judge awarded benefits. The Appeal Board affirmed.\n\nDISCUSSION\nThe Workers' Compensation Act covers injuries arising in the course of employment. The Act does not distinguish between injuries occurring at traditional workplaces and remote workspaces.\n\nMartinez's injury arose from work activities - repetitive keyboarding. The location of those activities does not affect compensability.\n\nEmployer Mutual's position would create an unreasonable loophole in coverage for the modern workforce.\n\nCONCLUSION\nThe order of the Workers' Compensation Appeal Board is affirmed."
+            },
+            {
+                id: 8,
+                title: "Taylor v. Social Security Administration",
+                court: "Ninth Circuit Court of Appeals",
+                date: "2022-02-28",
+                snippet: "Disability benefits and mental health conditions. The court established new precedents for evaluating anxiety disorders in benefit determinations.",
+                summary: "The Ninth Circuit addressed the evaluation of mental health conditions in Social Security disability determinations. Plaintiff Taylor challenged the denial of benefits for severe anxiety disorder. The court ruled that administrative law judges must consider the combined effects of multiple mental health conditions and their impact on daily functioning. The decision strengthens protections for individuals with mental health disabilities in federal benefit programs.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE NINTH CIRCUIT\n\nPATRICIA TAYLOR,\nPlaintiff-Appellant,\nv.\nKILOLO KIJAKAZI, Acting Commissioner of Social Security,\nDefendant-Appellee.\n\nNo. 20-56123\n\nBefore: WARDLAW and HURWITZ, Circuit Judges, and ROSENBLUTH, District Judge.\n\nWARDLAW, Circuit Judge.\n\nPatricia Taylor appeals the district court's affirmance of the Commissioner's denial of disability insurance benefits.\n\nBACKGROUND\nTaylor suffers from generalized anxiety disorder, panic disorder, and major depressive disorder. She applied for disability benefits, claiming these conditions prevent substantial gainful activity.\n\nAn ALJ denied benefits, finding Taylor's mental impairments did not meet or equal a listed impairment and that she retained the residual functional capacity to perform light work.\n\nThe Appeals Council denied review, making the ALJ's decision the final decision of the Commissioner.\n\nSTANDARD OF REVIEW\nWe review de novo the district court's order affirming the Commissioner's denial of benefits. We review the ALJ's findings for substantial evidence.\n\nDISCUSSION\nThe ALJ failed to properly consider the combined effects of Taylor's mental impairments. The medical evidence shows significant limitations in concentration, persistence, and pace.\n\nThe ALJ also failed to consider the impact of Taylor's conditions on her daily activities and social functioning. These errors require remand for further proceedings.\n\nCONCLUSION\nThe judgment is REVERSED and the matter is REMANDED for further proceedings."
+            },
+            {
+                id: 9,
+                title: "United States v. Financial Services Corp.",
+                court: "District Court, Southern District of New York",
+                date: "2022-01-15",
+                snippet: "Corporate fraud and securities violations in cryptocurrency markets. The ruling established new precedents for digital asset regulation.",
+                summary: "The Southern District of New York addressed securities fraud in cryptocurrency markets. Defendant Financial Services Corp. operated an initial coin offering without proper registration. The court ruled that digital assets may be securities under federal law, requiring compliance with registration and disclosure requirements. The decision provides important guidance on the regulation of cryptocurrency offerings and investor protection in digital markets.",
+                fullText: "UNITED STATES DISTRICT COURT\nSOUTHERN DISTRICT OF NEW YORK\n\nUNITED STATES OF AMERICA,\nv.\nFINANCIAL SERVICES CORPORATION,\nDefendant.\n\nNo. 1:21-cr-00123\n\nOPINION AND ORDER\n\nPAUL G. GARDEPHE, District Judge.\n\nDefendant Financial Services Corporation operated an initial coin offering (ICO) for its digital token, 'CoinX.' The government charges that this offering violated federal securities laws.\n\nFINDINGS OF FACT\nFinancial Services marketed CoinX as an investment opportunity, promising returns to token holders. The company raised approximately $50 million through the ICO without registering the offering with the SEC.\n\nThe CoinX tokens were not used for any specific product or service. Instead, purchasers acquired them with the expectation of profit from market appreciation.\n\nCONCLUSIONS OF LAW\nThe Howey test determines whether an instrument is an investment contract and therefore a security. Under Howey, an investment contract exists where there is (1) an investment of money, (2) in a common enterprise, (3) with an expectation of profit, (4) derived from the efforts of others.\n\nCoinX tokens satisfy all four elements of the Howey test. Purchasers invested money in a common enterprise with the expectation of profit from the efforts of Financial Services' management team.\n\nThe offering was not exempt from registration requirements. The failure to register violated 15 U.S.C. § 77e(a).\n\nCONCLUSION\nDefendant's motion to dismiss is DENIED. The case will proceed to trial on the securities fraud charges."
+            },
+            {
+                id: 10,
+                title: "Martinez v. Immigration and Customs Enforcement",
+                court: "Eleventh Circuit Court of Appeals",
+                date: "2021-11-20",
+                snippet: "Immigration law and asylum claims based on domestic violence. The decision expanded protections for victims of gender-based persecution.",
+                summary: "The Eleventh Circuit addressed asylum claims based on domestic violence persecution. Petitioner Martinez, a Honduran national, sought asylum after fleeing an abusive spouse. The court ruled that domestic violence can constitute persecution under U.S. asylum law when the government is unable or unwilling to protect victims. The decision expands asylum protections for women fleeing gender-based violence and clarifies the nexus requirement for such claims.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE ELEVENTH CIRCUIT\n\nYOLANDA MARTINEZ,\nPetitioner,\nv.\nU.S. IMMIGRATION AND CUSTOMS ENFORCEMENT,\nRespondent.\n\nNo. 19-14567\n\nBefore WILSON, JILL PRYOR, and ANDERSON, Circuit Judges.\n\nJILL PRYOR, Circuit Judge.\n\nYolanda Martinez petitions for review of the Board of Immigration Appeals' denial of her asylum application.\n\nFACTS\nMartinez is a native and citizen of Honduras. She married Carlos Mendez in 2010. The marriage was marked by severe physical and emotional abuse.\n\nIn 2018, after Mendez threatened to kill her and her children, Martinez fled to the United States. She applied for asylum, claiming persecution based on membership in the particular social group of 'Honduran women unable to leave their domestic relationships due to social customs.'\n\nAn Immigration Judge denied relief, finding the proposed social group overly broad and that Martinez failed to establish government inability or unwillingness to protect her.\n\nThe BIA affirmed.\n\nDISCUSSION\nTo establish asylum eligibility, an applicant must show persecution on account of race, religion, nationality, political opinion, or membership in a particular social group.\n\nWe have recognized that 'women who are unable to leave their domestic relationships due to social customs' can constitute a particular social group.\n\nHonduran government data shows endemic domestic violence and inadequate protection for victims. Martinez established that the Honduran government was unable and unwilling to protect her.\n\nCONCLUSION\nThe petition for review is GRANTED. The case is REMANDED for further proceedings consistent with this opinion."
+            },
+            {
+                id: 11,
+                title: "Green Energy Co. v. Environmental Protection Agency",
+                court: "D.C. Circuit Court of Appeals",
+                date: "2021-09-08",
+                snippet: "Environmental regulation and carbon emission standards for power plants. The decision upheld EPA authority to regulate greenhouse gases.",
+                summary: "The D.C. Circuit addressed the Environmental Protection Agency's authority to regulate greenhouse gas emissions from power plants. Green Energy Company challenged new carbon emission standards as exceeding EPA's statutory authority. The court ruled that the Clean Air Act grants the EPA broad authority to regulate air pollutants, including greenhouse gases. The decision affirms federal authority to address climate change through regulatory mechanisms and upholds science-based environmental standards.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE DISTRICT OF COLUMBIA CIRCUIT\n\nGREEN ENERGY COMPANY,\nPetitioner,\nv.\nENVIRONMENTAL PROTECTION AGENCY,\nRespondent.\n\nNo. 20-1245\n\nOpinion for the Court filed by Circuit Judge KAVANAUGH.\n\nKAVANAUGH, Circuit Judge.\n\nThis petition challenges the Environmental Protection Agency's Carbon Pollution Standard for Power Plants.\n\nBACKGROUND\nIn 2021, EPA issued new regulations limiting carbon dioxide emissions from existing power plants. Green Energy Company, which operates coal-fired power plants, petitions for review, arguing the regulations exceed EPA's statutory authority.\n\nGreen Energy contends that section 111 of the Clean Air Act does not authorize regulation of carbon dioxide emissions and that the regulations constitute a de facto cap-and-trade system prohibited by Congress.\n\nANALYSIS\nThe Clean Air Act defines 'air pollutant' broadly to include 'any air pollution agent or combination of such agents.' Carbon dioxide clearly falls within this definition.\n\nSection 111 authorizes EPA to establish standards of performance for existing sources of air pollution. The Act contains no exception for greenhouse gases.\n\nCongress has repeatedly declined to amend the Clean Air Act to exclude greenhouse gases from regulation. We will not judicially rewrite the statute.\n\nThe regulations constitute a permissible interpretation of the Act and are supported by substantial evidence.\n\nCONCLUSION\nThe petition for review is DENIED. The EPA's Carbon Pollution Standard is AFFIRMED."
+            },
+            {
+                id: 12,
+                title: "Williams v. National Labor Relations Board",
+                court: "Sixth Circuit Court of Appeals",
+                date: "2021-06-30",
+                snippet: "Labor law and union organizing rights in the gig economy. The ruling clarified employment status for ride-share drivers.",
+                summary: "The Sixth Circuit addressed labor organizing rights for gig economy workers. Plaintiff Williams, a ride-share driver, challenged the National Labor Relations Board's refusal to process his union organizing petition. The court ruled that gig workers may be considered employees under the National Labor Relations Act depending on the degree of employer control. The decision clarifies the evolving legal landscape of employment status in the digital economy and expands potential organizing rights for platform workers.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE SIXTH CIRCUIT\n\nJAMES WILLIAMS,\nPetitioner,\nv.\nNATIONAL LABOR RELATIONS BOARD,\nRespondent.\n\nNo. 20-3547\n\nBefore: SILER, GIBBONS, and KETHLEDGE, Circuit Judges.\n\nKETHLEDGE, Circuit Judge.\n\nJames Williams petitions for review of the National Labor Relations Board's dismissal of his representation petition.\n\nFACTS\nWilliams drives for RideShare Inc., a ride-hailing platform. He filed a petition seeking to represent a bargaining unit of RideShare drivers.\n\nThe Regional Director dismissed the petition, finding that RideShare drivers are independent contractors, not employees under the NLRA.\n\nWilliams petitioned the Board for review, which the Board denied.\n\nSTANDARD OF REVIEW\nWe review the Board's dismissal of a representation petition for substantial evidence.\n\nDISCUSSION\nThe NLRA defines 'employee' broadly, excluding only agricultural workers, domestic service workers, and independent contractors.\n\nThe common-law test for independent contractor status focuses on the degree of control the putative employer exercises over the manner and means of work performance.\n\nRideShare exercises significant control over drivers through its app-based system, fare-setting, and rating mechanisms. These factors suggest an employment relationship.\n\nThe Board's conclusion that drivers are independent contractors lacks substantial support in the record.\n\nCONCLUSION\nThe petition for review is GRANTED. The case is REMANDED for further proceedings."
+            },
+            {
+                id: 13,
+                title: "City of Austin v. Texas Department of Transportation",
+                court: "Texas Supreme Court",
+                date: "2021-04-16",
+                snippet: "Municipal law and eminent domain for public infrastructure projects. The ruling established new compensation standards for property owners.",
+                summary: "The Texas Supreme Court addressed compensation for property owners in eminent domain proceedings for public infrastructure projects. The City of Austin sought to acquire land for a light rail extension, but property owners challenged the compensation offers as inadequate. The court ruled that property owners are entitled to fair market value plus severance damages when partial takings diminish remaining property value. The decision strengthens property rights protections and clarifies compensation standards in public infrastructure development.",
+                fullText: "SUPREME COURT OF TEXAS\n\nCITY OF AUSTIN,\nPetitioner,\nv.\nTEXAS DEPARTMENT OF TRANSPORTATION,\nRespondent.\n\nNo. 20-0123\n\nPER CURIAM.\n\nThis condemnation proceeding concerns compensation for property taken for a light rail extension project.\n\nFACTS\nThe Texas Department of Transportation, working with the City of Austin, initiated condemnation proceedings to acquire property for the MetroRail extension. Property owners challenged the adequacy of compensation offers.\n\nThe special commissioners awarded compensation based solely on the fair market value of the taken property. The property owners sought additional compensation for severance damages to their remaining property.\n\nThe district court confirmed the commissioners' awards. The court of appeals affirmed.\n\nANALYSIS\nArticle I, Section 17 of the Texas Constitution requires that private property taken for public use be compensated. This compensation must be just and adequate.\n\nWhen the state takes less than the entire property, the owner is entitled to compensation for both the taken property and any severance damages to the remainder.\n\nSeverance damages occur when the taking diminishes the value of the remaining property. Evidence of such damages must be considered in determining just compensation.\n\nThe special commissioners erred in failing to consider severance damages.\n\nCONCLUSION\nThe judgment of the court of appeals is REVERSED. The case is REMANDED for proceedings consistent with this opinion."
+            },
+            {
+                id: 14,
+                title: "Pharmaceutical Research Institute v. Generic Drugs Co.",
+                court: "Federal Circuit",
+                date: "2021-02-12",
+                snippet: "Intellectual property and patent term extensions for pharmaceutical compounds. The decision clarified the scope of pediatric exclusivity provisions.",
+                summary: "The Federal Circuit addressed patent term extensions for pharmaceutical products under the Hatch-Waxman Act. Plaintiff Pharmaceutical Research Institute sought extended patent terms for a pediatric formulation. Defendant Generic Drugs Company challenged the extension as exceeding statutory limits. The court ruled that pediatric exclusivity provisions apply to new formulations when they involve clinical studies in pediatric populations. The decision provides important guidance on patent term extensions in the pharmaceutical industry and balances innovation incentives with generic competition.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE FEDERAL CIRCUIT\n\nPHARMACEUTICAL RESEARCH INSTITUTE,\nPlaintiff-Appellant,\nv.\nGENERIC DRUGS COMPANY,\nDefendant-Appellee.\n\n2020-1847\n\nMOORE, Circuit Judge.\n\nThis appeal concerns patent term extension under the Drug Price Competition and Patent Term Restoration Act.\n\nBACKGROUND\nPharmaceutical Research Institute holds patents for Compound X, used to treat hypertension. The company developed a pediatric formulation and conducted clinical trials in children.\n\nBased on these pediatric studies, PPI sought a six-month patent term extension. The Patent and Trademark Office granted the extension.\n\nGeneric Drugs petitioned for inter partes review, arguing that pediatric exclusivity does not apply to new formulations of known compounds.\n\nThe Patent Trial and Appeal Board invalidated the extended claims. The district court affirmed.\n\nDISCUSSION\nThe Hatch-Waxman Act provides for patent term extension when the patent owner submits pediatric data to the FDA. The statute does not distinguish between new compounds and new formulations.\n\nPPI conducted clinical studies in pediatric populations and submitted the required data to the FDA. The patent term extension was properly granted.\n\nGeneric Drugs' interpretation would nullify the pediatric exclusivity provisions for many drugs, contrary to Congressional intent.\n\nCONCLUSION\nThe judgment is REVERSED. The case is REMANDED for entry of judgment in favor of Pharmaceutical Research Institute."
+            },
+            {
+                id: 15,
+                title: "Reed v. Social Media Platform Inc.",
+                court: "Ninth Circuit Court of Appeals",
+                date: "2020-12-03",
+                snippet: "First Amendment and content moderation policies on social media platforms. The ruling addressed state action doctrine in private platform regulation.",
+                summary: "The Ninth Circuit addressed First Amendment implications of content moderation on social media platforms. Plaintiff Reed challenged the removal of his posts critical of government policies. The court ruled that private social media platforms are not state actors and therefore not bound by the First Amendment in their content moderation decisions. The decision clarifies the boundaries of constitutional protections in digital spaces and the distinction between government and private action in online speech regulation.",
+                fullText: "UNITED STATES COURT OF APPEALS\nFOR THE NINTH CIRCUIT\n\nMICHAEL REED,\nPlaintiff-Appellant,\nv.\nSOCIAL MEDIA PLATFORM INC.,\nDefendant-Appellee.\n\nNo. 19-55678\n\nBefore: WARDLAW, CHRISTEN, and BADE, Circuit Judges.\n\nWARDLAW, Circuit Judge.\n\nMichael Reed appeals the district court's dismissal of his First Amendment claim against Social Media Platform Inc.\n\nFACTS\nReed posted comments critical of government policies on Social Media Platform. The Platform removed several posts, citing violations of its community guidelines.\n\nReed sued, claiming his removal violated the First Amendment. The district court dismissed, finding no state action.\n\nSTANDARD OF REVIEW\nWe review de novo a district court's dismissal under Federal Rule of Civil Procedure 12(b)(6).\n\nDISCUSSION\nThe First Amendment constrains only government action. Private entities, including social media platforms, generally do not act under color of state law.\n\nReed argues that the Platform's size and influence make it a state actor. However, mere size and market dominance do not convert private action into state action.\n\nReed also argues that the Platform performs a public function by providing a forum for speech. But social media platforms are not traditional public forums, and providing platforms for speech does not constitute a public function.\n\nThe district court properly dismissed Reed's First Amendment claim.\n\nCONCLUSION\nThe judgment is AFFIRMED."
+            }
+        ];
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultCount = document.getElementById('resultCount');
+        const detailPane = document.getElementById('detailPane');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCourt = document.getElementById('detailCourt');
+        const detailDate = document.getElementById('detailDate');
+        const summaryText = document.getElementById('summaryText');
+        const fullText = document.getElementById('fullText');
+        const tabs = document.querySelectorAll('.tab');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const extractEntitiesBtn = document.getElementById('extractEntities');
+        const addNoteBtn = document.getElementById('addNote');
+        const notesList = document.getElementById('notesList');
+        const clearNotesBtn = document.getElementById('clearNotes');
+        const saveNotesBtn = document.getElementById('saveNotes');
+
+        // State
+        let currentCase = null;
+        let notes = JSON.parse(localStorage.getItem('legalNotes')) || [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderResults(mockCases);
+            renderNotes();
+            setupEventListeners();
+        });
+
+        // Event Listeners
+        function setupEventListeners() {
+            searchInput.addEventListener('input', handleSearch);
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+            
+            extractEntitiesBtn.addEventListener('click', extractEntities);
+            addNoteBtn.addEventListener('click', addNote);
+            clearNotesBtn.addEventListener('click', clearNotes);
+            saveNotesBtn.addEventListener('click', saveNotes);
+        }
+
+        // Search functionality
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase();
+            const filteredCases = mockCases.filter(caseItem => 
+                caseItem.title.toLowerCase().includes(query) ||
+                caseItem.court.toLowerCase().includes(query) ||
+                caseItem.snippet.toLowerCase().includes(query) ||
+                caseItem.date.includes(query)
+            );
+            
+            renderResults(filteredCases);
+        }
+
+        // Render search results
+        function renderResults(cases) {
+            resultCount.textContent = `${cases.length} ${cases.length === 1 ? 'case' : 'cases'} found`;
+            
+            if (cases.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No cases found matching your search.</div>';
+                return;
+            }
+            
+            resultsList.innerHTML = cases.map(caseItem => `
+                <div class="case-item" data-id="${caseItem.id}">
+                    <div class="case-title">${caseItem.title}</div>
+                    <div class="case-meta">
+                        <span class="case-court">${caseItem.court}</span>
+                        <span class="case-date">${caseItem.date}</span>
+                    </div>
+                    <div class="case-snippet">${caseItem.snippet}</div>
+                </div>
+            `).join('');
+            
+            // Add click event to each case item
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.addEventListener('click', () => showCaseDetail(parseInt(item.dataset.id)));
+            });
+        }
+
+        // Show case detail
+        function showCaseDetail(caseId) {
+            const caseItem = mockCases.find(c => c.id === caseId);
+            if (!caseItem) return;
+            
+            currentCase = caseItem;
+            
+            detailTitle.textContent = caseItem.title;
+            detailCourt.textContent = caseItem.court;
+            detailDate.textContent = caseItem.date;
+            summaryText.textContent = caseItem.summary;
+            fullText.textContent = caseItem.fullText;
+            
+            // Reset highlighting
+            removeHighlighting();
+            
+            detailPane.classList.remove('hidden');
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tabs
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update tab panes
+            tabPanes.forEach(pane => {
+                if (pane.id === `${tabName}Pane`) {
+                    pane.classList.add('active');
+                } else {
+                    pane.classList.remove('active');
+                }
+            });
+        }
+
+        // Entity extraction (simulated)
+        function extractEntities() {
+            if (!currentCase) return;
+            
+            // Get current text content
+            const currentTab = document.querySelector('.tab.active').dataset.tab;
+            const textElement = currentTab === 'summary' ? summaryText : fullText;
+            let text = textElement.textContent;
+            
+            // Simulated entity patterns
+            const names = ['Smith', 'Johnson', 'Rodriguez', 'Anderson', 'Bennett', 'Rivera', 'Martinez', 'Taylor', 'Financial Services', 'Green Energy'];
+            const dates = ['2023-05-15', '2023-03-22', '2023-01-10', '2022-11-30', '2022-09-18', '2022-07-05', '2022-04-12', '2022-02-28', '2021-11-20', '2021-09-08'];
+            const courts = ['Supreme Court', 'Court of Appeals', 'District Court', 'Federal Circuit'];
+            
+            // Highlight entities
+            names.forEach(name => {
+                const regex = new RegExp(`\\b${name}\\b`, 'gi');
+                text = text.replace(regex, `<span class="highlight">${name}</span>`);
+            });
+            
+            dates.forEach(date => {
+                const regex = new RegExp(`\\b${date}\\b`, 'g');
+                text = text.replace(regex, `<span class="highlight">${date}</span>`);
+            });
+            
+            courts.forEach(court => {
+                const regex = new RegExp(`\\b${court}\\b`, 'gi');
+                text = text.replace(regex, `<span class="highlight">${court}</span>`);
+            });
+            
+            textElement.innerHTML = text;
+        }
+
+        // Remove highlighting
+        function removeHighlighting() {
+            if (!currentCase) return;
+            
+            summaryText.textContent = currentCase.summary;
+            fullText.textContent = currentCase.fullText;
+        }
+
+        // Add note
+        function addNote() {
+            if (!currentCase) return;
+            
+            // Get selected text
+            const selectedText = window.getSelection().toString();
+            if (!selectedText) {
+                alert('Please select text to add to notes.');
+                return;
+            }
+            
+            // Create note object
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: selectedText,
+                date: new Date().toISOString().split('T')[0]
+            };
+            
+            // Add to notes array
+            notes.push(note);
+            
+            // Render notes
+            renderNotes();
+            
+            // Save to localStorage
+            saveNotes();
+        }
+
+        // Render notes
+        function renderNotes() {
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="no-results">No notes saved yet.</div>';
+                return;
+            }
+            
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-meta">
+                        <div>${note.caseTitle}</div>
+                        <div>${note.date}</div>
+                    </div>
+                    <div class="note-actions">
+                        <button class="note-btn delete-note" data-id="${note.id}">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-note').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    deleteNote(id);
+                });
+            });
+        }
+
+        // Delete note
+        function deleteNote(id) {
+            notes = notes.filter(note => note.id !== id);
+            renderNotes();
+            saveNotes();
+        }
+
+        // Clear all notes
+        function clearNotes() {
+            if (confirm('Are you sure you want to clear all notes?')) {
+                notes = [];
+                renderNotes();
+                localStorage.removeItem('legalNotes');
+            }
+        }
+
+        // Save notes to localStorage
+        function saveNotes() {
+            localStorage.setItem('legalNotes', JSON.stringify(notes));
+        }
+    </script>
+</body>
+</html>

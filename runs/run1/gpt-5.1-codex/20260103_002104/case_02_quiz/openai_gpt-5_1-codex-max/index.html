@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fun Trivia Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --bg1: #1a1f3a;
+        --bg2: #2a4b7c;
+        --accent: #7cf2c4;
+        --accent2: #ffd166;
+        --text: #f8f9fb;
+        --card: rgba(255,255,255,0.08);
+        --correct: #5ad176;
+        --wrong: #e56363;
+        --shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(130deg, var(--bg1), var(--bg2), #102038);
+        background-size: 200% 200%;
+        animation: gradientShift 12s ease infinite;
+        overflow: hidden;
+    }
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .glow {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle at center, rgba(124,242,196,0.18), transparent 60%);
+        filter: blur(60px);
+        animation: float 10s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .glow.one { top: -200px; left: -150px; }
+    .glow.two { bottom: -250px; right: -120px; animation-delay: 2s; }
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(20px) scale(1.05); }
+    }
+
+    .app {
+        position: relative;
+        width: min(900px, 92vw);
+        padding: 24px;
+    }
+    .card {
+        background: var(--card);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: var(--shadow);
+        border-radius: 18px;
+        padding: 28px;
+        backdrop-filter: blur(14px);
+        animation: popIn 0.6s ease;
+    }
+    @keyframes popIn {
+        0% { opacity: 0; transform: translateY(20px) scale(0.98); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .hidden { display: none; }
+
+    .start-title {
+        text-align: center;
+        margin-top: 6px;
+        font-size: 30px;
+        letter-spacing: 0.6px;
+        font-weight: 700;
+    }
+    .start-sub {
+        text-align: center;
+        opacity: 0.8;
+        margin: 10px auto 20px;
+        max-width: 520px;
+        line-height: 1.4;
+    }
+    .btn {
+        cursor: pointer;
+        border: none;
+        padding: 14px 22px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0c152b;
+        background: linear-gradient(120deg, var(--accent), #b0f1ff);
+        box-shadow: 0 8px 26px rgba(124, 242, 196, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .btn:active { transform: translateY(1px) scale(0.99); }
+    .btn.secondary {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.25);
+        color: var(--text);
+        box-shadow: none;
+    }
+
+    .start-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 18px;
+    }
+
+    .header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .progress {
+        background: rgba(255,255,255,0.06);
+        border-radius: 50px;
+        overflow: hidden;
+        height: 12px;
+        position: relative;
+    }
+    .progress-bar {
+        background: linear-gradient(120deg, var(--accent), var(--accent2));
+        height: 100%;
+        width: 0%;
+        border-radius: 50px;
+        transition: width 0.4s ease;
+    }
+    .info {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        font-size: 14px;
+        background: rgba(255,255,255,0.08);
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .question {
+        font-size: 22px;
+        line-height: 1.3;
+        margin-bottom: 16px;
+        font-weight: 700;
+    }
+    .choices {
+        display: grid;
+        gap: 12px;
+    }
+    .choice {
+        width: 100%;
+        text-align: left;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.05);
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease, border 0.2s ease;
+    }
+    .choice:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0,0,0,0.25); }
+    .choice:active { transform: translateY(0px) scale(0.99); }
+    .choice.correct {
+        background: rgba(90, 209, 118, 0.18);
+        border-color: rgba(90, 209, 118, 0.8);
+        box-shadow: 0 12px 30px rgba(90,209,118,0.28);
+        animation: pulse 0.6s ease;
+    }
+    .choice.wrong {
+        background: rgba(229, 99, 99, 0.18);
+        border-color: rgba(229, 99, 99, 0.8);
+        box-shadow: 0 12px 30px rgba(229,99,99,0.28);
+        animation: shake 0.35s ease;
+    }
+    .choice.disabled {
+        opacity: 0.65;
+        pointer-events: none;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.98); }
+        50% { transform: scale(1.01); }
+        100% { transform: scale(1); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(6px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+    }
+    .footer {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+    .status {
+        font-size: 14px;
+        opacity: 0.8;
+        min-height: 22px;
+    }
+    .badge {
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.08);
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 0.3px;
+    }
+
+    .end-screen {
+        text-align: center;
+    }
+    .big-score {
+        font-size: 56px;
+        font-weight: 800;
+        margin: 0;
+    }
+    .confetti {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .confetti span {
+        position: absolute;
+        width: 10px;
+        height: 18px;
+        border-radius: 4px;
+        opacity: 0.9;
+        animation: fall 2.8s linear infinite;
+    }
+    @keyframes fall {
+        0% { transform: translateY(-20px) rotate(0deg); }
+        100% { transform: translateY(110vh) rotate(340deg); }
+    }
+
+    @media (max-width: 640px) {
+        .card { padding: 22px; }
+        .question { font-size: 19px; }
+        .btn { width: 100%; text-align: center; }
+        .header { grid-template-columns: 1fr; }
+    }
+</style>
+</head>
+<body>
+<div class="glow one"></div>
+<div class="glow two"></div>
+<div class="confetti" id="confetti"></div>
+
+<div class="app">
+    <div id="start-screen" class="card">
+        <div class="badge">🧠 Trivia Time</div>
+        <h1 class="start-title">Welcome to the Quick Quiz</h1>
+        <p class="start-sub">Ten fun and fast multiple-choice questions. Test your knowledge across random topics and see how high you can score!</p>
+        <div class="start-actions">
+            <button class="btn" id="begin-btn">Begin Quiz</button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="card hidden">
+        <div class="header">
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="info"><span id="score-label">Score: 0</span> / 10</div>
+        </div>
+        <div class="badge" id="q-number">Question 1 of 10</div>
+        <div class="question" id="question-text">Question text</div>
+        <div class="choices" id="choices"></div>
+        <div class="footer">
+            <div class="status" id="status"></div>
+            <button class="btn secondary hidden" id="next-btn">Next</button>
+        </div>
+    </div>
+
+    <div id="end-screen" class="card hidden end-screen">
+        <div class="badge">🎉 Finished</div>
+        <p class="big-score" id="final-score">8 / 10</p>
+        <p id="final-text">Amazing job! Want to try again?</p>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top: 10px;">
+            <button class="btn" id="play-again">Play Again</button>
+            <button class="btn secondary" id="back-home">Back to Start</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const questions = [
+    {
+        question: "Which planet in our solar system has the most moons?",
+        options: ["Earth", "Mars", "Saturn", "Mercury"],
+        answer: 2
+    },
+    {
+        question: "In what year was the very first iPhone released?",
+        options: ["2004", "2007", "2010", "2012"],
+        answer: 1
+    },
+    {
+        question: "What is the smallest prime number?",
+        options: ["0", "1", "2", "3"],
+        answer: 2
+    },
+    {
+        question: "Which element has the chemical symbol 'K'?",
+        options: ["Krypton", "Potassium", "Calcium", "Carbon"],
+        answer: 1
+    },
+    {
+        question: "What does the 'H' stand for in the internet term HTTP?",
+        options: ["Hyper", "Host", "Hyperlink", "Header"],
+        answer: 0
+    },
+    {
+        question: "Which instrument traditionally has 47 strings and 7 pedals?",
+        options: ["Grand Piano", "Harp", "Violin", "Mandolin"],
+        answer: 1
+    },
+    {
+        question: "Which city is home to the famous Shibuya Crossing?",
+        options: ["Seoul", "Tokyo", "Hong Kong", "Singapore"],
+        answer: 1
+    },
+    {
+        question: "Who painted the masterpiece 'The Starry Night'?",
+        options: ["Pablo Picasso", "Claude Monet", "Vincent van Gogh", "Salvador Dalí"],
+        answer: 2
+    },
+    {
+        question: "Which fictional world uses a wardrobe as a portal?",
+        options: ["Hogwarts", "Narnia", "Middle-earth", "Westeros"],
+        answer: 1
+    },
+    {
+        question: "As of 2023, what is the tallest building in the world?",
+        options: ["Shanghai Tower", "Burj Khalifa", "One World Trade Center", "Petronas Towers"],
+        answer: 1
+    }
+];
+
+const startScreen = document.getElementById("start-screen");
+const quizScreen = document.getElementById("quiz-screen");
+const endScreen = document.getElementById("end-screen");
+const beginBtn = document.getElementById("begin-btn");
+const questionText = document.getElementById("question-text");
+const qNumber = document.getElementById("q-number");
+const choicesEl = document.getElementById("choices");
+const statusEl = document.getElementById("status");
+const nextBtn = document.getElementById("next-btn");
+const scoreLabel = document.getElementById("score-label");
+const progressBar = document.getElementById("progress-bar");
+const finalScore = document.getElementById("final-score");
+const finalText = document.getElementById("final-text");
+const playAgain = document.getElementById("play-again");
+const backHome = document.getElementById("back-home");
+const confetti = document.getElementById("confetti");
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function startQuiz() {
+    current = 0;
+    score = 0;
+    answered = false;
+    statusEl.textContent = "";
+    scoreLabel.textContent = "Score: 0";
+    progressBar.style.width = "0%";
+    startScreen.classList.add("hidden");
+    endScreen.classList.add("hidden");
+    quizScreen.classList.remove("hidden");
+    renderQuestion();
+    clearConfetti();
+}
+
+function renderQuestion() {
+    answered = false;
+    nextBtn.classList.add("hidden");
+    statusEl.textContent = "";
+    const q = questions[current];
+    qNumber.textContent = `Question ${current + 1} of ${questions.length}`;
+    questionText.textContent = q.question;
+    choicesEl.innerHTML = "";
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = opt;
+        btn.dataset.index = idx;
+        btn.addEventListener("click", () => selectAnswer(btn, idx));
+        choicesEl.appendChild(btn);
+    });
+    progressBar.style.width = `${(current) / questions.length * 100}%`;
+}
+
+function selectAnswer(btn, idx) {
+    if (answered) return;
+    answered = true;
+    const q = questions[current];
+    const correctIdx = q.answer;
+    const buttons = Array.from(document.querySelectorAll(".choice"));
+    buttons.forEach(b => b.classList.add("disabled"));
+    if (idx === correctIdx) {
+        btn.classList.add("correct");
+        score++;
+        scoreLabel.textContent = `Score: ${score}`;
+        statusEl.textContent = "Nice! That's correct.";
+    } else {
+        btn.classList.add("wrong");
+        buttons[correctIdx].classList.add("correct");
+        statusEl.textContent = "Oops! That wasn't it.";
+    }
+    progressBar.style.width = `${(current + 1) / questions.length * 100}%`;
+    nextBtn.textContent = current === questions.length - 1 ? "See Results" : "Next";
+    nextBtn.classList.remove("hidden");
+
+    // Auto-advance after a delay if not last
+    if (current < questions.length - 1) {
+        setTimeout(() => { goNext(); }, 900);
+    }
+}
+
+function goNext() {
+    if (!answered) return;
+    if (current < questions.length - 1) {
+        current++;
+        renderQuestion();
+    } else {
+        endQuiz();
+    }
+}
+
+function endQuiz() {
+    quizScreen.classList.add("hidden");
+    endScreen.classList.remove("hidden");
+    finalScore.textContent = `${score} / ${questions.length}`;
+    const percent = Math.round((score / questions.length) * 100);
+    finalText.textContent = percent >= 80 ? "Brilliant! You nailed it." :
+                            percent >= 50 ? "Great effort! Want to improve?" :
+                            "Practice makes perfect. Give it another go!";
+    launchConfetti();
+}
+
+function backToStart() {
+    quizScreen.classList.add("hidden");
+    endScreen.classList.add("hidden");
+    startScreen.classList.remove("hidden");
+    clearConfetti();
+}
+
+function launchConfetti() {
+    clearConfetti();
+    const colors = ["#ff9a9e", "#7cf2c4", "#ffd166", "#9bb1ff", "#f78fb3"];
+    for (let i = 0; i < 60; i++) {
+        const piece = document.createElement("span");
+        const size = Math.random() * 8 + 6;
+        piece.style.width = `${size}px`;
+        piece.style.height = `${size * 1.5}px`;
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = `${Math.random() * 1.5}s`;
+        piece.style.animationDuration = `${2 + Math.random() * 1.8}s`;
+        piece.style.opacity = 0.6 + Math.random() * 0.4;
+        confetti.appendChild(piece);
+    }
+}
+
+function clearConfetti() {
+    confetti.innerHTML = "";
+}
+
+beginBtn.addEventListener("click", startQuiz);
+nextBtn.addEventListener("click", goNext);
+playAgain.addEventListener("click", startQuiz);
+backHome.addEventListener("click", backToStart);
+
+// allow keyboard navigation
+document.addEventListener("keydown", (e) => {
+    if (quizScreen.classList.contains("hidden")) return;
+    const choices = Array.from(document.querySelectorAll(".choice"));
+    if (!choices.length) return;
+    if (["1","2","3","4"].includes(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (choices[idx]) choices[idx].click();
+    }
+    if (e.key === "Enter" && answered) nextBtn.click();
+});
+</script>
+</body>
+</html>

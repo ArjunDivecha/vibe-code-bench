@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .text {
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        .input {
+            width: 100%;
+            height: 30px;
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+        }
+        .stats {
+            margin-top: 20px;
+        }
+        .stats > span {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="text">Text to type:</p>
+        <p id="text-to-type"></p>
+        <input type="text" id="typed-text" class="input" autofocus>
+        <div class="stats">
+            <span id="wpm">0</span> WPM
+            <span id="accuracy">0%</span> Accuracy
+        </div>
+        <div class="stats">
+            <span id="timer"></span>
+        </div>
+        <button id="submit-button">Submit</button>
+        <button id="try-again-button">Try Again</button>
+    </div>
+
+    <script>
+        const texts = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Jackdaws love my big sphinx of quartz.",
+            "How vexingly quick daft zebras jump!",
+            "Bright vixens jump; dozy fowl quack.",
+            "Pack my box with five dozen liquor jugs.",
+            "How vexingly quick daft zebras jump!",
+            "Bright vixens jump; dozy fowl quack.",
+            "Pack my box with five dozen liquor jugs.",
+            "The five boxing wizards jump quickly at dawn.",
+            "How vexingly quick daft zebras jump!"
+        ];
+
+        let currentTextIndex = 0;
+        let startTime = 0;
+        let endTime = 0;
+        let typedText = "";
+        let correctText = "";
+        let wpm = 0;
+        let accuracy = 0;
+        let timerInterval = null;
+
+        document.getElementById("text-to-type").innerText = texts[currentTextIndex];
+
+        document.getElementById("typed-text").addEventListener("input", (e) => {
+            typedText = e.target.value;
+            correctText = texts[currentTextIndex].substr(0, typedText.length);
+            let correctChars = 0;
+            for (let i = 0; i < correctText.length; i++) {
+                if (correctText[i] === typedText[i]) {
+                    correctChars++;
+                }
+            }
+            accuracy = (correctChars / correctText.length) * 100;
+            wpm = (correctChars * 60) / (endTime - startTime);
+            document.getElementById("wpm").innerText = Math.floor(wpm);
+            document.getElementById("accuracy").innerText = Math.floor(accuracy) + "%";
+            let correctCharsElement = document.createElement("span");
+            correctCharsElement.style.color = "green";
+            correctCharsElement.innerText = correctChars;
+            let incorrectCharsElement = document.createElement("span");
+            incorrectCharsElement.style.color = "red";
+            incorrectCharsElement.innerText = texts[currentTextIndex].length - correctChars;
+            document.getElementById("typed-text").parentElement.insertBefore(correctCharsElement, document.getElementById("typed-text"));
+            document.getElementById("typed-text").parentElement.insertBefore(incorrectCharsElement, document.getElementById("typed-text"));
+        });
+
+        document.getElementById("submit-button").addEventListener("click", () => {
+            endTime = new Date().getTime();
+            let statsElement = document.createElement("div");
+            statsElement.style.marginTop = "20px";
+            statsElement.style.fontSize = "18px";
+            statsElement.innerText = `Final Stats:\nAccuracy: ${Math.floor(accuracy)}%\nWPM: ${Math.floor(wpm)}`;
+            document.getElementById("typed-text").parentElement.appendChild(statsElement);
+            timerInterval = null;
+        });
+
+        document.getElementById("try-again-button").addEventListener("click", () => {
+            currentTextIndex = (currentTextIndex + 1) % texts.length;
+            document.getElementById("text-to-type").innerText = texts[currentTextIndex];
+            typedText = "";
+            correctText = "";
+            wpm = 0;
+            accuracy = 0;
+            document.getElementById("typed-text").value = "";
+            startTime = new Date().getTime();
+            endTime = 0;
+            document.getElementById("timer").innerText = "30:00";
+            timerInterval = setInterval(() => {
+                let timeElapsed = (new Date().getTime() - startTime) / 1000;
+                let minutes = Math.floor(timeElapsed / 60);
+                let seconds = Math.floor(timeElapsed % 60);
+                document.getElementById("timer").innerText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+                if (timeElapsed >= 30) {
+                    clearInterval(timerInterval);
+                    document.getElementById("submit-button").click();
+                }
+            }, 1000);
+        });
+
+        document.getElementById("try-again-button").click();
+    </script>
+</body>
+</html>

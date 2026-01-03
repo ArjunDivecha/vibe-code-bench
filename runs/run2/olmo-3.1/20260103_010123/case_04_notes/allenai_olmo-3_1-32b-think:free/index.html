@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Notes</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        header { background: #4CAF50; color: white; padding: 10px; text-align: center; }
+        h1 { margin: 0; }
+        .container { display: flex; flex-direction: column; }
+        .note-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .note-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .note-card:hover { transform: translateY(-2px); }
+        .note-card h3 { margin: 0; }
+        .content-snippet { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .note-editor { min-height: 80vh; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .editor-form { margin-bottom: 20px; }
+        textarea { width: 100%; height: 200px; padding: 10px; font-family: monospace; }
+        .formatting { margin-right: 5px; }
+        button { background: #4CAF50; color: white; border: none; padding: 8px 15px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Notes</h1>
+        <input type="text" id="searchInput" placeholder="Search notes..." class="search">
+        <button id="addNewNoteBtn">+ New Note</button>
+    </header>
+
+    <div class="container">
+        <div id="noteList" class="note-list">
+        </div>
+        <div id="noteEditor" class="note-editor hidden">
+            <div class="editor-form">
+                <input type="text" id="noteTitle" placeholder="Title" required>
+                <textarea id="noteContent" placeholder="Write your note here..."></textarea>
+                <div class="formatting">
+                    <button onclick="toggleFormat('bold')">B</button>
+                    <button onclick="toggleFormat('italic')">I</button>
+                </div>
+                <button id="saveBtn">Save</button>
+                <button id="cancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+let notes = [];
+let currentNote = null;
+
+function loadNotes() {
+    const stored = localStorage.getItem('notes');
+    if (stored) notes = JSON.parse(stored);
+}
+
+function saveNotes() {
+    localStorage.setItem('notes', JSON.stringify(notes));
+}
+
+function renderNotes(notesToShow = notes) {
+    const list = document.getElementById('noteList');
+    list.innerHTML = '';
+    notesToShow.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+            <h3>${note.title}</h3>
+            <p>${note.content.substring(0, 50) + '...'}</p>
+            <button onclick="editNote(${note.id})">Edit</button>
+            <button onclick="deleteNote(${note.id})">Delete</button>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function editNote(id) {
+    const note = notes.find(n => n.id === id);
+    if (note) {
+        currentNote = note;
+        document.getElementById('noteTitle').value = note.title;
+        document.getElementById('noteContent').value = note.content;
+        document.getElementById('noteList').classList.add('hidden');
+        document.getElementById('noteEditor').classList.remove('hidden');
+    }
+}
+
+function deleteNote(id) {
+    const index = notes.findIndex(n => n.id === id);
+    if (index > -1) {
+        notes.splice(index, 1);
+        saveNotes();
+        renderNotes();
+    }
+}
+
+function saveNote() {
+    if (!currentNote) return;
+    currentNote.title = document.getElementById('noteTitle').value;
+    currentNote.content = document.getElementById('noteContent').value;
+    // Add new note to list if it doesn't exist
+    if (!notes.some(n => n.id === currentNote.id)) {
+        notes.push(currentNote);
+    }
+    saveNotes();
+    document.getElementById('noteEditor').classList.add('hidden');
+    document.getElementById('noteList').classList.remove('hidden');
+    currentNote = null;
+}
+
+function toggleFormat(format) {
+    const content = document.getElementById('noteContent');
+    if (!content || !content.selectionStart) return;
+    const selected = content.value.substring(content.selectionStart, content.selectionEnd);
+    const before = content.value.substring(0, content.selectionStart);
+    const after = content.value.substring(content.selectionEnd);
+    content.value = before + (format === 'bold' ? `**${selected}**` : format === 'italic' ? `*${selected}*` : '') + after;
+}
+
+document.getElementById('addNewNoteBtn').addEventListener('click', () => {
+    const newNote = { id: Date.now().toString(), title: 'New Note', content: '' };
+    currentNote = newNote;
+    document.getElementById('noteTitle').value = newNote.title;
+    document.getElementById('noteContent').value = newNote.content;
+    document.getElementById('noteList').classList.add('hidden');
+    document.getElementById('noteEditor').classList.remove('hidden');
+});
+
+document.getElementById('saveBtn').addEventListener('click', saveNote);
+document.getElementById('cancelBtn').addEventListener('click', () => {
+    document.getElementById('noteEditor').classList.add('hidden');
+    document.getElementById('noteList').classList.remove('hidden');
+    currentNote = null;
+});
+
+document.getElementById('searchInput').addEventListener('input', () => {
+    const term = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = notes.filter(n => 
+        n.title.toLowerCase().includes(term) || 
+        n.content.toLowerCase().includes(term)
+    );
+    renderNotes(filtered);
+});
+
+loadNotes();
+renderNotes();
+</script>
+</body>
+</html>

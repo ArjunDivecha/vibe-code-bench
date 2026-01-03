@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Typing Speed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            max-width: 800px;
+            margin: auto;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #text-display {
+            font-size: 1.2em;
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            min-height: 100px;
+            line-height: 1.6em;
+            white-space: pre-wrap;
+        }
+
+        #text-input {
+            width: 100%;
+            font-size: 1.2em;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .correct {
+            color: green;
+        }
+
+        .incorrect {
+            color: red;
+            background-color: #ffe6e6;
+        }
+
+        #stats {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        #timer {
+            font-weight: bold;
+        }
+
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Typing Speed Test</h1>
+    <div id="text-display"></div>
+    <textarea id="text-input" rows="5" placeholder="Start typing here..." disabled></textarea>
+    <div id="stats">
+        Timer: <span id="timer">0</span>s |
+        WPM: <span id="wpm">0</span> |
+        Accuracy: <span id="accuracy">100</span>%
+    </div>
+    <button id="restart-btn">Start New Test</button>
+
+    <script>
+        const texts = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Typing fast requires a lot of practice and patience.",
+            "JavaScript is a versatile programming language used for web development.",
+            "A journey of a thousand miles begins with a single step.",
+            "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+            "Life is what happens when you're busy making other plans.",
+            "Do not go where the path may lead, go instead where there is no path and leave a trail.",
+            "The only way to do great work is to love what you do.",
+            "Imagination is more important than knowledge. Knowledge is limited. Imagination encircles the world."
+        ];
+
+        const textDisplay = document.getElementById("text-display");
+        const textInput = document.getElementById("text-input");
+        const timerEl = document.getElementById("timer");
+        const wpmEl = document.getElementById("wpm");
+        const accuracyEl = document.getElementById("accuracy");
+        const restartBtn = document.getElementById("restart-btn");
+
+        let targetText = "";
+        let timer = 0;
+        let interval = null;
+        let maxTime = 30; // 30 seconds
+        let testEnded = false;
+
+        function pickRandomText() {
+            return texts[Math.floor(Math.random() * texts.length)];
+        }
+
+        function renderText() {
+            textDisplay.innerHTML = "";
+            for (let char of targetText) {
+                const span = document.createElement("span");
+                span.textContent = char;
+                textDisplay.appendChild(span);
+            }
+        }
+
+        function startTest() {
+            targetText = pickRandomText();
+            renderText();
+            textInput.value = "";
+            textInput.disabled = false;
+            textInput.focus();
+            timer = 0;
+            testEnded = false;
+            timerEl.textContent = "0";
+            wpmEl.textContent = "0";
+            accuracyEl.textContent = "100";
+            clearInterval(interval);
+            interval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timer++;
+            timerEl.textContent = timer;
+            if (timer >= maxTime) {
+                endTest();
+            }
+        }
+
+        function endTest() {
+            clearInterval(interval);
+            textInput.disabled = true;
+            testEnded = true;
+        }
+
+        textInput.addEventListener("input", () => {
+            const input = textInput.value;
+            const spans = textDisplay.querySelectorAll("span");
+            let correct = 0;
+            let totalTyped = input.length;
+
+            for (let i = 0; i < spans.length; i++) {
+                const span = spans[i];
+                const char = input[i];
+
+                if (char == null) {
+                    span.className = "";
+                } else if (char === span.textContent) {
+                    span.className = "correct";
+                    correct++;
+                } else {
+                    span.className = "incorrect";
+                }
+            }
+
+            let wordsTyped = input.trim().split(/\s+/).length;
+            if (input.trim() === "") wordsTyped = 0;
+            const minutes = timer / 60;
+            const wpm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
+            const accuracy = totalTyped > 0 ? Math.round((correct / totalTyped) * 100) : 100;
+
+            wpmEl.textContent = wpm;
+            accuracyEl.textContent = accuracy;
+
+            if (timer >= maxTime && !testEnded) {
+                endTest();
+            }
+        });
+
+        restartBtn.addEventListener("click", startTest);
+
+        // Initialize
+        startTest();
+    </script>
+</body>
+</html>

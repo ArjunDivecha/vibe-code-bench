@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weather Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --sunny: linear-gradient(135deg, #ffeb3b, #ff9800);
+        --cloudy: linear-gradient(135deg, #cfd9df, #e2ebf0);
+        --rainy: linear-gradient(135deg, #4facfe, #00f2fe);
+        --text-dark: #1f2a44;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        color: var(--text-dark);
+        background: var(--cloudy);
+        transition: background 0.6s ease;
+    }
+    header {
+        padding: 24px 16px 8px;
+        text-align: center;
+        color: #0f172a;
+    }
+    header h1 {
+        margin: 0;
+        font-size: 2rem;
+        letter-spacing: 0.5px;
+    }
+    header p {
+        margin: 6px 0 0;
+        color: #334155;
+    }
+    .container {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 18px;
+        padding: 12px 16px 24px;
+    }
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+    .card {
+        background: rgba(255,255,255,0.75);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, border 0.2s ease;
+        border: 2px solid transparent;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    }
+    .card.active {
+        border-color: #2563eb;
+        box-shadow: 0 12px 30px rgba(37,99,235,0.18);
+    }
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .city {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .icon {
+        font-size: 1.8rem;
+    }
+    .temp {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 6px 0 2px;
+    }
+    .meta {
+        color: #475569;
+        font-size: 0.95rem;
+    }
+    .details {
+        background: rgba(255,255,255,0.82);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .details h2 {
+        margin: 0;
+        font-size: 1.4rem;
+    }
+    .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #1f2937;
+    }
+    .label {
+        width: 100px;
+        font-weight: 600;
+    }
+    .value {
+        flex: 1;
+    }
+    .chart-wrapper {
+        background: rgba(255,255,255,0.82);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.1);
+    }
+    .chart-title {
+        margin: 0 0 8px;
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+    canvas {
+        width: 100%;
+        height: 220px;
+    }
+    @media (max-width: 900px) {
+        .container { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.6rem; }
+        .card { padding: 12px; }
+        .temp { font-size: 1.6rem; }
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>Weather Dashboard</h1>
+    <p>Live look (mocked) at 5 global cities</p>
+</header>
+
+<div class="container">
+    <div class="cards" id="cards"></div>
+    <div class="side-panel">
+        <div class="details" id="details">
+            <h2>Select a city</h2>
+            <div class="detail-row"><span class="label">Temp</span><span class="value">--</span></div>
+            <div class="detail-row"><span class="label">Condition</span><span class="value">--</span></div>
+            <div class="detail-row"><span class="label">Humidity</span><span class="value">--</span></div>
+            <div class="detail-row"><span class="label">Feels Like</span><span class="value">--</span></div>
+            <div class="detail-row"><span class="label">Wind</span><span class="value">--</span></div>
+        </div>
+        <div class="chart-wrapper">
+            <p class="chart-title">Temperature Comparison (°C)</p>
+            <canvas id="chart" width="400" height="220"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+const weatherData = [
+    { city: "New York",   temp: 22, condition: "sunny",  humidity: 55, feels: 24, wind: "10 km/h" },
+    { city: "London",     temp: 16, condition: "cloudy", humidity: 70, feels: 15, wind: "14 km/h" },
+    { city: "Tokyo",      temp: 19, condition: "rainy",  humidity: 80, feels: 19, wind: "18 km/h" },
+    { city: "Sydney",     temp: 25, condition: "sunny",  humidity: 60, feels: 27, wind: "9 km/h"  },
+    { city: "Paris",      temp: 18, condition: "cloudy", humidity: 65, feels: 17, wind: "12 km/h" }
+];
+
+const conditionIcons = {
+    sunny: "☀️",
+    cloudy: "☁️",
+    rainy: "🌧️"
+};
+
+const conditionBg = {
+    sunny: getComputedStyle(document.documentElement).getPropertyValue('--sunny'),
+    cloudy: getComputedStyle(document.documentElement).getPropertyValue('--cloudy'),
+    rainy: getComputedStyle(document.documentElement).getPropertyValue('--rainy')
+};
+
+const cardsContainer = document.getElementById('cards');
+const detailsBox = document.getElementById('details');
+const chartCanvas = document.getElementById('chart');
+const ctx = chartCanvas.getContext('2d');
+let activeCity = null;
+
+function renderCards() {
+    cardsContainer.innerHTML = "";
+    weatherData.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card' + (activeCity === idx ? ' active' : '');
+        card.addEventListener('click', () => selectCity(idx));
+
+        const header = document.createElement('div');
+        header.className = 'card-header';
+
+        const city = document.createElement('div');
+        city.className = 'city';
+        city.textContent = item.city;
+
+        const icon = document.createElement('div');
+        icon.className = 'icon';
+        icon.textContent = conditionIcons[item.condition] || "ℹ️";
+
+        header.appendChild(city);
+        header.appendChild(icon);
+
+        const temp = document.createElement('div');
+        temp.className = 'temp';
+        temp.textContent = item.temp + "°C";
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `${capitalize(item.condition)} • Humidity ${item.humidity}%`;
+
+        card.appendChild(header);
+        card.appendChild(temp);
+        card.appendChild(meta);
+
+        cardsContainer.appendChild(card);
+    });
+}
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function selectCity(idx) {
+    activeCity = idx;
+    renderCards();
+    const data = weatherData[idx];
+    detailsBox.innerHTML = `
+        <h2>${conditionIcons[data.condition] || ""} ${data.city}</h2>
+        <div class="detail-row"><span class="label">Temp</span><span class="value">${data.temp}°C</span></div>
+        <div class="detail-row"><span class="label">Condition</span><span class="value">${capitalize(data.condition)}</span></div>
+        <div class="detail-row"><span class="label">Humidity</span><span class="value">${data.humidity}%</span></div>
+        <div class="detail-row"><span class="label">Feels Like</span><span class="value">${data.feels}°C</span></div>
+        <div class="detail-row"><span class="label">Wind</span><span class="value">${data.wind}</span></div>
+    `;
+    document.body.style.background = conditionBg[data.condition] || conditionBg.cloudy;
+}
+
+function drawChart() {
+    const padding = { top: 20, right: 20, bottom: 26, left: 26 };
+    const width = chartCanvas.width;
+    const height = chartCanvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    const temps = weatherData.map(d => d.temp);
+    const maxTemp = Math.max(...temps) + 5;
+    const minTemp = Math.min(...temps) - 5;
+
+    const barWidth = (width - padding.left - padding.right) / temps.length * 0.6;
+    const gap = ((width - padding.left - padding.right) - (barWidth * temps.length)) / (temps.length - 1 || 1);
+
+    ctx.font = "12px 'Segoe UI'";
+    ctx.textBaseline = "middle";
+    ctx.strokeStyle = "rgba(0,0,0,0.08)";
+    ctx.lineWidth = 1;
+
+    // grid lines
+    for (let i = 0; i <= 4; i++) {
+        const t = i / 4;
+        const y = padding.top + (1 - t) * (height - padding.top - padding.bottom);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+        const tempLabel = (minTemp + t * (maxTemp - minTemp)).toFixed(0);
+        ctx.fillStyle = "#475569";
+        ctx.fillText(tempLabel + "°", 4, y);
+    }
+
+    temps.forEach((temp, i) => {
+        const x = padding.left + i * (barWidth + gap);
+        const y = padding.top + (1 - (temp - minTemp) / (maxTemp - minTemp)) * (height - padding.top - padding.bottom);
+        const barHeight = height - padding.bottom - y;
+        const color = barColor(weatherData[i].condition);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 6);
+        ctx.fill();
+
+        ctx.fillStyle = "#0f172a";
+        ctx.fillText(weatherData[i].city, x, height - padding.bottom + 12);
+        ctx.fillText(temp + "°", x, y - 10);
+    });
+}
+
+function barColor(condition) {
+    switch (condition) {
+        case "sunny": return "#f59e0b";
+        case "cloudy": return "#94a3b8";
+        case "rainy": return "#38bdf8";
+        default: return "#22c55e";
+    }
+}
+
+// Polyfill for roundRect if not present
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        const minSize = Math.min(w, h);
+        if (r > minSize / 2) r = minSize / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+    };
+}
+
+renderCards();
+drawChart();
+selectCity(0);
+</script>
+</body>
+</html>

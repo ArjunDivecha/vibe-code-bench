@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #ddd;
+            --header-bg: #e0e0e0;
+            --button-bg: #4a90d9;
+            --button-hover: #357abd;
+            --code-bg: #f4f4f4;
+            --blockquote-border: #ccc;
+            --preview-link: #0066cc;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a2e;
+            --panel-bg: #16213e;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+            --header-bg: #0f3460;
+            --button-bg: #4a90d9;
+            --button-hover: #5ba0e9;
+            --code-bg: #0f3460;
+            --blockquote-border: #666;
+            --preview-link: #64b5f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            background-color: var(--header-bg);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toolbar h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .toolbar-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toolbar button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--button-bg);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .toolbar button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .toolbar button.secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .toolbar button.secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .editor-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            background-color: var(--header-bg);
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        #preview {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background-color: var(--panel-bg);
+            line-height: 1.6;
+        }
+
+        #preview h1 { font-size: 2em; margin: 0.67em 0; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h2 { font-size: 1.5em; margin: 0.75em 0; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h3 { font-size: 1.25em; margin: 0.83em 0; }
+        #preview h4 { font-size: 1em; margin: 1.12em 0; }
+        #preview h5 { font-size: 0.875em; margin: 1.5em 0; }
+        #preview h6 { font-size: 0.75em; margin: 1.67em 0; color: #666; }
+
+        #preview p { margin: 1em 0; }
+
+        #preview ul, #preview ol { margin: 1em 0; padding-left: 2em; }
+        #preview li { margin: 0.5em 0; }
+
+        #preview a { color: var(--preview-link); text-decoration: underline; }
+
+        #preview code {
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        #preview pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        #preview blockquote {
+            margin: 1em 0;
+            padding: 0.5em 1em;
+            border-left: 4px solid var(--blockquote-border);
+            background-color: var(--code-bg);
+            color: var(--text-color);
+        }
+
+        #preview blockquote p { margin: 0.5em 0; }
+
+        #preview hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2em 0;
+        }
+
+        #preview img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+        }
+
+        #preview th, #preview td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        #preview th { background-color: var(--header-bg); }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+            
+            .pane {
+                min-height: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>Markdown Editor</h1>
+        <div class="toolbar-buttons">
+            <button id="theme-toggle" class="secondary">🌙 Dark Mode</button>
+            <button id="save-btn">💾 Save</button>
+            <button id="load-btn" class="secondary">📂 Load</button>
+            <button id="export-btn">📤 Export HTML</button>
+        </div>
+    </div>
+    
+    <div class="editor-container">
+        <div class="pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="markdown-input" placeholder="Enter your markdown here..."></textarea>
+        </div>
+        <div class="pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        const themeToggle = document.getElementById('theme-toggle');
+        const saveBtn = document.getElementById('save-btn');
+        const loadBtn = document.getElementById('load-btn');
+        const exportBtn = document.getElementById('export-btn');
+
+        // Storage keys
+        const STORAGE_KEY = 'markdown_content';
+        const THEME_KEY = 'markdown_theme';
+
+        // Simple Markdown Parser
+        class MarkdownParser {
+            constructor() {
+                this.rules = [
+                    // Code blocks ```code```
+                    [/(?:^|\n)```(\w*)\n([\s\S]*?)```\n/g, '<pre><code>$2</code></pre>\n'],
+                    
+                    // Headers
+                    [/^### (.+)$/gm, '<h3>$1</h3>'],
+                    [/^## (.+)$/gm, '<h2>$1</h2>'],
+                    [/^# (.+)$/gm, '<h1>$1</h1>'],
+                    
+                    // Blockquotes
+                    [/^&gt;(.+)$/gm, '<blockquote><p>$1</p></blockquote>'],
+                    
+                    // Horizontal rule
+                    [/^[-*_]{3,}$/gm, '<hr>'],
+                    
+                    // Inline code
+                    [/`([^`]+)`/g, '<code>$1</code>'],
+                    
+                    // Bold
+                    [/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'],
+                    
+                    // Italic
+                    [/\*([^*]+)\*/g, '<em>$1</em>'],
+                    
+                    // Links [text](url)
+                    [\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>'],
+                    
+                    // Unordered lists
+                    [/^- (.+)$/gm, '<li>$1</li>'],
+                    
+                    // Ordered lists
+                    [/^\d+\. (.+)$/gm, '<li>$1</li>'],
+                ];
+            }
+
+            parse(text) {
+                let html = text;
+
+                // Escape HTML
+                html = html.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+
+                // Apply rules in order
+                for (const [pattern, replacement] of this.rules) {
+                    html = html.replace(pattern, replacement);
+                }
+
+                // Convert newlines to <br> for paragraphs
+                html = html.split(/\n\n+/).map(block => {
+                    if (block.startsWith('<h') || block.startsWith('<pre') || 
+                        block.startsWith('<blockquote') || block.startsWith('<hr') ||
+                        block.startsWith('<ul') || block.startsWith('<ol')) {
+                        return block;
+                    }
+                    if (block.trim()) {
+                        return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+                    }
+                    return '';
+                }).join('\n');
+
+                return html;
+            }
+        }
+
+        const parser = new MarkdownParser();
+
+        // Live preview update
+        function updatePreview() {
+            const markdown = markdownInput.value;
+            preview.innerHTML = parser.parse(markdown);
+        }
+
+        markdownInput.addEventListener('input', updatePreview);
+
+        // Theme toggle
+        let isDarkMode = false;
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            themeToggle.textContent = isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem(THEME_KEY, isDarkMode ? 'dark' : 'light');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Save to localStorage
+        function saveContent() {
+            const content = markdownInput.value;
+            localStorage.setItem(STORAGE_KEY, content);
+            showNotification('Content saved!');
+        }
+
+        saveBtn.addEventListener('click', saveContent);
+
+        // Load from localStorage
+        function loadContent() {
+            const content = localStorage.getItem(STORAGE_KEY);
+            if (content) {
+                markdownInput.value = content;
+                updatePreview();
+                showNotification('Content loaded!');
+            } else {
+                showNotification('No saved content found');
+            }
+        }
+
+        loadBtn.addEventListener('click', loadContent);
+
+        // Export as HTML
+        function exportHTML() {
+            const content = markdownInput.value;
+            const rendered = parser.parse(content);
+            
+            const fullHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 { font-size: 2em; margin: 0.67em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
+        h2 { font-size: 1.5em; margin: 0.75em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
+        h3 { font-size: 1.25em; margin: 0.83em 0; }
+        p { margin: 1em 0; }
+        ul, ol { margin: 1em 0; padding-left: 2em; }
+        a { color: #0066cc; text-decoration: underline; }
+        code { background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        pre { background: #f4f4f4; padding: 16px; border-radius: 4px; overflow-x: auto; }
+        blockquote { margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid #ccc; background: #f4f4f4; }
+        hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+    </style>
+</head>
+<body>
+${rendered}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('HTML exported!');
+        }
+
+        exportBtn.addEventListener('click', exportHTML);
+
+        // Notification system
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #333;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 4px;
+                z-index: 1000;
+                animation: fadeIn 0.3s ease;
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize
+        function init() {
+            // Load saved theme
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            if (savedTheme === 'dark') {
+                isDarkMode = true;
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '☀️ Light Mode';
+            }
+
+            // Load saved content if exists
+            const savedContent = localStorage.getItem(STORAGE_KEY);
+            if (savedContent) {
+                markdownInput.value = savedContent;
+            } else {
+                // Default content
+                markdownInput.value = `# Welcome to Markdown Editor!
+
+## Features
+- Live preview
+- Dark mode toggle
+- Save/Load from localStorage
+- Export as HTML
+
+## Supported Syntax
+
+### Text Formatting
+**Bold text** and *italic text*
+
+### Lists
+- Unordered list item 1
+- Unordered list item 2
+
+1. Ordered list item 1
+2. Ordered list item 2
+
+### Links and Code
+[Visit Google](https://www.google.com)
+
+\`Inline code\`
+
+\`\`\`javascript
+// Code block
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+### Blockquote
+> This is a blockquote.
+> It can span multiple lines.
+
+---
+Enjoy writing!
+`;
+            }
+
+            updatePreview();
+        }
+
+        init();
+    </script>
+</body>
+</html>

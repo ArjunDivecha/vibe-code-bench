@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vibe-Law | Legal Case Search Workspace</title>
+<style>
+    :root {
+        --bg: #0f1724;
+        --panel: #131c2b;
+        --card: #1b2738;
+        --text: #dbe5f5;
+        --muted: #8ea0c4;
+        --accent: #4fa3ff;
+        --accent-2: #8c7cff;
+        --danger: #ff6b6b;
+        --border: #22324a;
+        --green: #36d399;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: radial-gradient(120% 120% at 20% 20%, #152137, #0c1320 55%);
+        color: var(--text);
+    }
+    header {
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(90deg, #111a2a, #0f1724);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    h1 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: 0.8px;
+        color: #e8eeff;
+    }
+    .pill {
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+    }
+    #searchBar {
+        flex: 1;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        color: var(--text);
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #searchBar:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79,163,255,0.15);
+    }
+    .container {
+        display: grid;
+        grid-template-columns: 34% 66%;
+        min-height: calc(100vh - 70px);
+    }
+    .results {
+        border-right: 1px solid var(--border);
+        padding: 12px;
+        overflow-y: auto;
+        background: linear-gradient(180deg, rgba(28,40,60,0.35), transparent);
+    }
+    .result-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 12px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: transform 0.1s, border-color 0.2s, background 0.2s;
+    }
+    .result-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
+    .result-card.active {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 2px rgba(140,124,255,0.2);
+    }
+    .result-title {
+        margin: 0 0 6px;
+        font-size: 15px;
+        color: #f0f4ff;
+    }
+    .meta {
+        display: flex;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+    }
+    .snippet {
+        color: #c7d4f0;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+    .detail {
+        display: grid;
+        grid-template-columns: 68% 32%;
+        padding: 14px;
+        gap: 12px;
+    }
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        min-height: 320px;
+        position: relative;
+    }
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .detail-title {
+        margin: 0;
+        font-size: 18px;
+        color: #f5f7ff;
+    }
+    .tabs {
+        display: flex;
+        gap: 8px;
+    }
+    .tab-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-btn.active {
+        background: rgba(79,163,255,0.12);
+        color: var(--text);
+        border-color: var(--accent);
+    }
+    .btn {
+        background: linear-gradient(135deg, #2a7ed6, #1a5bab);
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.15s;
+        font-weight: 600;
+    }
+    .btn.secondary {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        color: var(--text);
+    }
+    .btn:active { transform: scale(0.98); }
+    .body-text {
+        color: #d3def7;
+        line-height: 1.6;
+        font-size: 14px;
+        max-height: 65vh;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    .tag {
+        padding: 4px 8px;
+        background: rgba(79,163,255,0.15);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--accent);
+    }
+    .notes {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+    }
+    textarea {
+        width: 100%;
+        background: #111929;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 10px;
+        resize: vertical;
+        min-height: 80px;
+        outline: none;
+    }
+    textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79,163,255,0.1);
+    }
+    .note-list {
+        flex: 1;
+        overflow-y: auto;
+        display: grid;
+        gap: 8px;
+    }
+    .note-card {
+        background: #151f30;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+        position: relative;
+    }
+    .note-card small { color: var(--muted); }
+    .note-card button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        color: var(--muted);
+        border: none;
+        cursor: pointer;
+    }
+    .highlight-entity {
+        background: rgba(79,163,255,0.2);
+        color: #e9f2ff;
+        padding: 1px 3px;
+        border-radius: 4px;
+    }
+    .submeta {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .empty-state {
+        color: var(--muted);
+        text-align: center;
+        padding: 30px 10px;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #1f2c42; border-radius: 10px; }
+</style>
+</head>
+<body>
+<header>
+    <h1>Vibe-Law</h1>
+    <div class="pill">Case Intelligence Workspace</div>
+    <input id="searchBar" type="search" placeholder="Search cases by title, court, keywords, year...">
+</header>
+<div class="container">
+    <div class="results" id="results"></div>
+    <div class="detail">
+        <div class="panel" id="detailPanel">
+            <div class="detail-header">
+                <div>
+                    <div class="submeta" id="detailMeta">
+                        <span>Title</span>
+                    </div>
+                    <h2 class="detail-title" id="detailTitle">Select a case to preview</h2>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="summary">Summary</button>
+                    <button class="tab-btn" data-tab="full">Full Text</button>
+                </div>
+            </div>
+            <div class="submeta" style="gap:6px; margin-bottom:6px;" id="detailTags"></div>
+            <div class="body-text" id="detailBody">
+                <div class="empty-state">Choose a case from the left to view its summary and full text.</div>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+                <button class="btn" id="extractBtn">Extract Entities</button>
+                <button class="btn secondary" id="clearHighlightsBtn">Clear Highlights</button>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="notes">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0; color:#f2f4ff;">Notes</h3>
+                    <span class="pill" id="noteStatus">No case selected</span>
+                </div>
+                <textarea id="noteInput" placeholder="Write a quick note or paste a snippet..."></textarea>
+                <button class="btn" id="saveNote">Save Note</button>
+                <div class="note-list" id="noteList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Mock case data
+const cases = [
+    {
+        id: 'case01',
+        title: 'United States v. Harper',
+        court: '9th Cir.',
+        date: '2023-01-14',
+        tags: ['Criminal', 'Fourth Amendment', 'Search & Seizure'],
+        summary: 'Defendant challenged the warrantless search of a vehicle following a traffic stop, arguing the absence of exigent circumstances. The panel examined the scope of the automobile exception and whether the officers had probable cause based on the defendant’s statements and odor of contraband.',
+        fullText: `On January 14, 2023, Officer Morales initiated a traffic stop of Harper's vehicle for failure to signal. The officer testified that upon approach he observed Harper appearing nervous and detected a strong odor of marijuana. Without seeking consent or a warrant, Morales searched the vehicle and recovered a firearm from under the driver’s seat. The district court denied Harper’s motion to suppress. On appeal, Harper argues the search violated the Fourth Amendment because the odor alone did not establish probable cause and no exigent circumstance justified the warrantless intrusion. The panel held that under controlling precedent, the automobile exception requires probable cause but not a separate exigency. The odor, combined with Harper’s inconsistent answers, provided sufficient basis for probable cause, and the denial of suppression is affirmed.`
+    },
+    {
+        id: 'case02',
+        title: 'State v. Lin',
+        court: 'Supreme Court of Oregon',
+        date: '2022-09-08',
+        tags: ['Evidence', 'Digital Privacy'],
+        summary: 'The court considered whether extraction of text messages from a locked smartphone fell within the scope of a search warrant describing "digital communications." The opinion clarified particularity requirements in the context of mobile devices.',
+        fullText: `Detectives obtained a warrant to search Lin's residence and "digital communications" related to an alleged fraud scheme. Upon seizing a locked smartphone, officers used forensic tools to extract all text messages. Lin moved to suppress, asserting the warrant lacked particularity and exceeded its scope. The court held that while the warrant permitted review of digital communications, it failed to impose temporal or subject-matter limits. Therefore, the broad extraction violated Article I, section 9, of the Oregon Constitution, and the messages should have been suppressed.`
+    },
+    {
+        id: 'case03',
+        title: 'Garcia v. Apex Logistics',
+        court: 'D. Mass.',
+        date: '2021-05-18',
+        tags: ['Employment', 'FLSA', 'Class Action'],
+        summary: 'Delivery drivers alleged misclassification as independent contractors. The court analyzed the economic realities test under the FLSA and denied the defendant’s motion for summary judgment.',
+        fullText: `Garcia and similarly situated drivers delivered packages for Apex Logistics pursuant to contracts labeling them as independent contractors. Plaintiffs contended they were employees under the Fair Labor Standards Act and Massachusetts law. Applying the economic realities factors—control, opportunity for profit, investment, permanency, and integration—the court found disputes of material fact. Apex's uniform policies, route assignments, and equipment requirements could indicate employee status. Summary judgment for Apex was denied.`
+    },
+    {
+        id: 'case04',
+        title: 'Doe v. City of Meridian',
+        court: 'Idaho Supreme Court',
+        date: '2020-11-02',
+        tags: ['Civil Rights', 'Qualified Immunity'],
+        summary: 'Plaintiff alleged excessive force during a protest. The court addressed whether officers were entitled to qualified immunity at the motion to dismiss stage.',
+        fullText: `Jane Doe filed suit alleging that Meridian police used excessive force—deploying tear gas and rubber bullets—during a peaceful protest in June 2020. The district court dismissed on qualified immunity grounds. On appeal, the Idaho Supreme Court held that the complaint plausibly alleged violation of a clearly established right to be free from excessive force against peaceful demonstrators. The case was remanded for further proceedings.`
+    },
+    {
+        id: 'case05',
+        title: 'In re Beacon Solar',
+        court: 'Bankr. D. Del.',
+        date: '2023-04-22',
+        tags: ['Bankruptcy', 'Secured Transactions'],
+        summary: 'The bankruptcy court evaluated competing liens in solar farm assets, addressing the perfection of security interests in fixtures versus personal property.',
+        fullText: `Beacon Solar, LLC, entered Chapter 11 proceedings with multiple creditors asserting security interests in solar panels and related infrastructure. Creditor A filed a UCC-1 financing statement; Creditor B recorded a fixture filing in the county land records. The court held that the panels, once affixed to the land, constituted fixtures. Creditor B's fixture filing perfected its interest, giving it priority over Creditor A.`
+    },
+    {
+        id: 'case06',
+        title: 'Ramos v. City Transit Authority',
+        court: '2d Cir.',
+        date: '2019-06-30',
+        tags: ['ADA', 'Public Transit'],
+        summary: 'Passengers alleged systemic ADA violations in subway accessibility. The appellate court examined injunctive standing and scope of equitable relief.',
+        fullText: `Ramos and other plaintiffs alleged that the City Transit Authority failed to maintain elevator access at multiple subway stations, violating the Americans with Disabilities Act. The district court dismissed for lack of standing. The Second Circuit reversed, finding plaintiffs sufficiently alleged ongoing harm and a real and immediate threat of future injury. The case was remanded for consideration of injunctive relief.`
+    },
+    {
+        id: 'case07',
+        title: 'Miller v. Silver Oak Insurance',
+        court: 'Cal. Ct. App.',
+        date: '2021-12-19',
+        tags: ['Insurance', 'Bad Faith'],
+        summary: 'Insured claimed the carrier unreasonably delayed payment of a wildfire loss. The court analyzed the covenant of good faith and fair dealing.',
+        fullText: `After Miller's home was destroyed in a 2020 wildfire, Silver Oak Insurance engaged in extended investigation and issued partial payments. Miller sued for breach of contract and bad faith. The Court of Appeal held that triable issues existed regarding the reasonableness of the insurer's investigation and timing. Summary judgment for the insurer was reversed.`
+    },
+    {
+        id: 'case08',
+        title: 'People v. Delgado',
+        court: 'Supreme Court of Illinois',
+        date: '2022-03-11',
+        tags: ['Criminal', 'Miranda', 'Confessions'],
+        summary: 'The court considered whether the defendant’s confession was voluntary where police used a false friend ploy. The opinion clarified voluntariness factors.',
+        fullText: `During custodial interrogation, officers arranged for an acquaintance of Delgado to urge cooperation, falsely implying leniency. Delgado confessed to armed robbery. The court held the confession involuntary, emphasizing the coercive impact of deception involving personal relationships. The conviction was reversed and remanded for new trial.`
+    },
+    {
+        id: 'case09',
+        title: 'Anderson v. Horizon Health',
+        court: '7th Cir.',
+        date: '2020-07-09',
+        tags: ['Employment', 'Title VII', 'Retaliation'],
+        summary: 'Nurse alleged retaliation after reporting harassment. The appellate court reviewed causation standards post-Nassar.',
+        fullText: `Anderson reported repeated harassment to HR and was terminated two months later. The district court granted summary judgment, finding no causal link. The Seventh Circuit reversed, holding that temporal proximity and evidence of shifting explanations created a triable issue on but-for causation under Title VII.`
+    },
+    {
+        id: 'case10',
+        title: 'United States v. Vega',
+        court: '11th Cir.',
+        date: '2018-10-28',
+        tags: ['Criminal', 'Sentencing', 'Guidelines'],
+        summary: 'Appeal challenged application of the career offender enhancement based on prior state convictions. The court interpreted categorical approach principles.',
+        fullText: `Vega received a career offender enhancement based on two prior state drug convictions. He argued the state statute encompassed substances not listed in the federal schedules. Applying the categorical approach, the Eleventh Circuit agreed and vacated the sentence, remanding for resentencing without the enhancement.`
+    },
+    {
+        id: 'case11',
+        title: 'Smith v. Northbridge Tech.',
+        court: 'S.D.N.Y.',
+        date: '2023-02-04',
+        tags: ['Trade Secrets', 'Preliminary Injunction'],
+        summary: 'Employer sought to enjoin former engineer from working at a competitor, alleging inevitable disclosure. The court discussed likelihood of success and irreparable harm.',
+        fullText: `Northbridge claimed Smith downloaded proprietary code before departing. Smith denied misappropriation. The court held that inevitable disclosure alone was insufficient under New York law, but forensic evidence of downloads supported a likelihood of success. A limited injunction restricting use and disclosure of confidential code was granted.`
+    },
+    {
+        id: 'case12',
+        title: 'Rivera v. Crescent Foods',
+        court: 'Supreme Court of Texas',
+        date: '2021-09-02',
+        tags: ['Torts', 'Products Liability'],
+        summary: 'Plaintiff alleged design defect in a meat processing machine. The court reviewed admissibility of expert testimony under Texas Rule 702.',
+        fullText: `Rivera suffered injury when a safety guard failed. The trial court excluded the plaintiff’s engineering expert, finding unreliable methodology. The Supreme Court affirmed, holding the expert failed to test feasible alternative designs. Without expert support, the design defect claim could not proceed.`
+    },
+    {
+        id: 'case13',
+        title: 'Johnson v. Metro Housing',
+        court: 'D. Colo.',
+        date: '2019-02-26',
+        tags: ['Fair Housing', 'Disability'],
+        summary: 'Tenant claimed denial of a reasonable accommodation for an emotional support animal. The court analyzed HUD guidance and direct threat exceptions.',
+        fullText: `Johnson requested permission to keep an emotional support dog despite a no-pets policy. Metro Housing denied the request citing prior noise complaints. The court found the landlord failed to conduct an individualized assessment and granted partial summary judgment for Johnson on liability.`
+    },
+    {
+        id: 'case14',
+        title: 'Khan v. AeroSky Systems',
+        court: 'Fed. Cir.',
+        date: '2022-12-01',
+        tags: ['Patents', 'Obviousness'],
+        summary: 'The Federal Circuit reviewed a PTAB decision invalidating claims as obvious over combined prior art references, focusing on motivation to combine.',
+        fullText: `Khan's patent covered a drone stabilization system. The Board found claims obvious over Smith and Chen. The Federal Circuit affirmed, holding substantial evidence supported a motivation to combine where both references addressed wind-resistance and control latency, and the claimed arrangement yielded predictable results.`
+    }
+];
+
+// DOM references
+const resultsEl = document.getElementById('results');
+const detailTitle = document.getElementById('detailTitle');
+const detailMeta = document.getElementById('detailMeta');
+const detailTags = document.getElementById('detailTags');
+const detailBody = document.getElementById('detailBody');
+const tabs = document.querySelectorAll('.tab-btn');
+const searchBar = document.getElementById('searchBar');
+const extractBtn = document.getElementById('extractBtn');
+const clearHighlightsBtn = document.getElementById('clearHighlightsBtn');
+const noteInput = document.getElementById('noteInput');
+const saveNoteBtn = document.getElementById('saveNote');
+const noteList = document.getElementById('noteList');
+const noteStatus = document.getElementById('noteStatus');
+
+let currentCaseId = null;
+let currentTab = 'summary';
+
+// Render results
+function renderResults(list) {
+    resultsEl.innerHTML = '';
+    if (!list.length) {
+        resultsEl.innerHTML = `<div class="empty-state">No cases match your search.</div>`;
+        return;
+    }
+    list.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.dataset.id = c.id;
+        card.innerHTML = `
+            <h3 class="result-title">${c.title}</h3>
+            <div class="meta">
+                <span>${c.court}</span>
+                <span>•</span>
+                <span>${c.date}</span>
+            </div>
+            <div class="snippet">${c.summary.slice(0, 180)}${c.summary.length > 180 ? '…' : ''}</div>
+        `;
+        card.addEventListener('click', () => selectCase(c.id));
+        resultsEl.appendChild(card);
+    });
+}
+renderResults(cases);
+
+// Select case
+function selectCase(id) {
+    const selected = cases.find(c => c.id === id);
+    if (!selected) return;
+    currentCaseId = id;
+    document.querySelectorAll('.result-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.id === id);
+    });
+    detailTitle.textContent = selected.title;
+    detailMeta.innerHTML = `<span>${selected.court}</span><span>•</span><span>${selected.date}</span>`;
+    detailTags.innerHTML = selected.tags.map(t => `<span class="tag">${t}</span>`).join('');
+    updateBody();
+    loadNotes();
+    noteStatus.textContent = 'Linked to ' + selected.id;
+}
+
+// Update body based on tab
+function updateBody() {
+    const selected = cases.find(c => c.id === currentCaseId);
+    if (!selected) {
+        detailBody.innerHTML = `<div class="empty-state">Choose a case from the left to view its summary and full text.</div>`;
+        return;
+    }
+    const text = currentTab === 'summary' ? selected.summary : selected.fullText;
+    detailBody.innerHTML = `<div id="textContent">${escapeHtml(text)}</div>`;
+}
+
+// Simple entity extraction (names and dates)
+function extractEntities() {
+    const textEl = document.getElementById('textContent');
+    if (!textEl) return;
+    let html = textEl.innerHTML;
+    const datePattern = /\b(20\d{2}|19\d{2})[-\/.](0?[1-9]|1[0-2])[-\/.](0?[1-9]|[12]\d|3[01])\b/g;
+    html = html.replace(datePattern, match => `<span class="highlight-entity">${match}</span>`);
+    const namePattern = /\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)+)\b/g;
+    html = html.replace(namePattern, match => `<span class="highlight-entity">${match}</span>`);
+    textEl.innerHTML = html;
+}
+
+// Clear highlights by re-rendering
+function clearHighlights() {
+    updateBody();
+}
+
+// Escape HTML to avoid injection
+function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+}
+
+// Search handling
+searchBar.addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    const filtered = cases.filter(c => {
+        return [c.title, c.court, c.summary, c.fullText, c.tags.join(' '), c.date]
+            .some(field => field.toLowerCase().includes(q));
+    });
+    renderResults(filtered);
+});
+
+// Tab switching
+tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab === 'full' ? 'fullText' : 'summary';
+        currentTab = btn.dataset.tab; // align with updateBody logic
+        if (currentTab === 'full') currentTab = 'full';
+        else currentTab = 'summary';
+        updateBody();
+    });
+});
+
+// Normalize currentTab variable usage
+function getTabContentKey() {
+    return currentTab === 'full' ? 'fullText' : 'summary';
+}
+
+// Update body uses currentTab global but we toggled to 'summary'/'full'
+function updateBody() {
+    const selected = cases.find(c => c.id === currentCaseId);
+    if (!selected) {
+        detailBody.innerHTML = `<div class="empty-state">Choose a case from the left to view its summary and full text.</div>`;
+        return;
+    }
+    const key = getTabContentKey();
+    const text = key === 'summary' ? selected.summary : selected.fullText;
+    detailBody.innerHTML = `<div id="textContent">${escapeHtml(text)}</div>`;
+}
+
+// Notes persistence
+function loadNotes() {
+    noteList.innerHTML = '';
+    if (!currentCaseId) return;
+    const stored = JSON.parse(localStorage.getItem('notes_'+currentCaseId) || '[]');
+    if (!stored.length) {
+        noteList.innerHTML = `<div class="empty-state">No notes yet. Capture key points or citations.</div>`;
+        return;
+    }
+    stored.forEach((note, idx) => {
+        const div = document.createElement('div');
+        div.className = 'note-card';
+        div.innerHTML = `<small>${note.date}</small><p style="margin:6px 0 0;">${escapeHtml(note.text)}</p><button title="Delete">&times;</button>`;
+        div.querySelector('button').addEventListener('click', () => deleteNote(idx));
+        noteList.appendChild(div);
+    });
+}
+
+function saveNote() {
+    if (!currentCaseId) {
+        alert('Select a case to attach notes.');
+        return;
+    }
+    const text = noteInput.value.trim();
+    if (!text) return;
+    const stored = JSON.parse(localStorage.getItem('notes_'+currentCaseId) || '[]');
+    stored.unshift({ text, date: new Date().toLocaleString() });
+    localStorage.setItem('notes_'+currentCaseId, JSON.stringify(stored));
+    noteInput.value = '';
+    loadNotes();
+}
+
+function deleteNote(idx) {
+    const stored = JSON.parse(localStorage.getItem('notes_'+currentCaseId) || '[]');
+    stored.splice(idx,1);
+    localStorage.setItem('notes_'+currentCaseId, JSON.stringify(stored));
+    loadNotes();
+}
+
+// Event bindings
+extractBtn.addEventListener('click', extractEntities);
+clearHighlightsBtn.addEventListener('click', clearHighlights);
+saveNoteBtn.addEventListener('click', saveNote);
+
+// Default select first case
+selectCase(cases[0].id);
+</script>
+</body>
+</html>

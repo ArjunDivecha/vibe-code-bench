@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather Dashboard</title>
+  <style>
+    :root {
+      --sunny-bg: #ffe57f;
+      --cloudy-bg: #cfd8dc;
+      --rainy-bg: #b3e5fc;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--sunny-bg);
+      transition: background-color 0.3s ease;
+    }
+
+    header {
+      background-color: #2196f3;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      margin: 1rem;
+      padding: 1rem;
+      width: 200px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .emoji {
+      font-size: 2rem;
+    }
+
+    .details {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 2rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      border-radius: 10px;
+      display: none;
+      z-index: 10;
+    }
+
+    .details h2 {
+      margin-top: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      top:0;
+      left:0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 5;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin: 2rem auto;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Weather Dashboard</h1>
+  </header>
+  <div class="container" id="cityContainer">
+    <!-- Cards inserted here -->
+  </div>
+
+  <canvas id="chart" width="400" height="200"></canvas>
+
+  <div class="overlay" id="overlay"></div>
+  <div class="details" id="details">
+    <h2 id="detailCity"></h2>
+    <p><span id="detailEmoji" class="emoji"></span></p>
+    <p><strong>Temperature:</strong> <span id="detailTemp"></span> °C</p>
+    <p><strong>Condition:</strong> <span id="detailCondition"></span></p>
+    <p><strong>Humidity:</strong> <span id="detailHumidity"></span>%</p>
+    <button onclick="closeDetails()">Close</button>
+  </div>
+
+  <script>
+    const weatherData = [
+      { city: "New York", temp: 22, condition: "sunny", humidity: 55 },
+      { city: "London", temp: 18, condition: "cloudy", humidity: 65 },
+      { city: "Tokyo", temp: 26, condition: "rainy", humidity: 70 },
+      { city: "Sydney", temp: 24, condition: "sunny", humidity: 50 },
+      { city: "Paris", temp: 20, condition: "cloudy", humidity: 60 }
+    ];
+
+    const conditionEmojis = {
+      sunny: "☀️",
+      cloudy: "☁️",
+      rainy: "🌧️"
+    };
+
+    const conditionColors = {
+      sunny: "var(--sunny-bg)",
+      cloudy: "var(--cloudy-bg)",
+      rainy: "var(--rainy-bg)"
+    };
+
+    const cityContainer = document.getElementById("cityContainer");
+
+    function createCard(data) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue(`--${data.condition}-bg`);
+      card.innerHTML = `
+        <h3>${data.city}</h3>
+        <div class="emoji">${conditionEmojis[data.condition]}</div>
+        <p>${data.temp} °C</p>
+        <p>${data.condition}</p>
+      `;
+      card.onclick = () => showDetails(data);
+      cityContainer.appendChild(card);
+    }
+
+    function showDetails(data) {
+      const details = document.getElementById("details");
+      const overlay = document.getElementById("overlay");
+      document.getElementById("detailCity").textContent = data.city;
+      document.getElementById("detailEmoji").textContent = conditionEmojis[data.condition];
+      document.getElementById("detailTemp").textContent = data.temp;
+      document.getElementById("detailCondition").textContent = data.condition;
+      document.getElementById("detailHumidity").textContent = data.humidity;
+      details.style.display = "block";
+      overlay.style.display = "block";
+    }
+
+    function closeDetails() {
+      document.getElementById("details").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    function setBackground() {
+      const conditions = weatherData.map(d => d.condition);
+      const mostCommon = conditions.sort((a,b) =>
+        conditions.filter(v => v===a).length - conditions.filter(v => v===b).length
+      ).pop();
+      document.body.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue(`--${mostCommon}-bg`);
+    }
+
+    function drawChart() {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      const maxTemp = Math.max(...weatherData.map(d => d.temp));
+      const barWidth = 60;
+      const spacing = 30;
+      const baseY = canvas.height - 30;
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.font = "14px Arial";
+
+      weatherData.forEach((data, i) => {
+        const height = (data.temp / maxTemp) * (canvas.height - 60);
+        const x = i * (barWidth + spacing) + spacing;
+        const y = baseY - height;
+
+        ctx.fillStyle = "#4caf50";
+        ctx.fillRect(x, y, barWidth, height);
+
+        ctx.fillStyle = "#000";
+        ctx.fillText(data.city, x, baseY + 15);
+        ctx.fillText(data.temp + "°C", x, y - 5);
+      });
+    }
+
+    weatherData.forEach(createCard);
+    setBackground();
+    drawChart();
+  </script>
+</body>
+</html>

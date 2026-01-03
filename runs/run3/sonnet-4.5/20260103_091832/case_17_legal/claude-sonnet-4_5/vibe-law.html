@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law - Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e1e8ed;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid #3d5a80;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-bar {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            background: #1a2332;
+            border: 2px solid #3d5a80;
+            border-radius: 6px;
+            color: #e1e8ed;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #5b8bb4;
+            box-shadow: 0 0 0 3px rgba(91, 139, 180, 0.2);
+        }
+
+        .search-btn {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #2c5f8d 0%, #3d7ba8 100%);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-btn:hover {
+            background: linear-gradient(135deg, #3d7ba8 0%, #4a90c2 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            width: 400px;
+            background: #151d28;
+            border-right: 2px solid #2c3e50;
+            overflow-y: auto;
+            transition: all 0.3s;
+        }
+
+        .results-panel.collapsed {
+            width: 0;
+            border: none;
+        }
+
+        .results-header {
+            padding: 1.25rem 1.5rem;
+            background: #1a2332;
+            border-bottom: 1px solid #2c3e50;
+            font-weight: 600;
+            color: #a8b8cc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .case-item {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #2c3e50;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .case-item:hover {
+            background: #1a2332;
+        }
+
+        .case-item.active {
+            background: #1e3a5f;
+            border-left: 4px solid #3d7ba8;
+        }
+
+        .case-title {
+            font-weight: 600;
+            color: #5b8bb4;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #7a8ea4;
+        }
+
+        .case-court {
+            color: #a8b8cc;
+        }
+
+        .case-date {
+            color: #7a8ea4;
+        }
+
+        .case-snippet {
+            font-size: 0.875rem;
+            color: #9aa5b3;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Detail View */
+        .detail-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0f1419;
+            overflow: hidden;
+        }
+
+        .detail-view.hidden {
+            display: none;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #5a6e84;
+        }
+
+        .empty-state svg {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+        }
+
+        .detail-header {
+            padding: 1.5rem 2rem;
+            background: #1a2332;
+            border-bottom: 2px solid #2c3e50;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            color: #5b8bb4;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 2rem;
+            color: #a8b8cc;
+            font-size: 0.95rem;
+        }
+
+        .detail-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: #151d28;
+            border-bottom: 2px solid #2c3e50;
+            padding: 0 2rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            color: #7a8ea4;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #a8b8cc;
+            background: rgba(91, 139, 180, 0.05);
+        }
+
+        .tab.active {
+            color: #5b8bb4;
+            border-bottom-color: #3d7ba8;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content p {
+            line-height: 1.8;
+            margin-bottom: 1rem;
+            color: #c5d1de;
+        }
+
+        .actions-bar {
+            padding: 1rem 2rem;
+            background: #151d28;
+            border-top: 1px solid #2c3e50;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2c5f8d 0%, #3d7ba8 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3d7ba8 0%, #4a90c2 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: #2c3e50;
+            color: #a8b8cc;
+        }
+
+        .btn-secondary:hover {
+            background: #34495e;
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 350px;
+            background: #151d28;
+            border-left: 2px solid #2c3e50;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .notes-sidebar.hidden {
+            width: 0;
+            border: none;
+        }
+
+        .notes-header {
+            padding: 1.25rem 1.5rem;
+            background: #1a2332;
+            border-bottom: 1px solid #2c3e50;
+            font-weight: 600;
+            color: #a8b8cc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .note-item {
+            background: #1a2332;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #3d7ba8;
+        }
+
+        .note-text {
+            color: #c5d1de;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-meta {
+            font-size: 0.75rem;
+            color: #7a8ea4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .note-delete {
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .note-delete:hover {
+            background: rgba(231, 76, 60, 0.2);
+        }
+
+        .add-note-area {
+            padding: 1rem;
+            border-top: 1px solid #2c3e50;
+            background: #1a2332;
+        }
+
+        .note-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0f1419;
+            border: 1px solid #2c3e50;
+            border-radius: 4px;
+            color: #e1e8ed;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .note-textarea:focus {
+            outline: none;
+            border-color: #3d7ba8;
+        }
+
+        .btn-add-note {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* Entity Highlighting */
+        .entity-person {
+            background: rgba(52, 152, 219, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .entity-date {
+            background: rgba(46, 204, 113, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #2ecc71;
+        }
+
+        .entity-legal {
+            background: rgba(230, 126, 34, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #e67e22;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f1419;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2c3e50;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #34495e;
+        }
+
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: #7a8ea4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ Vibe-Law Case Search</h1>
+            <div class="search-container">
+                <input type="text" class="search-bar" id="searchInput" placeholder="Search cases by title, court, or keywords...">
+                <button class="search-btn" onclick="performSearch()">Search</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="results-panel" id="resultsPanel">
+                <div class="results-header">
+                    <span id="resultsCount">0 Cases Found</span>
+                </div>
+                <div id="resultsList"></div>
+            </div>
+
+            <div class="detail-view" id="detailView">
+                <div class="empty-state" id="emptyState">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h2>Select a Case</h2>
+                    <p>Choose a case from the search results to view details</p>
+                </div>
+
+                <div id="caseDetail" style="display: none; flex: 1; display: flex; flex-direction: column;">
+                    <div class="detail-header">
+                        <div class="detail-title" id="detailTitle"></div>
+                        <div class="detail-meta">
+                            <span id="detailCourt"></span>
+                            <span id="detailDate"></span>
+                        </div>
+                    </div>
+
+                    <div class="detail-body">
+                        <div class="detail-content">
+                            <div class="tabs">
+                                <div class="tab active" onclick="switchTab('summary')">Summary</div>
+                                <div class="tab" onclick="switchTab('fulltext')">Full Text</div>
+                            </div>
+
+                            <div class="tab-content active" id="summaryTab"></div>
+                            <div class="tab-content" id="fulltextTab"></div>
+
+                            <div class="actions-bar">
+                                <button class="btn btn-primary" onclick="extractEntities()">Extract Entities</button>
+                                <button class="btn btn-secondary" onclick="clearEntities()">Clear Highlights</button>
+                                <button class="btn btn-secondary" onclick="toggleNotes()">
+                                    <span id="notesToggleText">Show Notes</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notes-sidebar hidden" id="notesSidebar">
+                            <div class="notes-header">Case Notes</div>
+                            <div class="notes-list" id="notesList"></div>
+                            <div class="add-note-area">
+                                <textarea class="note-textarea" id="noteInput" placeholder="Add a note or save a snippet..."></textarea>
+                                <button class="btn btn-primary btn-add-note" onclick="addNote()">Add Note</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Case Data
+        const cases = [
+            {
+                id: 1,
+                title: "Miranda v. Arizona",
+                court: "Supreme Court of the United States",
+                date: "June 13, 1966",
+                snippet: "The Supreme Court ruled that detained criminal suspects must be informed of their constitutional rights...",
+                summary: "Miranda v. Arizona established the requirement that law enforcement officials must inform suspects of their Fifth Amendment rights before interrogation. This landmark decision created what became known as 'Miranda rights' or 'Miranda warnings.' The Court held that the Fifth Amendment's protection against self-incrimination requires that suspects be clearly informed of their rights to remain silent and to have an attorney present during questioning.",
+                fullText: "The Supreme Court of the United States, in a 5-4 decision, ruled that Ernesto Miranda's confession was inadmissible because he had not been informed of his rights. Chief Justice Earl Warren wrote the majority opinion, establishing that suspects must be advised of their right to remain silent, that anything they say can be used against them in court, that they have the right to an attorney, and that if they cannot afford an attorney, one will be appointed for them. This decision fundamentally changed police procedures across the United States. The case arose from Miranda's arrest in Phoenix, Arizona, in 1963, where he was identified by the complaining witness and confessed to kidnapping and rape after two hours of interrogation. The Court found that without proper warnings, statements made during custodial interrogation are inadmissible. Justice John Marshall Harlan II dissented, arguing that the decision went too far in limiting law enforcement. The practical impact of this ruling has been profound, creating standard procedures for police departments nationwide and becoming a cornerstone of American criminal procedure."
+            },
+            {
+                id: 2,
+                title: "Brown v. Board of Education",
+                court: "Supreme Court of the United States",
+                date: "May 17, 1954",
+                snippet: "Landmark decision declaring state laws establishing separate public schools unconstitutional...",
+                summary: "Brown v. Board of Education was a consolidation of several cases challenging racial segregation in public schools. The Court unanimously ruled that 'separate educational facilities are inherently unequal,' overturning Plessy v. Ferguson's 'separate but equal' doctrine. Chief Justice Earl Warren delivered the opinion, which became a catalyst for the civil rights movement.",
+                fullText: "The Supreme Court's unanimous decision in Brown v. Board of Education fundamentally altered American society by declaring racial segregation in public schools unconstitutional. The case actually consolidated five separate cases from Kansas, South Carolina, Virginia, Delaware, and Washington, D.C. Oliver Brown filed suit against the Board of Education of Topeka, Kansas after his daughter Linda was denied admission to white elementary schools. Chief Justice Earl Warren wrote the opinion for a unanimous Court, stating that segregation of children in public schools solely on the basis of race deprives minority children of equal educational opportunities, even when physical facilities and other tangible factors may be equal. The Court cited psychological studies, including research by Kenneth Clark, showing that segregation had detrimental effects on African American children. The decision explicitly overruled Plessy v. Ferguson's 'separate but equal' doctrine in the context of public education. A second decision, known as Brown II, was issued in 1955 to address implementation, requiring desegregation 'with all deliberate speed.' This landmark case served as a legal foundation for the civil rights movement of the 1950s and 1960s."
+            },
+            {
+                id: 3,
+                title: "Roe v. Wade",
+                court: "Supreme Court of the United States",
+                date: "January 22, 1973",
+                snippet: "Landmark decision on the constitutionality of abortion laws, recognizing a woman's right to choose...",
+                summary: "Roe v. Wade held that the Constitution protects a woman's liberty to choose to have an abortion without excessive government restriction. The Court ruled that the Due Process Clause of the Fourteenth Amendment provides a fundamental 'right to privacy' that protects a pregnant woman's liberty to choose whether to have an abortion, though this right must be balanced against the state's interests.",
+                fullText: "In a 7-2 decision written by Justice Harry Blackmun, the Supreme Court struck down a Texas statute that criminalized abortion except to save the mother's life. The pseudonymous plaintiff, Norma McCorvey (known as Jane Roe), challenged the constitutionality of Texas abortion laws. The Court held that the Due Process Clause of the Fourteenth Amendment protects the right to privacy, including a woman's qualified right to terminate her pregnancy. The decision established a trimester framework: during the first trimester, the abortion decision must be left to the woman and her physician; the state may regulate abortion procedures during the second trimester to protect maternal health; and during the third trimester, after fetal viability, the state may regulate or prohibit abortion to protect potential life, except when necessary to preserve the life or health of the mother. Justice Byron White and Justice William Rehnquist dissented, arguing that the Court was overstepping its judicial authority. This decision sparked ongoing national debate and became one of the most politically significant and controversial Supreme Court decisions. Note: This case was later overturned by Dobbs v. Jackson Women's Health Organization in 2022."
+            },
+            {
+                id: 4,
+                title: "Gideon v. Wainwright",
+                court: "Supreme Court of the United States",
+                date: "March 18, 1963",
+                snippet: "Established the right to counsel for criminal defendants who cannot afford an attorney...",
+                summary: "Gideon v. Wainwright held that the Sixth Amendment's guarantee of counsel is a fundamental right essential to a fair trial and applies to state courts through the Fourteenth Amendment's Due Process Clause. The Court ruled that states are required to provide attorneys for defendants in criminal cases who cannot afford their own lawyers.",
+                fullText: "Clarence Earl Gideon was charged with breaking into a pool hall in Florida. Too poor to afford a lawyer, he requested that one be appointed for him, but his request was denied under Florida law, which only appointed counsel in capital cases. Gideon represented himself and was convicted. While in prison, he filed a handwritten petition to the Supreme Court. In a unanimous decision written by Justice Hugo Black, the Court overruled its earlier decision in Betts v. Brady and held that the right to counsel is fundamental and essential to a fair trial. The Court reasoned that lawyers in criminal courts are necessities, not luxuries, and that 'noble principles' of fair trials cannot be realized if poor defendants cannot afford lawyers. Justice John Marshall Harlan II wrote a concurring opinion emphasizing the evolving understanding of fundamental rights. Following this decision, Gideon was retried with a court-appointed lawyer and acquitted. This case led to the creation of public defender systems across the United States, fundamentally transforming criminal justice by ensuring legal representation for indigent defendants. The story of this case was later popularized in Anthony Lewis's book 'Gideon's Trumpet.'"
+            },
+            {
+                id: 5,
+                title: "Marbury v. Madison",
+                court: "Supreme Court of the United States",
+                date: "February 24, 1803",
+                snippet: "Established the principle of judicial review, allowing courts to strike down laws unconstitutional...",
+                summary: "Marbury v. Madison is considered the most important case in Supreme Court history. Chief Justice John Marshall established the principle of judicial review, which gives federal courts the power to declare legislative and executive acts unconstitutional. This decision fundamentally defined the boundary between the constitutionally separate executive and judicial branches.",
+                fullText: "William Marbury was appointed as a justice of the peace by President John Adams in the final days of his administration. When the new Secretary of State, James Madison, refused to deliver Marbury's commission, Marbury petitioned the Supreme Court for a writ of mandamus to compel delivery. Chief Justice John Marshall faced a political dilemma: ordering Madison to deliver the commission might be ignored, undermining the Court's authority, while ruling against Marbury would suggest the Federalists' appointments were invalid. Marshall's brilliant solution established judicial review. He wrote that while Marbury had a right to his commission and mandamus was the appropriate remedy, the provision of the Judiciary Act of 1789 that granted the Supreme Court original jurisdiction over mandamus petitions was unconstitutional. The Constitution limits the Court's original jurisdiction, and Congress cannot expand it. Marshall wrote: 'It is emphatically the province and duty of the judicial department to say what the law is.' This established that the Supreme Court has the final authority to determine whether acts of Congress conform to the Constitution. Though the immediate effect was limited—the Court declared it lacked jurisdiction—the long-term impact was revolutionary, establishing the judiciary as a co-equal branch of government with the power to check both the legislature and executive."
+            },
+            {
+                id: 6,
+                title: "United States v. Nixon",
+                court: "Supreme Court of the United States",
+                date: "July 24, 1974",
+                snippet: "Ruled that executive privilege is not absolute and President must comply with subpoenas...",
+                summary: "During the Watergate scandal, President Richard Nixon claimed executive privilege to resist a subpoena for tape recordings and documents. The Supreme Court unanimously ruled that neither the separation of powers nor executive privilege is absolute. The President must comply with judicial demands for evidence in criminal proceedings.",
+                fullText: "Special Prosecutor Leon Jaworski subpoenaed tape recordings of conversations between President Richard Nixon and his advisors, believing they contained evidence relevant to the Watergate investigation. Nixon refused, claiming executive privilege. The case reached the Supreme Court with unusual speed given its constitutional importance. Chief Justice Warren Burger, himself appointed by Nixon, wrote the unanimous opinion. The Court acknowledged that executive privilege exists and is necessary for the President to receive candid advice. However, it held that this privilege is not absolute and must yield to the demonstrated, specific need for evidence in a criminal trial. The Court reasoned that the judiciary's need for evidence in criminal proceedings outweighs a generalized claim of confidentiality. The decision emphasized that no person, not even the President, is above the law. Just sixteen days after this ruling, Nixon resigned from office. The released tapes proved his involvement in the Watergate cover-up. This case established important precedents about presidential power, executive privilege, and the rule of law. It demonstrated that the constitutional system of checks and balances functions even in situations involving the highest office. The decision has been cited numerous times in subsequent cases involving executive privilege and presidential power, including investigations of later presidents."
+            },
+            {
+                id: 7,
+                title: "Citizens United v. FEC",
+                court: "Supreme Court of the United States",
+                date: "January 21, 2010",
+                snippet: "Ruled that corporations and unions can spend unlimited amounts on political campaigns...",
+                summary: "Citizens United v. Federal Election Commission held that the First Amendment prohibits the government from restricting independent expenditures for political campaigns by corporations, associations, and labor unions. The Court ruled that corporate funding of independent political broadcasts during elections cannot be limited.",
+                fullText: "Citizens United, a conservative nonprofit corporation, wanted to air a film critical of Hillary Clinton during the 2008 Democratic primary season. The Federal Election Commission held that the film constituted 'electioneering communication' prohibited by the Bipartisan Campaign Reform Act (McCain-Feingold Act). In a controversial 5-4 decision written by Justice Anthony Kennedy, the Supreme Court held that corporate funding of independent political broadcasts in candidate elections cannot be limited under the First Amendment. The Court overruled previous decisions, including Austin v. Michigan Chamber of Commerce, holding that political speech does not lose First Amendment protection based on the speaker's corporate identity. Kennedy wrote that the government cannot restrict political speech based on the speaker's identity. The majority argued that restrictions on independent expenditures violate the First Amendment because the public has a right to hear all perspectives. Justice John Paul Stevens wrote a lengthy dissent, arguing that corporations are not members of society and that corporate speech can drown out other voices. The decision fundamentally altered campaign finance law, leading to the rise of Super PACs and dramatically increasing the amount of money in American politics. Critics argue it has given corporations disproportionate political influence, while supporters contend it protects free speech rights."
+            },
+            {
+                id: 8,
+                title: "District of Columbia v. Heller",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2008",
+                snippet: "Held that the Second Amendment protects an individual's right to possess firearms...",
+                summary: "In a landmark 5-4 decision, the Supreme Court held that the Second Amendment protects an individual's right to possess a firearm unconnected with service in a militia, and to use that firearm for traditionally lawful purposes, such as self-defense within the home. The Court struck down provisions of the Firearms Control Regulations Act of 1975 as unconstitutional.",
+                fullText: "Dick Heller, a D.C. special police officer, applied to register a handgun to keep at home but was denied. He challenged the constitutionality of the District of Columbia's handgun ban and requirement that firearms in the home be kept nonfunctional. Justice Antonin Scalia wrote the majority opinion, holding that the Second Amendment codifies a pre-existing right to keep and bear arms and that the right belongs to individuals, not just members of a militia. Scalia analyzed the text's prefatory clause ('A well regulated Militia, being necessary to the security of a free State') and operative clause ('the right of the people to keep and bear Arms, shall not be infringed'), concluding that while the prefatory clause announces a purpose, it does not limit the operative clause. The opinion examined historical sources and concluded that the right existed before the Constitution and was understood as an individual right. However, the Court clarified that this right is not unlimited and does not cast doubt on longstanding prohibitions on firearms possession by felons and the mentally ill, laws forbidding firearms in sensitive places like schools, or laws imposing conditions on commercial sale. Justice Stevens wrote a dissenting opinion arguing that the Second Amendment protects only a right to possess and use firearms in connection with militia service. Justice Breyer also dissented, arguing that even if there is an individual right, the D.C. law was constitutional. This decision was the first in which the Supreme Court held that the Second Amendment guarantees an individual's right to possess firearms."
+            },
+            {
+                id: 9,
+                title: "Obergefell v. Hodges",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2015",
+                snippet: "Ruled that same-sex marriage is a constitutional right under the Fourteenth Amendment...",
+                summary: "The Supreme Court held that the fundamental right to marry is guaranteed to same-sex couples by the Due Process and Equal Protection Clauses of the Fourteenth Amendment. The decision required all states to issue marriage licenses to same-sex couples and recognize same-sex marriages performed in other jurisdictions.",
+                fullText: "This case consolidated challenges from Michigan, Kentucky, Ohio, and Tennessee, where same-sex couples were denied marriage licenses or recognition of marriages performed in other states. James Obergefell was the lead plaintiff in the Ohio case, challenging the state's refusal to recognize his marriage to John Arthur. Justice Anthony Kennedy wrote the majority opinion in the 5-4 decision. He identified four principles supporting the conclusion that the right to marry applies to same-sex couples: personal choice in marriage is inherent in individual autonomy; marriage is fundamental because it supports a two-person union unlike any other; marriage safeguards children and families; and marriage is the keystone of the nation's social order. Kennedy wrote that excluding same-sex couples from marriage conflicts with the central meaning of equal liberty. He emphasized that the right to marry is fundamental as a matter of history and tradition, but its boundaries have changed over time to exclude arranged marriages and prohibitions on interracial marriage. Chief Justice John Roberts wrote a dissent, arguing that while same-sex marriage may be good policy, the Constitution does not address it, and the issue should be resolved through democratic processes. Justice Scalia criticized the majority for ending political debate on an issue that should be decided by the people. Justice Clarence Thomas argued that the majority decision threatens religious liberty. This decision extended marriage rights nationwide, overturning bans in fourteen states and marking a culmination of the marriage equality movement."
+            },
+            {
+                id: 10,
+                title: "Plessy v. Ferguson",
+                court: "Supreme Court of the United States",
+                date: "May 18, 1896",
+                snippet: "Established the 'separate but equal' doctrine that legitimized racial segregation...",
+                summary: "In a 7-1 decision (one justice did not participate), the Supreme Court upheld a Louisiana law requiring 'equal but separate accommodations' for white and Black railroad passengers. The Court held that 'separate but equal' facilities did not violate the Equal Protection Clause of the Fourteenth Amendment, establishing a legal doctrine that legitimized racial segregation for nearly 60 years.",
+                fullText: "Homer Plessy, who was seven-eighths white and one-eighth Black, was arrested for sitting in a whites-only railroad car in Louisiana. Plessy argued that Louisiana's Separate Car Act violated the Thirteenth and Fourteenth Amendments. Justice Henry Billings Brown wrote the majority opinion, holding that the law did not violate the Fourteenth Amendment. The Court reasoned that the Fourteenth Amendment aimed to enforce absolute equality before the law, but could not have been intended to abolish distinctions based on color or enforce social equality. The majority argued that laws permitting or requiring separation of races do not necessarily imply inferiority of either race, and that if one race feels inferior, it is solely because they choose to put that construction upon the law. The Court distinguished between political equality and social equality, suggesting that legislation cannot overcome social prejudices. Justice John Marshall Harlan wrote the sole dissent, arguing that the Constitution is color-blind and neither knows nor tolerates classes among citizens. He predicted the decision would stimulate aggressions upon the rights of Black citizens and perpetuate racial animosity. Harlan's dissent proved prescient—Plessy legitimized Jim Crow laws throughout the South, leading to widespread racial segregation in schools, transportation, and public facilities. The 'separate but equal' doctrine remained the law until Brown v. Board of Education overturned it in 1954. Plessy is now widely regarded as one of the worst Supreme Court decisions in American history."
+            },
+            {
+                id: 11,
+                title: "Terry v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 10, 1968",
+                snippet: "Established the stop-and-frisk exception to Fourth Amendment protections...",
+                summary: "Terry v. Ohio held that police may stop and briefly detain a person for investigative purposes if they have reasonable suspicion that the person has committed, is committing, or is about to commit a crime. Police may conduct a limited protective search for weapons if they have reasonable belief that the person is armed and dangerous.",
+                fullText: "Cleveland detective Martin McFadden observed John Terry and two other men acting suspiciously, appearing to case a store for a robbery. Based on his experience and observations, McFadden approached the men, identified himself as a police officer, and patted down Terry, discovering a concealed weapon. Terry was convicted of carrying a concealed weapon and challenged the constitutionality of the search. Chief Justice Earl Warren wrote the majority opinion for the 8-1 Court, establishing the 'reasonable suspicion' standard. The Court held that the Fourth Amendment's protection against unreasonable searches and seizures is not violated when a police officer stops a suspect on the street and frisks them without probable cause if the officer has reasonable suspicion that the person has committed, is committing, or is about to commit a crime and has a reasonable belief that the person may be armed and dangerous. Warren emphasized that this was a narrow exception to Fourth Amendment protections, justified by the need to protect police officers and the public. The search must be limited in scope to a pat-down for weapons. Justice William Douglas dissented, arguing that reasonable suspicion was insufficient justification for a search and that probable cause should be required. This decision created what became known as a 'Terry stop' or 'stop and frisk,' a significant exception to Fourth Amendment protections. While intended to protect officer safety, the practice has been controversial, particularly regarding its disproportionate application to minority communities. The case remains one of the most cited Supreme Court decisions in criminal procedure."
+            },
+            {
+                id: 12,
+                title: "New York Times Co. v. Sullivan",
+                court: "Supreme Court of the United States",
+                date: "March 9, 1964",
+                snippet: "Established 'actual malice' standard for defamation suits by public officials...",
+                summary: "New York Times Co. v. Sullivan held that public officials cannot recover damages for defamatory falsehoods relating to their official conduct unless they prove the statement was made with 'actual malice'—that is, with knowledge that it was false or with reckless disregard of whether it was false or not. This landmark First Amendment case provided substantial protection for freedom of the press.",
+                fullText: "L.B. Sullivan, a Montgomery, Alabama city commissioner, sued the New York Times for libel over a full-page advertisement describing police actions against civil rights demonstrators. The ad contained some factual inaccuracies, though it did not mention Sullivan by name. An Alabama jury awarded Sullivan $500,000 in damages. The Supreme Court unanimously reversed. Justice William Brennan wrote the opinion establishing that the First Amendment requires a federal rule protecting criticism of public officials. The Court held that public officials suing for defamation must prove 'actual malice'—knowledge of falsity or reckless disregard for the truth. Brennan wrote that debate on public issues should be uninhibited, robust, and wide-open, and that it may well include vehement, caustic, and sometimes unpleasantly sharp attacks on government and public officials. The Court reasoned that erroneous statements are inevitable in free debate and must be protected if freedom of expression is to have the breathing space it needs to survive. The case arose during the civil rights movement when Southern officials were using libel suits to intimidate the press. The Court recognized that the threat of libel suits could chill the media's willingness to report on civil rights and other controversial issues. Justice Hugo Black, joined by Justice William Douglas, wrote a concurring opinion arguing that the First Amendment provides absolute protection for criticism of public officials, regardless of malice. This decision fundamentally shaped modern media law, making it difficult for public officials to win defamation suits and enabling aggressive investigative journalism. The 'actual malice' standard was later extended to public figures in Curtis Publishing Co. v. Butts."
+            },
+            {
+                id: 13,
+                title: "Bush v. Gore",
+                court: "Supreme Court of the United States",
+                date: "December 12, 2000",
+                snippet: "Ended Florida recount in 2000 presidential election, effectively deciding the presidency...",
+                summary: "In an urgent case arising from the 2000 presidential election, the Supreme Court ruled 7-2 that Florida's manual recount of presidential ballots violated the Equal Protection Clause because different standards were being applied in different counties. A separate 5-4 decision held that there was insufficient time to conduct a new recount that would meet constitutional standards.",
+                fullText: "The 2000 presidential election between George W. Bush and Al Gore came down to Florida's electoral votes. After election night, Bush led by a slim margin, triggering an automatic machine recount under Florida law. Gore requested manual recounts in several counties, leading to a legal battle over the process and standards. The Florida Supreme Court ordered a statewide manual recount, but the U.S. Supreme Court stayed that order and heard the case on an emergency basis. The Court's unsigned per curiam opinion held that Florida's recount process violated the Equal Protection Clause because county canvassing boards were applying different standards to determine voter intent. Some counties examined 'hanging chads,' while others looked for 'dimpled chads,' creating arbitrary and disparate treatment of voters. Seven justices agreed on this Equal Protection violation. However, by a 5-4 vote, the Court held that there was insufficient time to conduct a constitutionally proper recount before the December 12 safe harbor deadline. This effectively ended the election. Chief Justice William Rehnquist, joined by Justices Scalia and Thomas, wrote a concurrence arguing that the Florida Supreme Court had violated Article II by changing election law. Justice Stevens wrote a dissent, joined by Justices Ginsburg and Breyer, arguing that the federal questions were insubstantial and the Court should not have taken the case. Justice Souter and Justice Breyer wrote separate dissents arguing that the remedy should have been to establish uniform standards and continue the recount. The decision was controversial, with critics arguing that the Court improperly intervened in a political process and that the rationale was result-oriented. The opinion stated it was limited to the present circumstances. The decision effectively resolved the 2000 election in favor of George W. Bush."
+            },
+            {
+                id: 14,
+                title: "Loving v. Virginia",
+                court: "Supreme Court of the United States",
+                date: "June 12, 1967",
+                snippet: "Struck down laws banning interracial marriage as unconstitutional...",
+                summary: "In a unanimous decision, the Supreme Court struck down Virginia's anti-miscegenation law, which prohibited interracial marriage. The Court held that the law violated both the Equal Protection and Due Process Clauses of the Fourteenth Amendment, establishing that marriage is a fundamental civil right.",
+                fullText: "Richard Loving, a white man, and Mildred Jeter, a Black woman, were married in Washington, D.C., in 1958 to evade Virginia's Racial Integrity Act of 1924, which prohibited interracial marriages. When they returned to Virginia, they were arrested in their bedroom and charged with violating the ban. They pleaded guilty and were sentenced to one year in jail, suspended on the condition that they leave Virginia and not return together for 25 years. The trial judge stated, 'Almighty God created the races white, black, yellow, malay and red, and he placed them on separate continents... The fact that he separated the races shows that he did not intend for the races to mix.' The Lovings moved to Washington, D.C., but challenged the constitutionality of the Virginia law. Chief Justice Earl Warren wrote the opinion for a unanimous Court, holding that Virginia's law violated both the Equal Protection Clause and the Due Process Clause of the Fourteenth Amendment. Warren wrote that the freedom to marry is a fundamental civil right, essential to the orderly pursuit of happiness. The Court rejected the state's argument that the law was constitutional because it punished both white and Black participants equally. Warren stated that classifications based on race are inherently suspect and subject to the most rigid scrutiny, and Virginia's law served no legitimate purpose independent of invidious racial discrimination. At the time, sixteen states still had laws prohibiting interracial marriage. Loving invalidated these laws nationwide. The decision built upon the principles established in Brown v. Board of Education, applying them beyond public education. The case is frequently cited in marriage equality cases, including Obergefell v. Hodges. June 12 is celebrated as Loving Day by some to commemorate the decision."
+            },
+            {
+                id: 15,
+                title: "Korematsu v. United States",
+                court: "Supreme Court of the United States",
+                date: "December 18, 1944",
+                snippet: "Upheld Japanese American internment during WWII; later discredited as wrongly decided...",
+                summary: "In a 6-3 decision now widely regarded as one of the worst in Supreme Court history, the Court upheld the exclusion of Japanese Americans from the West Coast Military Area during World War II. The Court held that the need to protect against espionage outweighed Fred Korematsu's individual rights, applying a deferential standard in wartime.",
+                fullText: "Following the attack on Pearl Harbor, President Franklin Roosevelt issued Executive Order 9066, which authorized military commanders to designate military areas from which people could be excluded. General John DeWitt issued orders excluding all persons of Japanese ancestry from designated West Coast areas. Fred Korematsu, an American-born citizen of Japanese descent, refused to leave his home in California and was convicted of violating the exclusion order. Justice Hugo Black wrote the majority opinion, holding that the exclusion order was constitutional. The Court applied a 'strict scrutiny' standard, recognizing that all legal restrictions which curtail the civil rights of a single racial group are immediately suspect. However, it held that pressing public necessity may sometimes justify such restrictions and that the military urgency justified this racial classification. The Court distinguished between the exclusion order (upheld) and the detention that followed (not directly addressed). Justice Black stated the Court could not reject the military judgment that excluding Japanese Americans was necessary to prevent espionage and sabotage. Justice Owen Roberts dissented, arguing that Korematsu was convicted for being present in the place where he lived, which conflicted with orders that made it a crime to both leave and stay. Justice Frank Murphy dissented more forcefully, arguing that the exclusion fell into the 'ugly abyss of racism.' Justice Robert Jackson also dissented, warning that the decision would lie like a loaded weapon ready for any authority to use. Over 120,000 Japanese Americans were forcibly relocated and detained in internment camps. In 1983, a federal court vacated Korematsu's conviction after evidence emerged that the government had suppressed evidence and made false claims about the military necessity. In 2018, the Supreme Court explicitly repudiated Korematsu in Trump v. Hawaii, though it did not formally overturn it. The decision remains a cautionary tale about judicial deference to executive power in times of crisis and the vulnerability of constitutional rights during wartime."
+            }
+        ];
+
+        let currentCase = null;
+        let filteredCases = [...cases];
+        let entitiesExtracted = false;
+        let originalFullText = '';
+        let notesVisible = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            displayResults(cases);
+            loadNotes();
+            
+            // Allow Enter key to search
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        });
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            if (!query) {
+                filteredCases = [...cases];
+            } else {
+                filteredCases = cases.filter(c => 
+                    c.title.toLowerCase().includes(query) ||
+                    c.court.toLowerCase().includes(query) ||
+                    c.snippet.toLowerCase().includes(query) ||
+                    c.summary.toLowerCase().includes(query) ||
+                    c.fullText.toLowerCase().includes(query)
+                );
+            }
+            
+            displayResults(filteredCases);
+        }
+
+        function displayResults(results) {
+            const resultsList = document.getElementById('resultsList');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            resultsCount.textContent = `${results.length} Case${results.length !== 1 ? 's' : ''} Found`;
+            
+            if (results.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No cases found matching your search.</div>';
+                return;
+            }
+            
+            resultsList.innerHTML = results.map(c => `
+                <div class="case-item ${currentCase && currentCase.id === c.id ? 'active' : ''}" onclick="selectCase(${c.id})">
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-meta">
+                        <span class="case-court">${c.court}</span>
+                        <span class="case-date">${c.date}</span>
+                    </div>
+                    <div class="case-snippet">${c.snippet}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectCase(id) {
+            currentCase = cases.find(c => c.id === id);
+            entitiesExtracted = false;
+            originalFullText = currentCase.fullText;
+            
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('caseDetail').style.display = 'flex';
+            
+            document.getElementById('detailTitle').textContent = currentCase.title;
+            document.getElementById('detailCourt').textContent = currentCase.court;
+            document.getElementById('detailDate').textContent = currentCase.date;
+            
+            document.getElementById('summaryTab').innerHTML = `<p>${currentCase.summary}</p>`;
+            document.getElementById('fulltextTab').innerHTML = `<p>${currentCase.fullText}</p>`;
+            
+            // Update active state in list
+            displayResults(filteredCases);
+            loadNotes();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            
+            if (tab === 'summary') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('summaryTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('fulltextTab').classList.add('active');
+            }
+        }
+
+        function extractEntities() {
+            if (!currentCase) return;
+            
+            entitiesExtracted = true;
+            const fullTextTab = document.getElementById('fulltextTab');
+            let text = originalFullText;
+            
+            // Extract person names (simplified: capitalized words)
+            const personPattern = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+            text = text.replace(personPattern, '<span class="entity-person">$1</span>');
+            
+            // Extract dates
+            const datePattern = /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g;
+            text = text.replace(datePattern, '<span class="entity-date">$&</span>');
+            
+            // Extract year patterns
+            const yearPattern = /\b(19|20)\d{2}\b/g;
+            text = text.replace(yearPattern, '<span class="entity-date">$&</span>');
+            
+            // Extract legal terms
+            const legalTerms = [
+                'Supreme Court', 'Constitution', 'Amendment', 'First Amendment', 'Second Amendment', 
+                'Fourth Amendment', 'Fifth Amendment', 'Fourteenth Amendment', 'Due Process', 
+                'Equal Protection', 'judicial review', 'precedent', 'dissent', 'majority opinion',
+                'concurring opinion', 'unconstitutional', 'plaintiff', 'defendant', 'appellant',
+                'appellee', 'certiorari', 'habeas corpus', 'executive privilege', 'separation of powers'
+            ];
+            
+            legalTerms.forEach(term => {
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                text = text.replace(regex, match => `<span class="entity-legal">${match}</span>`);
+            });
+            
+            fullTextTab.innerHTML = `<p>${text}</p>`;
+        }
+
+        function clearEntities() {
+            if (!currentCase) return;
+            entitiesExtracted = false;
+            document.getElementById('fulltextTab').innerHTML = `<p>${originalFullText}</p>`;
+        }
+
+        function toggleNotes() {
+            notesVisible = !notesVisible;
+            const sidebar = document.getElementById('notesSidebar');
+            const toggleText = document.getElementById('notesToggleText');
+            
+            if (notesVisible) {
+                sidebar.classList.remove('hidden');
+                toggleText.textContent = 'Hide Notes';
+            } else {
+                sidebar.classList.add('hidden');
+                toggleText.textContent = 'Show Notes';
+            }
+        }
+
+        function addNote() {
+            if (!currentCase) return;
+            
+            const input = document.getElementById('noteInput');
+            const noteText = input.value.trim();
+            
+            if (!noteText) return;
+            
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: noteText,
+                timestamp: new Date().toISOString()
+            };
+            
+            const notes = getNotes();
+            notes.push(note);
+            localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+            
+            input.value = '';
+            loadNotes();
+        }
+
+        function deleteNote(noteId) {
+            let notes = getNotes();
+            notes = notes.filter(n => n.id !== noteId);
+            localStorage.setItem('vibeLawNotes', JSON.stringify(notes));
+            loadNotes();
+        }
+
+        function getNotes() {
+            const notesStr = localStorage.getItem('vibeLawNotes');
+            return notesStr ? JSON.parse(notesStr) : [];
+        }
+
+        function loadNotes() {
+            if (!currentCase) return;
+            
+            const notes = getNotes().filter(n => n.caseId === currentCase.id);
+            const notesList = document.getElementById('notesList');
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div style="padding: 1rem; text-align: center; color: #7a8ea4;">No notes yet. Add a note below.</div>';
+                return;
+            }
+            
+            notesList.innerHTML = notes.map(note => {
+                const date = new Date(note.timestamp);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                return `
+                    <div class="note-item">
+                        <div class="note-text">${escapeHtml(note.text)}</div>
+                        <div class="note-meta">
+                            <span>${dateStr}</span>
+                            <span class="note-delete" onclick="deleteNote(${note.id})">Delete</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Dashboard</title>
+<style>
+    :root {
+        --sunny: linear-gradient(135deg, #fbc02d, #ffeb3b);
+        --cloudy: linear-gradient(135deg, #90a4ae, #cfd8dc);
+        --rainy: linear-gradient(135deg, #4a6572, #6c8aa8);
+        --text: #1f2937;
+        --card-bg: rgba(255, 255, 255, 0.8);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color: var(--text);
+        background: #f0f4f8;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: background 0.6s ease;
+    }
+    header {
+        text-align: center;
+        padding: 24px 16px 8px;
+    }
+    header h1 {
+        margin: 0;
+        font-size: 2rem;
+        letter-spacing: 0.5px;
+    }
+    header p {
+        margin: 4px 0 0;
+        color: #4b5563;
+    }
+    main {
+        width: min(1100px, 95vw);
+        margin: 0 auto 32px;
+        display: grid;
+        gap: 16px;
+    }
+    .cards {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .city-card {
+        background: var(--card-bg);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, border 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
+    }
+    .city-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.35), transparent 45%);
+        pointer-events: none;
+    }
+    .city-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+        border-color: rgba(0,0,0,0.05);
+    }
+    .city-card.active {
+        border-color: #2563eb;
+    }
+    .city-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .city-name {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .temp {
+        font-size: 2.1rem;
+        font-weight: 700;
+    }
+    .condition {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .emoji {
+        font-size: 1.4rem;
+    }
+    .meta {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        color: #4b5563;
+        font-size: 0.95rem;
+    }
+    .details-panel {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 18px 18px 12px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .panel-section h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        letter-spacing: 0.3px;
+        color: #111827;
+    }
+    .panel-section p {
+        margin: 0;
+        color: #374151;
+        line-height: 1.5;
+    }
+    .chart-wrapper {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+    }
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    canvas {
+        width: 100%;
+        max-width: 100%;
+        height: 260px;
+    }
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 700px) {
+        header h1 { font-size: 1.7rem; }
+        .city-card { padding: 14px; }
+        .details-panel { grid-template-columns: 1fr; }
+        canvas { height: 220px; }
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>City Weather Dashboard</h1>
+    <p>Tap a city to view live-like details (mock data)</p>
+</header>
+<main>
+    <section class="cards" id="cityCards"></section>
+
+    <section class="details-panel" id="detailsPanel">
+        <div class="panel-section">
+            <h3 id="detailCity">Select a city</h3>
+            <p id="detailSummary">Click on a city card to see more information.</p>
+        </div>
+        <div class="panel-section">
+            <h3>Extra</h3>
+            <p id="detailExtras">Humidity, wind, and feels like temperature will appear here.</p>
+        </div>
+    </section>
+
+    <section class="chart-wrapper">
+        <div class="chart-header">
+            <h3>Temperature Comparison</h3>
+            <small style="color:#4b5563;">Across all cities (°C)</small>
+        </div>
+        <canvas id="tempChart" width="800" height="260"></canvas>
+        <div class="legend" id="legend"></div>
+    </section>
+</main>
+
+<script>
+const weatherData = [
+    { city: "New York", temp: 26, condition: "sunny", humidity: 55, wind: 14, feelsLike: 27, note: "Clear skies with a gentle breeze." },
+    { city: "London", temp: 18, condition: "cloudy", humidity: 70, wind: 12, feelsLike: 17, note: "Overcast conditions, cool throughout the day." },
+    { city: "Tokyo", temp: 24, condition: "rainy", humidity: 82, wind: 9, feelsLike: 26, note: "Light showers expected; carry an umbrella." },
+    { city: "Sydney", temp: 21, condition: "sunny", humidity: 60, wind: 16, feelsLike: 22, note: "Bright and breezy along the coast." },
+    { city: "Paris", temp: 20, condition: "cloudy", humidity: 65, wind: 10, feelsLike: 20, note: "Patchy clouds with mild temperatures." }
+];
+
+const conditionEmoji = {
+    sunny: "☀️",
+    cloudy: "☁️",
+    rainy: "🌧️"
+};
+
+const conditionBackground = {
+    sunny: "var(--sunny)",
+    cloudy: "var(--cloudy)",
+    rainy: "var(--rainy)"
+};
+
+const conditionBodyBackground = {
+    sunny: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.55), transparent 45%), linear-gradient(180deg, #fef3c7, #fde68a)",
+    cloudy: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.35), transparent 40%), linear-gradient(180deg, #e5e7eb, #cbd5e1)",
+    rainy: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.2), transparent 35%), linear-gradient(180deg, #cbd5f5, #94a3b8)"
+};
+
+const colorPalette = ["#2563eb", "#10b981", "#f97316", "#8b5cf6", "#ef4444"];
+
+const cardsContainer = document.getElementById("cityCards");
+const detailsPanel = document.getElementById("detailsPanel");
+const detailCity = document.getElementById("detailCity");
+const detailSummary = document.getElementById("detailSummary");
+const detailExtras = document.getElementById("detailExtras");
+const canvas = document.getElementById("tempChart");
+const legend = document.getElementById("legend");
+const ctx = canvas.getContext("2d");
+
+function createCards() {
+    cardsContainer.innerHTML = "";
+    weatherData.forEach((item, idx) => {
+        const card = document.createElement("div");
+        card.className = "city-card";
+        card.dataset.city = item.city;
+
+        // set subtle background tint based on condition
+        card.style.backgroundImage = conditionBackground[item.condition];
+
+        card.innerHTML = `
+            <div class="city-header">
+                <span class="city-name">${item.city}</span>
+                <span class="emoji" aria-label="${item.condition}">${conditionEmoji[item.condition]}</span>
+            </div>
+            <div class="temp">${item.temp}°C</div>
+            <div class="condition">
+                <span>${item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}</span>
+                <span class="meta">Humidity: ${item.humidity}%</span>
+            </div>
+            <div class="meta"><span>Feels like: ${item.feelsLike}°C</span><span>Wind: ${item.wind} km/h</span></div>
+        `;
+        card.addEventListener("click", () => showDetails(item.city));
+        cardsContainer.appendChild(card);
+    });
+}
+
+function showDetails(city) {
+    const data = weatherData.find(d => d.city === city);
+    if (!data) return;
+    detailCity.textContent = `${data.city} • ${conditionEmoji[data.condition]} ${data.condition.toUpperCase()}`;
+    detailSummary.textContent = data.note;
+    detailExtras.innerHTML = `
+        Humidity: <strong>${data.humidity}%</strong><br>
+        Wind: <strong>${data.wind} km/h</strong><br>
+        Feels like: <strong>${data.feelsLike}°C</strong><br>
+        Current temp: <strong>${data.temp}°C</strong>
+    `;
+    // highlight selected card
+    document.querySelectorAll(".city-card").forEach(c => {
+        c.classList.toggle("active", c.dataset.city === city);
+    });
+    // change body background
+    document.body.style.background = conditionBodyBackground[data.condition] || "#f0f4f8";
+    drawChart(city);
+}
+
+function drawChart(activeCity) {
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    const padding = { top: 20, right: 20, bottom: 40, left: 40 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    const temps = weatherData.map(d => d.temp);
+    const maxTemp = Math.max(...temps) + 5;
+    const minTemp = Math.min(...temps) - 2;
+    const yRange = maxTemp - minTemp || 1;
+    const barWidth = chartWidth / weatherData.length * 0.6;
+    const gap = (chartWidth / weatherData.length - barWidth);
+
+    // grid lines
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        const y = padding.top + (chartHeight / steps) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+
+        const label = Math.round(maxTemp - (yRange / steps) * i);
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillText(label + "°", 6, y + 4);
+    }
+
+    weatherData.forEach((d, i) => {
+        const color = colorPalette[i % colorPalette.length];
+        const x = padding.left + i * (barWidth + gap + gap / 2);
+        const barHeight = ((d.temp - minTemp) / yRange) * chartHeight;
+        const y = padding.top + chartHeight - barHeight;
+
+        // highlight active
+        ctx.fillStyle = d.city === activeCity ? shadeColor(color, -15) : color;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 8);
+        ctx.fill();
+
+        // label
+        ctx.fillStyle = "#111827";
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(d.temp + "°", x + barWidth / 2, y - 6);
+
+        // city labels
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillText(d.city, x + barWidth / 2, height - 12);
+    });
+
+    renderLegend(activeCity);
+}
+
+function renderLegend(activeCity) {
+    legend.innerHTML = "";
+    weatherData.forEach((d, i) => {
+        const span = document.createElement("span");
+        span.innerHTML = `<span class="dot" style="background:${colorPalette[i % colorPalette.length]};${d.city === activeCity ? 'box-shadow:0 0 0 2px #1d4ed8;' : ''}"></span>${d.city}`;
+        legend.appendChild(span);
+    });
+}
+
+// Utility to darken/lighten colors
+function shadeColor(color, percent) {
+    const f = parseInt(color.slice(1),16);
+    const t = percent < 0 ? 0 : 255;
+    const p = percent < 0 ? percent*-1 : percent;
+    const R = f>>16, G = f>>8&0x00FF, B = f&0x0000FF;
+    const newColor = "#" + (
+        0x1000000 +
+        (Math.round((t - R) * p/100) + R)*0x10000 +
+        (Math.round((t - G) * p/100) + G)*0x100 +
+        (Math.round((t - B) * p/100) + B)
+    ).toString(16).slice(1);
+    return newColor;
+}
+
+// Polyfill for roundRect on older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+    }
+}
+
+// Initialize
+createCards();
+drawChart();
+showDetails(weatherData[0].city);
+</script>
+</body>
+</html>

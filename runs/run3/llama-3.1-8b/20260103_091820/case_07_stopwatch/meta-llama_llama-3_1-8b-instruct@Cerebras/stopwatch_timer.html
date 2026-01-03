@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch and Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .clock {
+            font-size: 64px;
+            font-weight: bold;
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        .timer {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="mode">Stopwatch</h1>
+    <div class="clock" id="stopwatch-time"></div>
+    <div class="clock" id="stopwatch-lap-count"></div>
+    <ul id="lap-times">
+    </ul>
+    <div class="buttons">
+        <button id="start-stop">Start</button>
+        <button id="lap">Lap</button>
+        <button id="reset">Reset</button>
+    </div>
+    <div class="timer">
+        <input id="hours" type="number" min="0" max="23" value="0">
+        <input id="minutes" type="number" min="0" max="59" value="0">
+        <input id="seconds" type="number" min="0" max="59" value="0">
+        <button id="set-timer">Set Timer</button>
+        <button id="pause-resume">Pause/Resume</button>
+    </div>
+    <script>
+        let stopwatchMode = true;
+        let intervalId;
+        let lapTimes = [];
+        let timer = {
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            pause: true
+        };
+
+        function updateStopwatchTime() {
+            const time = timeToHms(stopwatchTime);
+            document.getElementById("stopwatch-time").innerHTML = time;
+        }
+
+        function updateLapCount() {
+            document.getElementById("stopwatch-lap-count").innerHTML = lapTimes.length;
+        }
+
+        function timeToHms(time) {
+            const h = Math.floor(time / 3600000);
+            const m = Math.floor((time % 3600000) / 60000);
+            const s = Math.floor((time % 60000) / 1000);
+            const ms = time % 1000;
+            return `${padZero(h)}:${padZero(m)}:${padZero(s)}.${padZero(ms)}`;
+        }
+
+        function padZero(num) {
+            return (num < 10 ? '0' : '') + num;
+        }
+
+        function startStopwatch() {
+            if (!intervalId) {
+                intervalId = setInterval(updateStopwatchTime, 10);
+                document.getElementById("start-stop").innerHTML = "Stop";
+            } else {
+                clearInterval(intervalId);
+                intervalId = null;
+                document.getElementById("start-stop").innerHTML = "Start";
+            }
+        }
+
+        function lap() {
+            const time = stopwatchTime;
+            lapTimes.push(time);
+            const lapList = document.getElementById("lap-times");
+            const li = document.createElement("LI");
+            li.innerHTML = timeToHms(time);
+            lapList.appendChild(li);
+            updateLapCount();
+        }
+
+        function resetStopwatch() {
+            clearInterval(intervalId);
+            intervalId = null;
+            stopwatchTime = 0;
+            lapTimes = [];
+            document.getElementById("stopwatch-lap-count").innerHTML = "0";
+            document.getElementById("lap-times").innerHTML = "";
+        }
+
+        function updateTimerDisplay() {
+            const time = timeToHms(timer.hours * 3600000 + timer.minutes * 60000 + timer.seconds * 1000);
+            document.getElementById("timer-display").innerHTML = time;
+        }
+
+        function setTimer() {
+            timer.pause = true;
+            const hours = parseInt(document.getElementById("hours").value);
+            const minutes = parseInt(document.getElementById("minutes").value);
+            const seconds = parseInt(document.getElementById("seconds").value);
+            timer.hours = hours;
+            timer.minutes = minutes;
+            timer.seconds = seconds;
+            updateTimerDisplay();
+        }
+
+        function startTimer() {
+            if (!timer.pause) {
+                return;
+            }
+            const display = document.getElementById("timer-display");
+            const time = timer.hours * 3600000 + timer.minutes * 60000 + timer.seconds * 1000;
+            const intervalId = setInterval(() => {
+                if (time > 0) {
+                    time -= 10;
+                    display.innerHTML = timeToHms(time);
+                } else {
+                    clearInterval(intervalId);
+                    alert("Time's up!");
+                    display.innerHTML = "00:00:00.00";
+                }
+            }, 10);
+            timer.pause = false;
+        }
+
+        function pauseResumeTimer() {
+            if (timer.pause) {
+                startTimer();
+            } else {
+                clearInterval(intervalId);
+                timer.pause = true;
+            }
+        }
+
+        let stopwatchTime = 0;
+        document.getElementById("start-stop").addEventListener("click", () => {
+            if (stopwatchMode) {
+                startStopwatch();
+            } else {
+                startTimer();
+            }
+        });
+
+        document.getElementById("lap").addEventListener("click", lap);
+
+        document.getElementById("reset").addEventListener("click", resetStopwatch);
+
+        document.getElementById("set-timer").addEventListener("click", setTimer);
+
+        document.getElementById("pause-resume").addEventListener("click", pauseResumeTimer);
+
+        document.getElementById("hours").addEventListener("input", () => {
+            if (stopwatchMode) {
+                return;
+            }
+            setTimer();
+        });
+
+        document.getElementById("minutes").addEventListener("input", () => {
+            if (stopwatchMode) {
+                return;
+            }
+            setTimer();
+        });
+
+        document.getElementById("seconds").addEventListener("input", () => {
+            if (stopwatchMode) {
+                return;
+            }
+            setTimer();
+        });
+
+        document.getElementById("mode").addEventListener("click", () => {
+            stopwatchMode = !stopwatchMode;
+            document.getElementById("mode").innerHTML = stopwatchMode ? "Stopwatch" : "Timer";
+            document.getElementById("start-stop").style.display = stopwatchMode ? "block" : "none";
+            document.getElementById("lap").style.display = stopwatchMode ? "block" : "none";
+            document.getElementById("reset").style.display = stopwatchMode ? "block" : "none";
+            document.getElementById("lap-times").style.display = stopwatchMode ? "block" : "none";
+            document.getElementById("stopwatch-lap-count").style.display = stopwatchMode ? "block" : "none";
+            document.getElementById("timer").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("hours").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("minutes").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("seconds").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("set-timer").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("pause-resume").style.display = stopwatchMode ? "none" : "block";
+            document.getElementById("timer-display").style.display = stopwatchMode ? "none" : "block";
+        });
+    </script>
+</body>
+</html>

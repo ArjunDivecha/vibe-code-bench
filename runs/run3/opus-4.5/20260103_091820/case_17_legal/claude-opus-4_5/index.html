@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-hover: #30363d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-purple: #8b5cf6;
+            --accent-green: #3fb950;
+            --accent-yellow: #d29922;
+            --accent-red: #f85149;
+            --highlight-entity: rgba(88, 166, 255, 0.3);
+            --highlight-date: rgba(210, 153, 34, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .stats {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 65px);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            width: 400px;
+            min-width: 350px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .results-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+
+        .results-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .results-count {
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .case-list {
+            padding: 0.5rem;
+        }
+
+        .case-item {
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 0.25rem;
+            border: 1px solid transparent;
+        }
+
+        .case-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .case-item.active {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-blue);
+        }
+
+        .case-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .case-court {
+            color: var(--accent-blue);
+        }
+
+        .case-snippet {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .case-tags {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-hover);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--text-muted);
+        }
+
+        .detail-placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .detail-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .detail-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4393e6;
+            border-color: #4393e6;
+        }
+
+        .btn.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .summary-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-section h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .summary-content {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            line-height: 1.7;
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-points li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .key-points li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+        }
+
+        .full-text {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .entity-name {
+            background: var(--highlight-entity);
+            padding: 0.1rem 0.25rem;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .entity-date {
+            background: var(--highlight-date);
+            padding: 0.1rem 0.25rem;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-yellow);
+        }
+
+        .entity-org {
+            background: rgba(63, 185, 80, 0.3);
+            padding: 0.1rem 0.25rem;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-green);
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        .notes-sidebar.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+
+        .notes-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .notes-add {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .notes-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 0.5rem;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .note-item {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .note-content {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .note-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .note-delete {
+            color: var(--accent-red);
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .note-delete:hover {
+            color: #ff6b6b;
+        }
+
+        .note-case {
+            font-size: 0.7rem;
+            color: var(--accent-blue);
+            margin-top: 0.25rem;
+        }
+
+        /* Entity Legend */
+        .entity-legend {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-name { background: var(--highlight-entity); border: 1px solid var(--accent-blue); }
+        .legend-date { background: var(--highlight-date); border: 1px solid var(--accent-yellow); }
+        .legend-org { background: rgba(63, 185, 80, 0.3); border: 1px solid var(--accent-green); }
+
+        /* No Results */
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-hover);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Selection highlight */
+        ::selection {
+            background: rgba(88, 166, 255, 0.3);
+        }
+
+        /* Toggle Notes Button */
+        .toggle-notes {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚖</div>
+            <span>Vibe-Law</span>
+        </div>
+        <div class="search-container">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search cases, courts, topics, or keywords...">
+        </div>
+        <div class="stats">
+            <span id="caseCount">15 cases</span> in database
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="results-panel">
+            <div class="results-header">
+                <span class="results-title">Search Results</span>
+                <span class="results-count" id="resultsCount">15 cases</span>
+            </div>
+            <div class="case-list" id="caseList"></div>
+        </aside>
+
+        <section class="detail-panel">
+            <div class="detail-content" id="detailContent">
+                <div class="detail-placeholder" id="placeholder">
+                    <div class="detail-placeholder-icon">📋</div>
+                    <p>Select a case to view details</p>
+                </div>
+            </div>
+            <aside class="notes-sidebar" id="notesSidebar">
+                <div class="notes-header">
+                    <span class="notes-title">📝 Research Notes</span>
+                    <button class="btn" onclick="toggleNotes()" title="Close notes">✕</button>
+                </div>
+                <div class="notes-add">
+                    <textarea class="notes-textarea" id="noteInput" placeholder="Add a note or save a snippet..."></textarea>
+                    <button class="btn btn-primary" onclick="addNote()" style="width: 100%;">Save Note</button>
+                </div>
+                <div class="notes-list" id="notesList"></div>
+            </aside>
+        </section>
+    </main>
+
+    <script>
+        // Mock Case Data
+        const cases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson Manufacturing Corp.",
+                court: "Supreme Court",
+                date: "2024-01-15",
+                tags: ["Contract Law", "Corporate", "Breach"],
+                snippet: "Landmark decision establishing new standards for corporate liability in contract disputes...",
+                summary: {
+                    holding: "The Court held that manufacturing corporations bear strict liability for contractual breaches when the breach results from systemic operational failures.",
+                    keyPoints: [
+                        "Corporate entities cannot delegate contractual obligations to subsidiaries without explicit consent",
+                        "Damages calculated based on anticipated profits over the contract term",
+                        "Precedent established for class action suits in similar circumstances"
+                    ],
+                    impact: "This decision significantly expands corporate liability in commercial contracts and establishes new precedent for breach of contract claims."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+No. 23-1847
+
+ROBERT SMITH, et al., Petitioners
+v.
+JOHNSON MANUFACTURING CORPORATION, Respondent
+
+[January 15, 2024]
+
+JUSTICE MARTINEZ delivered the opinion of the Court.
+
+This case presents the question whether a manufacturing corporation may be held strictly liable for contractual breaches arising from systemic operational failures within its production facilities.
+
+I. BACKGROUND
+
+Petitioner Robert Smith, representing a class of commercial buyers, entered into a supply agreement with Johnson Manufacturing Corporation on March 15, 2022. The agreement specified delivery of 50,000 units of industrial components over a 24-month period.
+
+Johnson Manufacturing Corporation failed to deliver approximately 40% of the contracted units within the specified timeframe, citing "unforeseen operational challenges" at their primary manufacturing facility in Detroit, Michigan.
+
+II. ANALYSIS
+
+The central question before this Court is whether operational failures, even when characterized as "unforeseen," constitute a valid defense to breach of contract claims when such failures result from the corporation's own systemic deficiencies.
+
+We hold that they do not.
+
+A corporation that undertakes contractual obligations assumes the risk of its own operational capacity. The doctrine of force majeure, while applicable in cases of truly external and unforeseeable events, does not shield a party from liability when the breach results from internal organizational failures.
+
+III. CONCLUSION
+
+For the foregoing reasons, the judgment of the Court of Appeals is REVERSED and the case is REMANDED for proceedings consistent with this opinion.
+
+It is so ordered.`
+            },
+            {
+                id: 2,
+                title: "State of California v. TechGlobal Industries",
+                court: "Ninth Circuit",
+                date: "2023-11-28",
+                tags: ["Environmental Law", "Corporate", "Emissions"],
+                snippet: "Significant ruling on corporate environmental compliance and emission standards...",
+                summary: {
+                    holding: "Corporations must demonstrate active compliance measures, not merely reactive corrections, to avoid environmental penalties.",
+                    keyPoints: [
+                        "Proactive environmental monitoring required for large industrial operations",
+                        "Self-reporting of violations does not eliminate liability",
+                        "Penalties calculated based on duration and severity of violations"
+                    ],
+                    impact: "Sets new standard for corporate environmental compliance in the Ninth Circuit jurisdiction."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE NINTH CIRCUIT
+
+No. 22-35891
+
+STATE OF CALIFORNIA, Plaintiff-Appellee
+v.
+TECHGLOBAL INDUSTRIES, Defendant-Appellant
+
+[November 28, 2023]
+
+Before: CHEN, WILSON, and PATEL, Circuit Judges.
+
+CHEN, Circuit Judge:
+
+TechGlobal Industries appeals from the district court's summary judgment in favor of the State of California, which found TechGlobal liable for violations of the Clean Air Act and California Environmental Quality Act.
+
+FACTUAL BACKGROUND
+
+TechGlobal operates a semiconductor manufacturing facility in San Jose, California. Between January 2020 and December 2021, the facility exceeded permitted emission levels for volatile organic compounds (VOCs) on 47 separate occasions.
+
+The company self-reported these violations to the California Air Resources Board on February 15, 2022, following an internal audit conducted by environmental consultants Harrison & Associates.
+
+DISCUSSION
+
+TechGlobal argues that its voluntary self-reporting should mitigate or eliminate penalties under the Clean Air Act's self-audit provisions. We disagree.
+
+The self-audit privilege, while encouraging voluntary disclosure, does not eliminate liability for violations that occurred prior to disclosure. Moreover, the pattern of violations in this case suggests systemic non-compliance rather than isolated incidents.
+
+AFFIRMED.`
+            },
+            {
+                id: 3,
+                title: "Martinez Family Trust v. National Bank of Commerce",
+                court: "Fifth Circuit",
+                date: "2023-09-12",
+                tags: ["Trust Law", "Banking", "Fiduciary Duty"],
+                snippet: "Clarifies fiduciary duties of banks acting as trust administrators...",
+                summary: {
+                    holding: "Banks serving as trust administrators owe heightened fiduciary duties that exceed standard commercial banking obligations.",
+                    keyPoints: [
+                        "Trust administrators must prioritize beneficiary interests above institutional profits",
+                        "Conflicts of interest must be disclosed and resolved in favor of beneficiaries",
+                        "Prudent investor rule applies to all trust investment decisions"
+                    ],
+                    impact: "Strengthens protections for trust beneficiaries against institutional conflicts of interest."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE FIFTH CIRCUIT
+
+No. 22-60421
+
+MARTINEZ FAMILY TRUST, by and through its beneficiaries,
+Plaintiffs-Appellants
+v.
+NATIONAL BANK OF COMMERCE, Defendant-Appellee
+
+[September 12, 2023]
+
+Before: RODRIGUEZ, THORNTON, and GRAVES, Circuit Judges.
+
+RODRIGUEZ, Circuit Judge:
+
+This appeal requires us to examine the scope of fiduciary duties owed by financial institutions serving as trust administrators. The Martinez Family Trust, established in 1985 by patriarch Eduardo Martinez, has been administered by National Bank of Commerce since 2010.
+
+The beneficiaries allege that the Bank breached its fiduciary duties by investing trust assets in the Bank's proprietary investment funds, which charged higher fees and delivered lower returns than comparable third-party alternatives.
+
+We agree with the beneficiaries that such conduct constitutes a breach of fiduciary duty.
+
+ANALYSIS
+
+A trustee owes the highest duty of loyalty to trust beneficiaries. This duty prohibits self-dealing and requires the trustee to act solely in the interest of the beneficiaries.
+
+When National Bank of Commerce invested trust assets in its own proprietary funds, it placed its institutional interests in direct conflict with its duties to the Martinez beneficiaries. The Bank's argument that its funds were "reasonably comparable" to alternatives fails to address the fundamental conflict of interest inherent in such arrangements.
+
+REVERSED and REMANDED.`
+            },
+            {
+                id: 4,
+                title: "United States v. DataSecure Systems LLC",
+                court: "D.C. Circuit",
+                date: "2023-08-05",
+                tags: ["Cybersecurity", "Federal Contracts", "Data Protection"],
+                snippet: "Establishes liability standards for government contractors in data breach scenarios...",
+                summary: {
+                    holding: "Government contractors handling sensitive data must implement security measures that meet or exceed federal agency standards.",
+                    keyPoints: [
+                        "Contractors liable for breaches resulting from inadequate security protocols",
+                        "Cost savings cannot justify reduced security measures for federal data",
+                        "Mandatory incident reporting within 24 hours of breach discovery"
+                    ],
+                    impact: "Significantly increases cybersecurity obligations for federal contractors."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE DISTRICT OF COLUMBIA CIRCUIT
+
+No. 22-5198
+
+UNITED STATES OF AMERICA, Appellant
+v.
+DATASECURE SYSTEMS LLC, Appellee
+
+[August 5, 2023]
+
+Before: WILKINS, MILLETT, and CHILDS, Circuit Judges.
+
+MILLETT, Circuit Judge:
+
+DataSecure Systems LLC contracted with the Department of Defense to provide cloud storage and data management services for non-classified but sensitive personnel records. In March 2022, a security breach exposed the personal information of approximately 250,000 current and former military personnel.
+
+The United States brought this action seeking damages and injunctive relief under the False Claims Act and breach of contract theories.
+
+BACKGROUND
+
+DataSecure's contract with the Department of Defense required compliance with NIST Cybersecurity Framework standards and FedRAMP authorization. The company represented in its bid proposal that it maintained "enterprise-grade security infrastructure" meeting all federal requirements.
+
+Post-breach forensic analysis by the FBI Cyber Division revealed that DataSecure had not implemented multi-factor authentication for administrative access, had failed to patch known vulnerabilities for over 18 months, and had no effective intrusion detection system in place.
+
+HOLDING
+
+We hold that DataSecure's representations regarding its security capabilities constituted material misrepresentations under the False Claims Act. A government contractor cannot claim compliance with federal security standards while maintaining infrastructure that demonstrably fails to meet those standards.
+
+REVERSED.`
+            },
+            {
+                id: 5,
+                title: "Greenfield Homeowners Assn. v. Sunrise Development Group",
+                court: "California Supreme Court",
+                date: "2023-07-20",
+                tags: ["Real Estate", "HOA", "Construction Defects"],
+                snippet: "Major ruling on developer liability for common area construction defects...",
+                summary: {
+                    holding: "Developers remain liable for latent construction defects in common areas for ten years from substantial completion.",
+                    keyPoints: [
+                        "Statute of repose does not begin until HOA assumes control of common areas",
+                        "Developer cannot limit liability through CC&R provisions",
+                        "Expert testimony on industry standards admissible without Daubert gatekeeping"
+                    ],
+                    impact: "Extends developer liability period and strengthens HOA rights in construction defect litigation."
+                },
+                fullText: `SUPREME COURT OF CALIFORNIA
+
+S274891
+
+GREENFIELD HOMEOWNERS ASSOCIATION, Plaintiff and Appellant
+v.
+SUNRISE DEVELOPMENT GROUP, Defendant and Respondent
+
+[July 20, 2023]
+
+OPINION BY GUERRERO, C.J.
+
+This case concerns the liability of residential developers for latent construction defects discovered in common areas after the statutory period has ostensibly expired.
+
+Greenfield Homeowners Association represents 342 homeowners in a planned development in Orange County. The development was completed in phases between 2012 and 2015, with the HOA assuming control of common areas in December 2015.
+
+In 2021, severe drainage problems emerged in multiple common areas, causing flooding to adjacent homes and requiring extensive remediation. Engineering experts retained by the HOA determined that the drainage systems were improperly designed and installed, failing to account for the development's topography and soil conditions.
+
+ANALYSIS
+
+The central question is when the statute of repose begins to run for construction defects in common areas of a planned development.
+
+Sunrise argues that the ten-year statute began running upon substantial completion of each phase, meaning the limitations period expired before the HOA discovered the defects. We reject this interpretation.
+
+The purpose of the statute of repose is to provide certainty to builders while protecting homeowners from latent defects. This purpose is not served by commencing the limitations period before the HOA—the entity with standing to bring claims for common area defects—has the ability to discover and investigate such defects.
+
+We hold that the statute of repose for common area defects begins when the HOA assumes control of such areas.
+
+REVERSED.`
+            },
+            {
+                id: 6,
+                title: "Wilson v. Metropolitan Transit Authority",
+                court: "Second Circuit",
+                date: "2023-06-15",
+                tags: ["Employment Law", "Disability", "Discrimination"],
+                snippet: "Expands reasonable accommodation requirements for public employers...",
+                summary: {
+                    holding: "Public employers must engage in good-faith interactive process to identify reasonable accommodations, even when the employee's preferred accommodation is not feasible.",
+                    keyPoints: [
+                        "Failure to engage in interactive process is itself a violation of the ADA",
+                        "Employer must document consideration of alternative accommodations",
+                        "Undue hardship defense requires specific cost-benefit analysis"
+                    ],
+                    impact: "Raises the bar for public employers in disability accommodation cases."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE SECOND CIRCUIT
+
+No. 22-1834
+
+JAMES WILSON, Plaintiff-Appellant
+v.
+METROPOLITAN TRANSIT AUTHORITY, Defendant-Appellee
+
+[June 15, 2023]
+
+Before: LOHIER, BIANCO, and NARDINI, Circuit Judges.
+
+BIANCO, Circuit Judge:
+
+James Wilson, a bus driver for the Metropolitan Transit Authority (MTA) for 15 years, developed progressive hearing loss that eventually required hearing aids. Wilson requested reassignment to a dispatcher position as a reasonable accommodation, arguing that his hearing impairment made continued work as a bus driver unsafe.
+
+The MTA denied the request, stating that no dispatcher positions were available, and subsequently terminated Wilson when he could no longer perform his bus driver duties.
+
+DISCUSSION
+
+The Americans with Disabilities Act requires employers to provide reasonable accommodations to qualified individuals with disabilities unless doing so would impose an undue hardship. Critically, the statute also requires employers to engage in a good-faith interactive process with employees to identify appropriate accommodations.
+
+The record reveals that the MTA made no effort to engage Wilson in such a process. The denial letter was issued within three days of Wilson's request, with no discussion of alternative accommodations or timeline for potential openings in suitable positions.
+
+We hold that this summary rejection violated the ADA's procedural requirements. An employer cannot simply deny a requested accommodation without exploring alternatives.
+
+REVERSED and REMANDED.`
+            },
+            {
+                id: 7,
+                title: "In re: Patterson Pharmaceutical Litigation",
+                court: "Third Circuit",
+                date: "2023-05-08",
+                tags: ["Product Liability", "Class Action", "Pharmaceuticals"],
+                snippet: "Class certification standards in pharmaceutical injury cases...",
+                summary: {
+                    holding: "Individual causation issues do not preclude class certification when common questions of defendant's conduct predominate.",
+                    keyPoints: [
+                        "Fraud-on-the-market theory applicable to pharmaceutical marketing claims",
+                        "Bellwether trial procedure approved for determining typical damages",
+                        "Statistical evidence of increased injury rates admissible for general causation"
+                    ],
+                    impact: "Facilitates class action litigation against pharmaceutical companies."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE THIRD CIRCUIT
+
+No. 22-2891
+
+IN RE: PATTERSON PHARMACEUTICAL LITIGATION
+
+[May 8, 2023]
+
+Before: JORDAN, RESTREPO, and BIBAS, Circuit Judges.
+
+JORDAN, Circuit Judge:
+
+This multidistrict litigation involves claims by thousands of plaintiffs who allege injuries from Patterson Pharmaceutical's blood pressure medication, Cardiolex. Plaintiffs claim that Patterson knew of serious cardiac side effects but failed to adequately warn patients and physicians.
+
+The district court certified a class of approximately 45,000 plaintiffs who took Cardiolex between 2015 and 2020. Patterson appeals, arguing that individual causation issues predominate over common questions.
+
+ANALYSIS
+
+The Supreme Court's decision in Amgen makes clear that Rule 23(b)(3)'s predominance requirement focuses on whether common questions are more prevalent or important than individual ones—not whether individual questions exist at all.
+
+Here, the common questions are substantial: Did Patterson know of the cardiac risks? Did it adequately warn? Did its marketing misrepresent the drug's safety profile?
+
+These questions are susceptible to class-wide proof and their resolution would significantly advance all claims. Individual causation—whether each plaintiff's injury was caused by Cardiolex rather than other factors—can be addressed through bellwether trials and statistical methodologies.
+
+AFFIRMED.`
+            },
+            {
+                id: 8,
+                title: "Chen v. Silicon Valley Ventures LLC",
+                court: "Northern District of California",
+                date: "2023-04-22",
+                tags: ["Securities", "Fraud", "Venture Capital"],
+                snippet: "Securities fraud liability in private venture capital transactions...",
+                summary: {
+                    holding: "Venture capital firms may be liable for securities fraud when material misrepresentations are made to induce investment.",
+                    keyPoints: [
+                        "Private placement memorandum statements subject to securities laws",
+                        "Scienter may be inferred from pattern of misrepresentations",
+                        "Limited partners have standing to sue general partners for fraud"
+                    ],
+                    impact: "Extends securities fraud protections to private venture capital investors."
+                },
+                fullText: `UNITED STATES DISTRICT COURT
+NORTHERN DISTRICT OF CALIFORNIA
+
+Case No. 3:22-cv-04521-WHO
+
+DAVID CHEN, individually and on behalf of all others similarly situated
+Plaintiff
+v.
+SILICON VALLEY VENTURES LLC, et al.
+Defendants
+
+[April 22, 2023]
+
+ORRICK, District Judge:
+
+Plaintiff David Chen invested $2.5 million in Silicon Valley Ventures Fund IV based on representations in the fund's private placement memorandum and communications with fund principals. Chen now alleges that those representations contained material misstatements regarding the fund's investment strategy, fee structure, and the principals' track record.
+
+BACKGROUND
+
+Silicon Valley Ventures raised approximately $180 million for Fund IV between 2019 and 2020, primarily from high-net-worth individuals and family offices. The fund's PPM represented that it would focus on "early-stage technology companies with proven revenue models" and that the general partners had "generated average returns exceeding 3x on prior funds."
+
+Chen's complaint alleges that these representations were false: the fund invested primarily in pre-revenue startups, and the stated returns from prior funds included unrealized paper gains that never materialized.
+
+ANALYSIS
+
+Defendants argue that the federal securities laws do not apply to private fund investments. This argument misunderstands the scope of Section 10(b) and Rule 10b-5, which apply to any purchase or sale of securities, including interests in private investment funds.
+
+The complaint adequately alleges material misrepresentations and scienter. Motion to dismiss DENIED.`
+            },
+            {
+                id: 9,
+                title: "Estate of Thompson v. Mercy General Hospital",
+                court: "Seventh Circuit",
+                date: "2023-03-17",
+                tags: ["Medical Malpractice", "Wrongful Death", "Hospital Liability"],
+                snippet: "Hospital liability for emergency department treatment decisions...",
+                summary: {
+                    holding: "Hospitals may be vicariously liable for emergency physicians' malpractice regardless of independent contractor status.",
+                    keyPoints: [
+                        "Apparent agency doctrine applies when hospital holds out ED physicians as its agents",
+                        "Patient reliance on hospital, not individual physician, creates agency relationship",
+                        "Non-delegable duty to provide competent emergency care"
+                    ],
+                    impact: "Significantly expands hospital liability for emergency department malpractice."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE SEVENTH CIRCUIT
+
+No. 22-1672
+
+ESTATE OF MARGARET THOMPSON, by personal representative John Thompson
+Plaintiff-Appellant
+v.
+MERCY GENERAL HOSPITAL, Defendant-Appellee
+
+[March 17, 2023]
+
+Before: EASTERBROOK, SYKES, and ST. EVE, Circuit Judges.
+
+SYKES, Circuit Judge:
+
+Margaret Thompson arrived at Mercy General Hospital's emergency department on December 14, 2020, complaining of severe chest pain and shortness of breath. The treating physician, Dr. Robert Hayes, diagnosed anxiety and discharged Thompson with a prescription for anti-anxiety medication.
+
+Thompson suffered a fatal heart attack at home eight hours later. Her estate brought this wrongful death action against Mercy General, alleging that Dr. Hayes negligently failed to diagnose her cardiac condition.
+
+The district court granted summary judgment to Mercy General, holding that the hospital could not be vicariously liable because Dr. Hayes was an independent contractor employed by Emergency Physicians Associates, not by the hospital.
+
+DISCUSSION
+
+We reverse. The independent contractor status of emergency physicians does not automatically insulate hospitals from vicarious liability. Under the doctrine of apparent agency, a hospital may be liable for the negligence of physicians whom patients reasonably believe to be hospital employees.
+
+When Margaret Thompson presented at Mercy General's emergency department, she relied on the hospital—not any particular physician—to provide competent care. The hospital held out its emergency department as staffed by qualified physicians. Under these circumstances, the hospital cannot escape liability by pointing to the fine print of its contract with Emergency Physicians Associates.
+
+REVERSED and REMANDED.`
+            },
+            {
+                id: 10,
+                title: "Reynolds Construction v. City of Phoenix",
+                court: "Arizona Supreme Court",
+                date: "2023-02-28",
+                tags: ["Municipal Law", "Contract", "Bid Protests"],
+                snippet: "Municipal contract bid protest procedures and contractor standing...",
+                summary: {
+                    holding: "Disappointed bidders have standing to challenge contract awards when procedural irregularities materially affect the competitive process.",
+                    keyPoints: [
+                        "Competitive bidding requirements create enforceable rights for bidders",
+                        "Material deviation from bid specifications invalidates award",
+                        "Exhaustion of administrative remedies not required for constitutional claims"
+                    ],
+                    impact: "Strengthens contractor rights in municipal procurement disputes."
+                },
+                fullText: `SUPREME COURT OF ARIZONA
+
+No. CV-22-0198-PR
+
+REYNOLDS CONSTRUCTION COMPANY
+Petitioner
+v.
+CITY OF PHOENIX
+Respondent
+
+[February 28, 2023]
+
+JUSTICE TIMMER authored the opinion of the Court.
+
+Reynolds Construction Company submitted the apparent low bid of $4.2 million for the Phoenix Municipal Complex renovation project. The City of Phoenix rejected Reynolds' bid as "non-responsive" and awarded the contract to the second-lowest bidder, Maricopa Builders Inc., at $4.8 million.
+
+Reynolds filed this action challenging the award, alleging that the City improperly applied its bid responsiveness criteria and that Maricopa's bid contained material deviations from the specifications that should have disqualified it.
+
+ANALYSIS
+
+The City argues that Reynolds lacks standing to challenge the contract award because Arizona law grants municipalities broad discretion in procurement decisions. We disagree.
+
+When a municipality establishes competitive bidding requirements, it creates a framework designed to ensure fair competition and protect taxpayer funds. Contractors who invest time and resources in preparing responsive bids have a legitimate interest in seeing those requirements fairly applied.
+
+We hold that a disappointed bidder has standing to challenge a contract award when it alleges that procedural irregularities or improper application of bid criteria materially affected the competitive process.
+
+On the merits, we find that Maricopa's bid deviated from specifications in ways that provided it an unfair competitive advantage. The award is VACATED.`
+            },
+            {
+                id: 11,
+                title: "National Labor Relations Board v. Graystone Logistics",
+                court: "Sixth Circuit",
+                date: "2023-01-10",
+                tags: ["Labor Law", "Unfair Labor Practices", "Union Rights"],
+                snippet: "Employer interference with union organizing activities...",
+                summary: {
+                    holding: "Employer social media policies that prohibit employees from discussing working conditions violate the NLRA.",
+                    keyPoints: [
+                        "Section 7 rights extend to social media communications",
+                        "Overbroad social media policies have chilling effect on protected activity",
+                        "Employer cannot require approval for work-related social media posts"
+                    ],
+                    impact: "Limits employer control over employee social media regarding workplace issues."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE SIXTH CIRCUIT
+
+No. 22-3456
+
+NATIONAL LABOR RELATIONS BOARD
+Petitioner
+v.
+GRAYSTONE LOGISTICS, INC.
+Respondent
+
+[January 10, 2023]
+
+Before: SUTTON, GRIFFIN, and MURPHY, Circuit Judges.
+
+MURPHY, Circuit Judge:
+
+The National Labor Relations Board seeks enforcement of its order finding that Graystone Logistics violated Section 8(a)(1) of the National Labor Relations Act by maintaining an unlawful social media policy and by disciplining employees who posted about working conditions online.
+
+BACKGROUND
+
+Graystone operates a network of warehouses throughout the Midwest. In 2020, the company implemented a social media policy prohibiting employees from posting "any information about the company, its operations, employees, or customers on any social media platform" without prior management approval.
+
+When warehouse employees began using Facebook and Twitter to discuss safety concerns during the COVID-19 pandemic, Graystone issued warnings to several employees and terminated two others for violating the social media policy.
+
+ANALYSIS
+
+Section 7 of the NLRA guarantees employees the right to engage in "concerted activities for the purpose of collective bargaining or other mutual aid or protection." This right extends to discussions about working conditions, whether conducted in person or through social media.
+
+Graystone's policy, which required prior approval for any company-related social media post, clearly restricted this protected activity. The policy gave management unfettered discretion to prohibit employee speech about working conditions.
+
+The Board's order is ENFORCED.`
+            },
+            {
+                id: 12,
+                title: "Brooks v. Automated Decision Systems Inc.",
+                court: "Fourth Circuit",
+                date: "2022-12-05",
+                tags: ["AI/ML", "Employment Discrimination", "EEOC"],
+                snippet: "Landmark ruling on algorithmic bias in employment screening...",
+                summary: {
+                    holding: "Employers using AI-based hiring tools may be liable for disparate impact discrimination caused by algorithmic bias.",
+                    keyPoints: [
+                        "Employer cannot delegate anti-discrimination compliance to vendors",
+                        "Disparate impact liability applies to algorithmic screening tools",
+                        "Employers must audit AI systems for discriminatory effects"
+                    ],
+                    impact: "First circuit court decision addressing employer liability for AI hiring discrimination."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE FOURTH CIRCUIT
+
+No. 21-2187
+
+SARAH BROOKS, et al., Plaintiffs-Appellants
+v.
+AUTOMATED DECISION SYSTEMS INC., et al., Defendants-Appellees
+
+[December 5, 2022]
+
+Before: GREGORY, DIAZ, and RUSHING, Circuit Judges.
+
+GREGORY, Chief Circuit Judge:
+
+This case presents a question of first impression in this circuit: whether employers may be held liable under Title VII for disparate impact discrimination caused by artificial intelligence-based hiring tools developed and operated by third-party vendors.
+
+We hold that they may.
+
+BACKGROUND
+
+Automated Decision Systems Inc. developed an AI-powered resume screening tool called "HireRight" that was used by defendant companies to filter job applications. The tool used machine learning algorithms trained on historical hiring data to predict candidate success.
+
+Plaintiffs, a class of African-American and Hispanic job applicants, allege that HireRight systematically screened out qualified minority candidates at rates significantly higher than white applicants, resulting in disparate impact discrimination.
+
+The district court granted summary judgment to defendants, holding that employers could not be liable for discrimination caused by vendor-provided AI tools.
+
+ANALYSIS
+
+We reverse. Title VII prohibits employment practices that have a disparate impact on protected groups, regardless of intent. An employer cannot escape liability simply by outsourcing its hiring decisions to an algorithm.
+
+When an employer adopts an AI screening tool, it assumes responsibility for ensuring that tool does not discriminate. The employer must conduct regular audits and demand transparency from vendors regarding how these systems operate.
+
+REVERSED and REMANDED.`
+            },
+            {
+                id: 13,
+                title: "Consolidated Energy Corp. v. Federal Energy Regulatory Commission",
+                court: "D.C. Circuit",
+                date: "2022-11-18",
+                tags: ["Energy Law", "Administrative Law", "Rulemaking"],
+                snippet: "Challenge to FERC renewable energy integration rules...",
+                summary: {
+                    holding: "FERC has authority to mandate renewable energy integration standards but must provide adequate notice and comment opportunity.",
+                    keyPoints: [
+                        "Renewable integration mandates within FERC's statutory authority",
+                        "Cost-benefit analysis required for major rules",
+                        "Retroactive application of new standards impermissible"
+                    ],
+                    impact: "Upholds FERC authority over grid modernization while limiting retroactive enforcement."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE DISTRICT OF COLUMBIA CIRCUIT
+
+No. 22-1089
+
+CONSOLIDATED ENERGY CORPORATION, et al.
+Petitioners
+v.
+FEDERAL ENERGY REGULATORY COMMISSION
+Respondent
+
+[November 18, 2022]
+
+Before: SRINIVASAN, PILLARD, and WALKER, Circuit Judges.
+
+SRINIVASAN, Circuit Judge:
+
+Multiple energy companies petition for review of FERC Order No. 2222, which requires regional transmission organizations to accommodate distributed energy resources and establishes new interconnection standards for renewable energy facilities.
+
+Petitioners argue that FERC exceeded its statutory authority, failed to conduct adequate cost-benefit analysis, and violated the Administrative Procedure Act by not providing sufficient opportunity for comment on key provisions.
+
+DISCUSSION
+
+We address each argument in turn.
+
+First, we reject the claim that FERC exceeded its authority. The Federal Power Act grants FERC broad authority to ensure just and reasonable rates and adequate service. Grid modernization to accommodate changing energy sources falls squarely within this mandate.
+
+Second, we find that FERC's cost-benefit analysis was adequate. The agency considered both the costs of compliance and the benefits of increased grid reliability and reduced carbon emissions. Petitioners' disagreement with FERC's weighing of these factors does not render the analysis arbitrary.
+
+Third, we agree with petitioners that FERC's attempt to apply certain standards retroactively to pending interconnection applications violates the APA. The order is VACATED in part with respect to retroactive application.`
+            },
+            {
+                id: 14,
+                title: "Hernandez v. Immigration and Customs Enforcement",
+                court: "Ninth Circuit (en banc)",
+                date: "2022-10-25",
+                tags: ["Immigration", "Constitutional Law", "Due Process"],
+                snippet: "En banc decision on due process rights in expedited removal...",
+                summary: {
+                    holding: "Non-citizens in expedited removal proceedings retain habeas corpus rights to challenge the legality of their detention.",
+                    keyPoints: [
+                        "Suspension Clause applies regardless of immigration status",
+                        "Expedited removal cannot eliminate judicial review entirely",
+                        "Bond hearings required after prolonged detention"
+                    ],
+                    impact: "Expands due process protections for individuals in expedited removal."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE NINTH CIRCUIT
+
+No. 20-72689 (en banc)
+
+MARIA HERNANDEZ, et al.
+Petitioners-Appellees
+v.
+IMMIGRATION AND CUSTOMS ENFORCEMENT, et al.
+Respondents-Appellants
+
+[October 25, 2022]
+
+Before: MURGUIA, Chief Judge, and THOMAS, McKEOWN, WARDLAW, PAEZ, NGUYEN, OWENS, FRIEDLAND, BENNETT, R. NELSON, and SUNG, Circuit Judges.
+
+McKEOWN, Circuit Judge:
+
+This en banc case presents fundamental questions about the reach of the Suspension Clause and the due process rights of non-citizens subject to expedited removal proceedings.
+
+Petitioners are asylum seekers who were detained pursuant to 8 U.S.C. § 1225(b)(1) pending expedited removal. They sought habeas corpus review of their detention in federal district court, challenging both the length of their detention and the constitutionality of procedures used to evaluate their claims.
+
+BACKGROUND
+
+The expedited removal statute authorizes immigration officers to order the removal of certain arriving aliens without a hearing before an immigration judge. The government argues that this scheme forecloses all judicial review.
+
+ANALYSIS
+
+The Suspension Clause provides that "The Privilege of the Writ of Habeas Corpus shall not be suspended, unless when in Cases of Rebellion or Invasion the public Safety may require it." This fundamental protection is not limited to citizens.
+
+While Congress has broad authority over immigration, it cannot entirely eliminate judicial review of executive detention. At minimum, individuals detained for prolonged periods pending removal retain the right to challenge the legality of that detention.
+
+We hold that petitioners may seek habeas review of both the procedures applied to their cases and the constitutionality of their continued detention.
+
+AFFIRMED.`
+            },
+            {
+                id: 15,
+                title: "Blackwood Media Group v. Federal Trade Commission",
+                court: "Eleventh Circuit",
+                date: "2022-09-14",
+                tags: ["Antitrust", "Media", "FTC"],
+                snippet: "FTC authority to block media company mergers under antitrust laws...",
+                summary: {
+                    holding: "FTC has authority to seek preliminary injunctions blocking mergers in media markets based on platform competition theory.",
+                    keyPoints: [
+                        "Digital platforms compete with traditional media for attention and advertising",
+                        "Market definition must account for cross-platform substitution",
+                        "Consumer welfare standard includes non-price competition factors"
+                    ],
+                    impact: "Expands antitrust enforcement in digital media markets."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE ELEVENTH CIRCUIT
+
+No. 22-11234
+
+BLACKWOOD MEDIA GROUP, INC.
+Appellant
+v.
+FEDERAL TRADE COMMISSION
+Appellee
+
+[September 14, 2022]
+
+Before: WILSON, BRANCH, and LAGOA, Circuit Judges.
+
+BRANCH, Circuit Judge:
+
+Blackwood Media Group appeals from the district court's grant of a preliminary injunction blocking its proposed acquisition of Southeastern Broadcasting Corporation. The Federal Trade Commission sought the injunction under Section 13(b) of the FTC Act, alleging that the merger would substantially lessen competition in regional advertising markets.
+
+BACKGROUND
+
+Blackwood operates digital media platforms including news websites and social media applications reaching approximately 15 million users in the southeastern United States. Southeastern Broadcasting owns television and radio stations in the same geographic markets.
+
+The FTC alleges that despite operating different types of media platforms, Blackwood and Southeastern compete directly for local advertising dollars. The merger, according to the FTC, would eliminate this competition and allow the combined entity to raise advertising prices.
+
+ANALYSIS
+
+Blackwood argues that the FTC improperly defined the relevant market to include both digital and traditional media. We disagree.
+
+Modern antitrust analysis must account for the reality that advertisers view digital platforms and traditional broadcast media as at least partial substitutes. The record evidence shows that local businesses allocate advertising budgets across platforms and that prices for each are affected by competition from the other.
+
+The FTC demonstrated a reasonable probability of success on the merits. The preliminary injunction is AFFIRMED.`
+            }
+        ];
+
+        let selectedCase = null;
+        let entitiesHighlighted = false;
+        let notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+        let notesVisible = true;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCaseList(cases);
+            renderNotes();
+            
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+        });
+
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            const filtered = cases.filter(c => 
+                c.title.toLowerCase().includes(query) ||
+                c.court.toLowerCase().includes(query) ||
+                c.snippet.toLowerCase().includes(query) ||
+                c.tags.some(t => t.toLowerCase().includes(query)) ||
+                c.fullText.toLowerCase().includes(query)
+            );
+            renderCaseList(filtered);
+            document.getElementById('resultsCount').textContent = `${filtered.length} cases`;
+        }
+
+        function renderCaseList(casesList) {
+            const container = document.getElementById('caseList');
+            
+            if (casesList.length === 0) {
+                container.innerHTML = '<div class="no-results">No cases found matching your search.</div>';
+                return;
+            }
+
+            container.innerHTML = casesList.map(c => `
+                <div class="case-item ${selectedCase?.id === c.id ? 'active' : ''}" onclick="selectCase(${c.id})">
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-meta">
+                        <span class="case-court">${c.court}</span>
+                        <span>${formatDate(c.date)}</span>
+                    </div>
+                    <div class="case-snippet">${c.snippet}</div>
+                    <div class="case-tags">
+                        ${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectCase(id) {
+            selectedCase = cases.find(c => c.id === id);
+            entitiesHighlighted = false;
+            renderCaseList(cases.filter(c => {
+                const query = document.getElementById('searchInput').value.toLowerCase();
+                if (!query) return true;
+                return c.title.toLowerCase().includes(query) ||
+                    c.court.toLowerCase().includes(query) ||
+                    c.snippet.toLowerCase().includes(query) ||
+                    c.tags.some(t => t.toLowerCase().includes(query));
+            }));
+            renderDetail();
+        }
+
+        function renderDetail() {
+            if (!selectedCase) return;
+
+            const container = document.getElementById('detailContent');
+            container.innerHTML = `
+                <div class="detail-header">
+                    <h1 class="detail-title">${selectedCase.title}</h1>
+                    <div class="detail-meta">
+                        <span>🏛️ ${selectedCase.court}</span>
+                        <span>📅 ${formatDate(selectedCase.date)}</span>
+                        <span>🏷️ ${selectedCase.tags.join(', ')}</span>
+                    </div>
+                </div>
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('summary', this)">Summary</div>
+                        <div class="tab" onclick="switchTab('fulltext', this)">Full Text</div>
+                    </div>
+                    <div class="tab-actions">
+                        <button class="btn ${entitiesHighlighted ? 'active' : ''}" onclick="toggleEntities()">
+                            🔍 Extract Entities
+                        </button>
+                        <button class="btn" onclick="toggleNotes()">
+                            📝 Notes
+                        </button>
+                    </div>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="summaryPane">
+                        <div class="summary-section">
+                            <h3>Holding</h3>
+                            <div class="summary-content">${selectedCase.summary.holding}</div>
+                        </div>
+                        <div class="summary-section">
+                            <h3>Key Points</h3>
+                            <div class="summary-content">
+                                <ul class="key-points">
+                                    ${selectedCase.summary.keyPoints.map(p => `<li>${p}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="summary-section">
+                            <h3>Impact</h3>
+                            <div class="summary-content">${selectedCase.summary.impact}</div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="fulltextPane">
+                        ${entitiesHighlighted ? `
+                            <div class="entity-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color legend-name"></div>
+                                    <span>Names/Parties</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color legend-date"></div>
+                                    <span>Dates</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color legend-org"></div>
+                                    <span>Organizations</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="summary-content full-text" id="fullTextContent">${
+                            entitiesHighlighted ? highlightEntities(selectedCase.fullText) : escapeHtml(selectedCase.fullText)
+                        }</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(tab, element) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById(tab === 'summary' ? 'summaryPane' : 'fulltextPane').classList.add('active');
+        }
+
+        function toggleEntities() {
+            entitiesHighlighted = !entitiesHighlighted;
+            renderDetail();
+            // Switch to full text tab to show entities
+            if (entitiesHighlighted) {
+                const tabs = document.querySelectorAll('.tab');
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+                document.getElementById('summaryPane').classList.remove('active');
+                document.getElementById('fulltextPane').classList.add('active');
+            }
+        }
+
+        function highlightEntities(text) {
+            let result = escapeHtml(text);
+            
+            // Highlight dates (various formats)
+            const datePatterns = [
+                /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi,
+                /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g,
+                /\b(20\d{2}|19\d{2})\b/g
+            ];
+            
+            datePatterns.forEach(pattern => {
+                result = result.replace(pattern, '<span class="entity-date">$&</span>');
+            });
+
+            // Highlight organizations/courts
+            const orgs = [
+                'Supreme Court', 'Court of Appeals', 'District Court', 'Circuit',
+                'Department of Defense', 'FBI', 'FERC', 'FTC', 'NLRB', 'MTA',
+                'National Bank of Commerce', 'Silicon Valley Ventures', 'Patterson Pharmaceutical',
+                'Johnson Manufacturing', 'TechGlobal Industries', 'DataSecure Systems',
+                'Graystone Logistics', 'Metropolitan Transit Authority', 'EEOC'
+            ];
+            
+            orgs.forEach(org => {
+                const regex = new RegExp(`\\b${org}\\b`, 'gi');
+                result = result.replace(regex, '<span class="entity-org">$&</span>');
+            });
+
+            // Highlight names (common patterns)
+            const namePatterns = [
+                /\b(Justice|Judge|Dr\.|Mr\.|Ms\.)\s+[A-Z][a-z]+\b/g,
+                /\b[A-Z][a-z]+\s+v\.\s+[A-Z][a-z]+/g,
+                /\b(MARTINEZ|CHEN|WILSON|RODRIGUEZ|THORNTON|GRAVES|BIANCO|MURPHY|GREGORY|McKEOWN)\b/gi
+            ];
+
+            namePatterns.forEach(pattern => {
+                result = result.replace(pattern, match => {
+                    if (!match.includes('entity-')) {
+                        return `<span class="entity-name">${match}</span>`;
+                    }
+                    return match;
+                });
+            });
+
+            // Highlight plaintiff/defendant names
+            const legalNames = [
+                'Robert Smith', 'James Wilson', 'David Chen', 'Sarah Brooks', 'Maria Hernandez',
+                'Margaret Thompson', 'Eduardo Martinez', 'John Thompson'
+            ];
+            
+            legalNames.forEach(name => {
+                const regex = new RegExp(`\\b${name}\\b`, 'gi');
+                result = result.replace(regex, '<span class="entity-name">$&</span>');
+            });
+
+            return result;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleNotes() {
+            const sidebar = document.getElementById('notesSidebar');
+            notesVisible = !notesVisible;
+            sidebar.classList.toggle('collapsed', !notesVisible);
+        }
+
+        function addNote() {
+            const input = document.getElementById('noteInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+
+            const note = {
+                id: Date.now(),
+                text: text,
+                caseId: selectedCase?.id || null,
+                caseTitle: selectedCase?.title || 'General Note',
+                date: new Date().toISOString()
+            };
+
+            notes.unshift(note);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            input.value = '';
+            renderNotes();
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notesList');
+            
+            if (notes.length === 0) {
+                container.innerHTML = '<div class="no-results">No notes yet. Add your first note above.</div>';
+                return;
+            }
+
+            container.innerHTML = notes.map(n => `
+                <div class="note-item">
+                    <div class="note-content">${escapeHtml(n.text)}</div>
+                    <div class="note-case">${n.caseTitle}</div>
+                    <div class="note-meta">
+                        <span>${formatDateTime(n.date)}</span>
+                        <span class="note-delete" onclick="deleteNote(${n.id})">🗑️ Delete</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function formatDateTime(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>

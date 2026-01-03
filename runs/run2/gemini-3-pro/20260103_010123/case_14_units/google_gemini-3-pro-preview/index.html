@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Unit Converter</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Category Tabs */
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            background: #eef2ff;
+            scrollbar-width: none; /* Firefox */
+        }
+        .tabs::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        /* Converter Body */
+        .converter-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+
+        .input-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="number"] {
+            flex: 2;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1.2rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--primary);
+        }
+
+        select {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: white;
+            cursor: pointer;
+            outline: none;
+            min-width: 100px;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        /* Swap Button */
+        .swap-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: -10px 0;
+            z-index: 10;
+        }
+
+        .swap-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .swap-btn:hover {
+            background: var(--primary-hover);
+            transform: rotate(180deg);
+        }
+        
+        .swap-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Formula */
+        .formula-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .formula-box span {
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* Quick Buttons */
+        .quick-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+
+        .quick-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eef2ff;
+        }
+
+        @media (max-width: 400px) {
+            .input-row {
+                flex-direction: column;
+            }
+            input[type="number"], select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Unit Converter</h1>
+    </header>
+    
+    <div class="tabs" id="categoryTabs">
+        <!-- Tabs injected by JS -->
+    </div>
+
+    <div class="converter-body">
+        
+        <!-- From Section -->
+        <div class="input-group">
+            <div class="input-label">From</div>
+            <div class="input-row">
+                <input type="number" id="inputA" placeholder="0">
+                <select id="unitA"></select>
+            </div>
+        </div>
+
+        <!-- Swap Button -->
+        <div class="swap-container">
+            <button class="swap-btn" id="swapBtn" title="Swap Units">
+                <svg viewBox="0 0 24 24">
+                    <path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- To Section -->
+        <div class="input-group">
+            <div class="input-label">To</div>
+            <div class="input-row">
+                <input type="number" id="inputB" placeholder="0">
+                <select id="unitB"></select>
+            </div>
+        </div>
+
+        <!-- Formula Display -->
+        <div class="formula-box" id="formulaDisplay">
+            Formula will appear here
+        </div>
+
+        <!-- Quick Buttons -->
+        <div>
+            <div class="input-label" style="margin-bottom: 8px;">Common Conversions</div>
+            <div class="quick-buttons" id="quickButtons">
+                <!-- Buttons injected by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration Data
+    const definitions = {
+        Length: {
+            units: {
+                'm': 1,
+                'km': 1000,
+                'cm': 0.01,
+                'mm': 0.001,
+                'miles': 1609.344,
+                'feet': 0.3048,
+                'inches': 0.0254
+            },
+            quick: [
+                { val: 1, from: 'miles', to: 'km' },
+                { val: 1, from: 'feet', to: 'cm' },
+                { val: 100, from: 'm', to: 'feet' }
+            ]
+        },
+        Weight: {
+            units: {
+                'g': 1,
+                'kg': 1000,
+                'lb': 453.59237,
+                'oz': 28.349523
+            },
+            quick: [
+                { val: 1, from: 'kg', to: 'lb' },
+                { val: 1, from: 'lb', to: 'kg' },
+                { val: 100, from: 'g', to: 'oz' }
+            ]
+        },
+        Temperature: {
+            // Temperature is special, so we don't use simple rates
+            units: ['C', 'F', 'K'],
+            quick: [
+                { val: 0, from: 'C', to: 'F' },
+                { val: 100, from: 'C', to: 'F' },
+                { val: 98.6, from: 'F', to: 'C' }
+            ]
+        },
+        Volume: {
+            units: {
+                'L': 1,
+                'mL': 0.001,
+                'gallons': 3.78541,
+                'cups': 0.236588
+            },
+            quick: [
+                { val: 1, from: 'gallons', to: 'L' },
+                { val: 1, from: 'L', to: 'cups' },
+                { val: 500, from: 'mL', to: 'cups' }
+            ]
+        },
+        Time: {
+            units: {
+                'seconds': 1,
+                'minutes': 60,
+                'hours': 3600
+            },
+            quick: [
+                { val: 1, from: 'hours', to: 'minutes' },
+                { val: 90, from: 'minutes', to: 'hours' },
+                { val: 3600, from: 'seconds', to: 'hours' }
+            ]
+        }
+    };
+
+    // State
+    let currentCategory = 'Length';
+    let currentUnitA = '';
+    let currentUnitB = '';
+
+    // DOM Elements
+    const tabsContainer = document.getElementById('categoryTabs');
+    const inputA = document.getElementById('inputA');
+    const inputB = document.getElementById('inputB');
+    const selectA = document.getElementById('unitA');
+    const selectB = document.getElementById('unitB');
+    const swapBtn = document.getElementById('swapBtn');
+    const formulaDisplay = document.getElementById('formulaDisplay');
+    const quickButtonsContainer = document.getElementById('quickButtons');
+
+    // Initialization
+    function init() {
+        renderTabs();
+        setCategory('Length');
+        
+        // Event Listeners
+        inputA.addEventListener('input', () => calculate('A'));
+        inputB.addEventListener('input', () => calculate('B'));
+        
+        selectA.addEventListener('change', () => {
+            currentUnitA = selectA.value;
+            calculate('A'); // Recalculate based on input A
+        });
+        
+        selectB.addEventListener('change', () => {
+            currentUnitB = selectB.value;
+            calculate('A'); // Recalculate based on input A
+        });
+
+        swapBtn.addEventListener('click', swap);
+    }
+
+    function renderTabs() {
+        tabsContainer.innerHTML = '';
+        Object.keys(definitions).forEach(cat => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${cat === currentCategory ? 'active' : ''}`;
+            tab.textContent = cat;
+            tab.onclick = () => setCategory(cat);
+            tabsContainer.appendChild(tab);
+        });
+    }
+
+    function setCategory(cat) {
+        currentCategory = cat;
+        
+        // Update UI Tabs
+        document.querySelectorAll('.tab').forEach(t => {
+            t.classList.toggle('active', t.textContent === cat);
+        });
+
+        // Populate Selects
+        populateSelects(cat);
+        
+        // Render Quick Buttons
+        renderQuickButtons(cat);
+
+        // Reset Inputs
+        inputA.value = 1;
+        calculate('A');
+    }
+
+    function populateSelects(cat) {
+        const def = definitions[cat];
+        let unitKeys = [];
+        
+        if (Array.isArray(def.units)) {
+            unitKeys = def.units;
+        } else {
+            unitKeys = Object.keys(def.units);
+        }
+
+        // Helper to create options
+        const createOptions = (selected) => {
+            return unitKeys.map(u => `<option value="${u}" ${u === selected ? 'selected' : ''}>${u}</option>`).join('');
+        };
+
+        // Defaults: first and second units
+        currentUnitA = unitKeys[0];
+        currentUnitB = unitKeys[1] || unitKeys[0];
+
+        selectA.innerHTML = createOptions(currentUnitA);
+        selectB.innerHTML = createOptions(currentUnitB);
+    }
+
+    function renderQuickButtons(cat) {
+        quickButtonsContainer.innerHTML = '';
+        const quicks = definitions[cat].quick;
+        
+        quicks.forEach(q => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-btn';
+            btn.textContent = `${q.val} ${q.from} to ${q.to}`;
+            btn.onclick = () => {
+                selectA.value = q.from;
+                selectB.value = q.to;
+                currentUnitA = q.from;
+                currentUnitB = q.to;
+                inputA.value = q.val;
+                calculate('A');
+            };
+            quickButtonsContainer.appendChild(btn);
+        });
+    }
+
+    function swap() {
+        // Swap values
+        const valA = inputA.value;
+        const valB = inputB.value;
+        inputA.value = valB;
+        // inputB.value = valA; // Will be calculated
+
+        // Swap units
+        const unitA = selectA.value;
+        const unitB = selectB.value;
+        
+        selectA.value = unitB;
+        selectB.value = unitA;
+        currentUnitA = unitB;
+        currentUnitB = unitA;
+
+        calculate('A');
+    }
+
+    // Core Calculation Logic
+    function calculate(source) {
+        let val = parseFloat(source === 'A' ? inputA.value : inputB.value);
+        if (isNaN(val)) {
+            if (source === 'A') inputB.value = '';
+            else inputA.value = '';
+            formulaDisplay.textContent = 'Enter a number';
+            return;
+        }
+
+        const fromUnit = source === 'A' ? currentUnitA : currentUnitB;
+        const toUnit = source === 'A' ? currentUnitB : currentUnitA;
+        
+        let result = 0;
+        let formula = '';
+
+        if (currentCategory === 'Temperature') {
+            result = convertTemperature(val, fromUnit, toUnit);
+            formula = getTempFormula(val, fromUnit, toUnit, result);
+        } else {
+            // Linear conversion
+            const rates = definitions[currentCategory].units;
+            const baseVal = val * rates[fromUnit];
+            result = baseVal / rates[toUnit];
+            
+            // Formula Text
+            const rate = rates[fromUnit] / rates[toUnit];
+            // Formatting rate to avoid super long decimals
+            let displayRate = rate;
+            if (rate < 0.0001 || rate > 10000) displayRate = rate.toExponential(4);
+            else displayRate = parseFloat(rate.toPrecision(6));
+
+            formula = `Multiply value by ${displayRate}`;
+        }
+
+        // Update the OTHER input
+        // Round result to avoid floating point errors like 0.300000000004
+        const displayResult = parseFloat(result.toPrecision(10)) / 1; 
+
+        if (source === 'A') {
+            inputB.value = displayResult;
+        } else {
+            inputA.value = displayResult;
+        }
+
+        formulaDisplay.innerHTML = formula;
+    }
+
+    function convertTemperature(val, from, to) {
+        if (from === to) return val;
+
+        let celsius;
+        // 1. To Celsius
+        if (from === 'C') celsius = val;
+        else if (from === 'F') celsius = (val - 32) * 5/9;
+        else if (from === 'K') celsius = val - 273.15;
+
+        // 2. From Celsius to Target
+        if (to === 'C') return celsius;
+        if (to === 'F') return (celsius * 9/5) + 32;
+        if (to === 'K') return celsius + 273.15;
+    }
+
+    function getTempFormula(val, from, to, result) {
+        if (from === to) return `${val} ${from} = ${result} ${to}`;
+        
+        // Round for display
+        const r = (n) => parseFloat(n.toFixed(2));
+
+        if (from === 'C' && to === 'F') return `(${val}°C × 9/5) + 32 = ${r(result)}°F`;
+        if (from === 'F' && to === 'C') return `(${val}°F − 32) × 5/9 = ${r(result)}°C`;
+        if (from === 'C' && to === 'K') return `${val}°C + 273.15 = ${r(result)}K`;
+        if (from === 'K' && to === 'C') return `${val}K − 273.15 = ${r(result)}°C`;
+        if (from === 'F' && to === 'K') return `(${val}°F − 32) × 5/9 + 273.15 = ${r(result)}K`;
+        if (from === 'K' && to === 'F') return `(${val}K − 273.15) × 9/5 + 32 = ${r(result)}°F`;
+        
+        return '';
+    }
+
+    // Start
+    init();
+
+</script>
+</body>
+</html>

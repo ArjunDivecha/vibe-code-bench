@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Summary Report</title>
+    <style>
+        /* CSS Variables */
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        /* Reset & Base */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            font-weight: 400;
+        }
+
+        .header .meta {
+            margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Print Button */
+        .print-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .print-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .print-btn:active {
+            transform: translateY(0);
+        }
+
+        .print-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Table of Contents */
+        .toc-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .toc-list li {
+            margin: 0;
+        }
+
+        .toc-list a {
+            display: block;
+            padding: 12px 16px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .toc-list a:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        /* Summary Section */
+        .summary-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .summary-item {
+            padding: 16px;
+            background: var(--bg-body);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .summary-item strong {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .summary-item strong a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .summary-item strong a:hover {
+            text-decoration: underline;
+        }
+
+        .summary-item span {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Slide Cards */
+        .slide-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .slide-number {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(10px);
+        }
+
+        .slide-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+        }
+
+        .slide-content {
+            padding: 32px;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .slide-content p {
+            margin-bottom: 16px;
+        }
+
+        .slide-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 64px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .print-btn {
+                display: none;
+            }
+
+            .section {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                page-break-inside: avoid;
+            }
+
+            .slide-card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+
+            .slide-header {
+                background: #f0f0f0 !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .slide-number {
+                background: #ddd !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .slide-title {
+                color: black !important;
+            }
+
+            .header h1 {
+                background: none;
+                -webkit-text-fill-color: black;
+                color: black;
+            }
+
+            .toc-list a {
+                border: 1px solid #ccc;
+                color: black;
+            }
+
+            .toc-list a:hover {
+                background: none;
+                color: black;
+                transform: none;
+            }
+
+            .summary-item {
+                border-left-color: #333;
+            }
+
+            a {
+                text-decoration: none;
+                color: black;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px 16px;
+            }
+
+            .header h1 {
+                font-size: 1.875rem;
+            }
+
+            .section {
+                padding: 24px;
+            }
+
+            .slide-header {
+                padding: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .slide-content {
+                padding: 24px;
+            }
+
+            .toc-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 Slide Summary Report</h1>
+            <p class="subtitle">Comprehensive overview of presentation slides</p>
+            <p class="meta">Generated on January 03, 2026 at 09:45 AM • 5 slides</p>
+            <button class="print-btn" onclick="window.print()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print to PDF
+            </button>
+        </header>
+
+        <section class="section">
+            <h2 class="section-title">Table of Contents</h2>
+            <ul class="toc-list">
+                <li><a href="#slide1-txt">1. Slide1</a></li><li><a href="#slide2-txt">2. Slide2</a></li><li><a href="#slide3-txt">3. Slide3</a></li><li><a href="#slide4-txt">4. Slide4</a></li><li><a href="#slide5-txt">5. Slide5</a></li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-grid">
+                
+            <div class="summary-item">
+                <strong><a href="#slide1-txt">Slide1</a>:</strong>
+                <span>Introduction to Machine Learning</span>
+            </div>
+        
+            <div class="summary-item">
+                <strong><a href="#slide2-txt">Slide2</a>:</strong>
+                <span>Neural Networks Overview</span>
+            </div>
+        
+            <div class="summary-item">
+                <strong><a href="#slide3-txt">Slide3</a>:</strong>
+                <span>Deep Learning Applications</span>
+            </div>
+        
+            <div class="summary-item">
+                <strong><a href="#slide4-txt">Slide4</a>:</strong>
+                <span>Model Training Process</span>
+            </div>
+        
+            <div class="summary-item">
+                <strong><a href="#slide5-txt">Slide5</a>:</strong>
+                <span>Challenges and Future Directions</span>
+            </div>
+        
+            </div>
+        </section>
+
+        <section class="slides-container">
+            <h2 class="section-title" style="margin-bottom: 32px;">Slide Details</h2>
+            
+            <div class="slide-card" id="slide1-txt">
+                <div class="slide-header">
+                    <span class="slide-number">Slide 1</span>
+                    <h2 class="slide-title">Slide1</h2>
+                </div>
+                <div class="slide-content">
+                    <p>Introduction to Machine Learning</p><p>Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.</p><p>Key Concepts: - Supervised Learning - Unsupervised Learning - Reinforcement Learning</p><p>These approaches form the foundation of modern AI applications.</p>
+                </div>
+            </div>
+        
+            <div class="slide-card" id="slide2-txt">
+                <div class="slide-header">
+                    <span class="slide-number">Slide 2</span>
+                    <h2 class="slide-title">Slide2</h2>
+                </div>
+                <div class="slide-content">
+                    <p>Neural Networks Overview</p><p>Neural networks are computing systems inspired by biological neural networks in human brains.</p><p>Architecture: - Input Layer - Hidden Layers - Output Layer</p><p>Each layer consists of neurons that process information using weights and biases.</p>
+                </div>
+            </div>
+        
+            <div class="slide-card" id="slide3-txt">
+                <div class="slide-header">
+                    <span class="slide-number">Slide 3</span>
+                    <h2 class="slide-title">Slide3</h2>
+                </div>
+                <div class="slide-content">
+                    <p>Deep Learning Applications</p><p>Deep learning has revolutionized multiple industries with breakthrough applications.</p><p>Healthcare: - Medical image analysis - Drug discovery - Disease prediction</p><p>Finance: - Fraud detection - Algorithmic trading - Risk assessment</p><p>The impact continues to grow exponentially.</p>
+                </div>
+            </div>
+        
+            <div class="slide-card" id="slide4-txt">
+                <div class="slide-header">
+                    <span class="slide-number">Slide 4</span>
+                    <h2 class="slide-title">Slide4</h2>
+                </div>
+                <div class="slide-content">
+                    <p>Model Training Process</p><p>Training a machine learning model involves several critical steps.</p><p>1. Data Collection and Preprocessing 2. Feature Engineering 3. Model Selection 4. Training and Validation 5. Testing and Evaluation 6. Deployment</p><p>Each step requires careful consideration and expertise.</p>
+                </div>
+            </div>
+        
+            <div class="slide-card" id="slide5-txt">
+                <div class="slide-header">
+                    <span class="slide-number">Slide 5</span>
+                    <h2 class="slide-title">Slide5</h2>
+                </div>
+                <div class="slide-content">
+                    <p>Challenges and Future Directions</p><p>Despite significant progress, several challenges remain in machine learning.</p><p>Current Challenges: - Data quality and quantity - Interpretability and explainability - Computational requirements - Ethical considerations</p><p>Future Directions: - Few-shot learning - Self-supervised learning - Edge AI deployment - Responsible AI frameworks</p>
+                </div>
+            </div>
+        
+        </section>
+
+        <footer class="footer">
+            <p>Slide Summary Report • Generated with Python</p>
+        </footer>
+    </div>
+</body>
+</html>

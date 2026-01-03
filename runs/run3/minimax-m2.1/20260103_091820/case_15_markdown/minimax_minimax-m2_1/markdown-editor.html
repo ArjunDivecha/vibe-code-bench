@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-editor: #fafafa;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --accent-color: #2196F3;
+            --code-bg: #f4f4f4;
+            --blockquote-border: #ddd;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-editor: #252526;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --accent-color: #4fc3f7;
+            --code-bg: #2d2d2d;
+            --blockquote-border: #666;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        button:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            background: var(--bg-secondary);
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border-color);
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background: var(--bg-editor);
+            color: var(--text-primary);
+            border: none;
+            resize: none;
+            outline: none;
+        }
+
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            line-height: 1.6;
+        }
+
+        /* Preview styles */
+        #preview h1, #preview h2, #preview h3 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+
+        #preview h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h3 { font-size: 1.25em; }
+
+        #preview p {
+            margin-bottom: 1em;
+        }
+
+        #preview strong {
+            font-weight: 600;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview ul, #preview ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        #preview li {
+            margin-bottom: 0.25em;
+        }
+
+        #preview a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        #preview pre code {
+            background: none;
+            padding: 0;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            padding-left: 1em;
+            margin: 1em 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2em 0;
+        }
+
+        #preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1em;
+        }
+
+        #preview th, #preview td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        #preview th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+            
+            .editor-pane {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .pane {
+                min-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📝 Markdown Editor</h1>
+        <div class="header-actions">
+            <button id="export-btn">Export HTML</button>
+            <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+        </div>
+    </header>
+
+    <main class="editor-container">
+        <div class="pane editor-pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="markdown-input" placeholder="Start typing markdown here..."></textarea>
+        </div>
+        <div class="pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // DOM Elements
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        const themeToggle = document.getElementById('theme-toggle');
+        const exportBtn = document.getElementById('export-btn');
+        const toast = document.getElementById('toast');
+
+        // Markdown Parser
+        class MarkdownParser {
+            constructor() {
+                this.text = '';
+                this.pos = 0;
+            }
+
+            parse(text) {
+                this.text = text;
+                this.pos = 0;
+                let html = this.parseBlock();
+                return html;
+            }
+
+            // Advance past whitespace
+            skipWhitespace() {
+                while (this.pos < this.text.length && /\s/.test(this.text[this.pos])) {
+                    this.pos++;
+                }
+            }
+
+            // Peek at current character
+            peek() {
+                return this.text[this.pos];
+            }
+
+            // Get current character or null
+            peekChar() {
+                return this.pos < this.text.length ? this.text[this.pos] : null;
+            }
+
+            // Check if we're at end
+            atEnd() {
+                return this.pos >= this.text.length;
+            }
+
+            // Parse entire document
+            parseBlock() {
+                let html = '';
+                
+                while (!this.atEnd()) {
+                    const result = this.parseBlockElement();
+                    if (result) {
+                        html += result;
+                    }
+                }
+                
+                return html;
+            }
+
+            // Parse a block element
+            parseBlockElement() {
+                this.skipWhitespace();
+                
+                if (this.atEnd()) return '';
+
+                const char = this.peekChar();
+
+                // Heading
+                if (char === '#') {
+                    return this.parseHeading();
+                }
+
+                // Blockquote
+                if (char === '>') {
+                    return this.parseBlockquote();
+                }
+
+                // Code block
+                if (this.peek(3) === '```') {
+                    return this.parseCodeBlock();
+                }
+
+                // Horizontal rule
+                if ((char === '-' || char === '*' || char === '_') && this.isHorizontalRule()) {
+                    return '<hr>\n';
+                }
+
+                // Unordered list
+                if (char === '-' || char === '*' || char === '+') {
+                    return this.parseUnorderedList();
+                }
+
+                // Ordered list
+                if (/[0-9]/.test(char)) {
+                    return this.parseOrderedList();
+                }
+
+                // Paragraph
+                return this.parseParagraph();
+            }
+
+            // Check if current line is a horizontal rule
+            isHorizontalRule() {
+                const start = this.pos;
+                let char = this.peekChar();
+                let count = 0;
+                
+                while (!this.atEnd() && (char === char || /\s/.test(char))) {
+                    if (char === this.text[start]) count++;
+                    this.pos++;
+                    char = this.peekChar();
+                    if (this.atEnd() || char === '\n') break;
+                }
+                
+                this.pos = start;
+                return count >= 3;
+            }
+
+            // Parse heading
+            parseHeading() {
+                let level = 0;
+                while (this.peekChar() === '#' && level < 6) {
+                    level++;
+                    this.pos++;
+                }
+                
+                this.skipWhitespace();
+                
+                let text = '';
+                while (!this.atEnd() && this.peekChar() !== '\n') {
+                    text += this.peekChar();
+                    this.pos++;
+                }
+                
+                this.pos++; // Skip newline
+                return `<h${level}>${this.parseInline(text.trim())}</h${level}>\n`;
+            }
+
+            // Parse blockquote
+            parseBlockquote() {
+                this.pos++; // Skip >
+                this.skipWhitespace();
+                
+                let content = '';
+                while (!this.atEnd() && this.peekChar() !== '\n') {
+                    content += this.peekChar();
+                    this.pos++;
+                }
+                this.pos++; // Skip newline
+                
+                return `<blockquote>${this.parseInline(content.trim())}</blockquote>\n`;
+            }
+
+            // Parse code block
+            parseCodeBlock() {
+                this.pos += 3; // Skip ```
+                
+                let language = '';
+                while (!this.atEnd() && this.peekChar() !== '\n' && this.peekChar() !== '`') {
+                    language += this.peekChar();
+                    this.pos++;
+                }
+                this.pos++; // Skip newline
+                
+                let code = '';
+                while (!this.atEnd()) {
+                    if (this.peek(3) === '```') {
+                        this.pos += 3;
+                        break;
+                    }
+                    code += this.peekChar();
+                    this.pos++;
+                }
+                
+                return `<pre><code class="language-${language.trim()}">${this.escapeHtml(code)}</code></pre>\n`;
+            }
+
+            // Parse unordered list
+            parseUnorderedList() {
+                let items = [];
+                
+                while (!this.atEnd()) {
+                    this.skipWhitespace();
+                    const char = this.peekChar();
+                    
+                    if (char === '-' || char === '*' || char === '+') {
+                        this.pos++; // Skip marker
+                        this.skipWhitespace();
+                        
+                        let item = '';
+                        while (!this.atEnd() && this.peekChar() !== '\n') {
+                            item += this.peekChar();
+                            this.pos++;
+                        }
+                        this.pos++; // Skip newline
+                        
+                        items.push(this.parseInline(item.trim()));
+                    } else {
+                        break;
+                    }
+                }
+                
+                return '<ul>\n' + items.map(item => `<li>${item}</li>`).join('\n') + '\n</ul>\n';
+            }
+
+            // Parse ordered list
+            parseOrderedList() {
+                let items = [];
+                
+                while (!this.atEnd()) {
+                    this.skipWhitespace();
+                    
+                    // Match number followed by period
+                    let number = '';
+                    while (/[0-9]/.test(this.peekChar())) {
+                        number += this.peekChar();
+                        this.pos++;
+                    }
+                    
+                    if (number && this.peekChar() === '.') {
+                        this.pos++; // Skip .
+                        this.skipWhitespace();
+                        
+                        let item = '';
+                        while (!this.atEnd() && this.peekChar() !== '\n') {
+                            item += this.peekChar();
+                            this.pos++;
+                        }
+                        this.pos++; // Skip newline
+                        
+                        items.push(this.parseInline(item.trim()));
+                    } else {
+                        break;
+                    }
+                }
+                
+                return '<ol>\n' + items.map(item => `<li>${item}</li>`).join('\n') + '\n</ol>\n';
+            }
+
+            // Parse paragraph
+            parseParagraph() {
+                let text = '';
+                
+                while (!this.atEnd() && this.peekChar() !== '\n') {
+                    text += this.peekChar();
+                    this.pos++;
+                }
+                this.pos++; // Skip newline
+                
+                if (text.trim()) {
+                    return `<p>${this.parseInline(text.trim())}</p>\n`;
+                }
+                return '';
+            }
+
+            // Parse inline elements
+            parseInline(text) {
+                if (!text) return '';
+                
+                let result = '';
+                let i = 0;
+                
+                while (i < text.length) {
+                    const char = text[i];
+                    
+                    // Escape sequence
+                    if (char === '\\') {
+                        result += text[i + 1] || '';
+                        i += 2;
+                        continue;
+                    }
+                    
+                    // Code inline
+                    if (char === '`') {
+                        let end = text.indexOf('`', i + 1);
+                        if (end !== -1) {
+                            result += `<code>${this.escapeHtml(text.substring(i + 1, end))}</code>`;
+                            i = end + 1;
+                            continue;
+                        }
+                    }
+                    
+                    // Image
+                    if (text.substring(i, i + 5) === '![') {
+                        let altEnd = text.indexOf(']', i + 2);
+                        if (altEnd !== -1 && text[altEnd + 1] === '(') {
+                            let urlEnd = text.indexOf(')', altEnd + 2);
+                            if (urlEnd !== -1) {
+                                const alt = text.substring(i + 2, altEnd);
+                                const url = text.substring(altEnd + 2, urlEnd);
+                                result += `<img src="${this.escapeHtml(url)}" alt="${this.escapeHtml(alt)}">`;
+                                i = urlEnd + 1;
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    // Link
+                    if (text.substring(i, i + 2) === '[') {
+                        let textEnd = text.indexOf(']', i + 1);
+                        if (textEnd !== -1 && text[textEnd + 1] === '(') {
+                            let urlEnd = text.indexOf(')', textEnd + 2);
+                            if (urlEnd !== -1) {
+                                const linkText = text.substring(i + 1, textEnd);
+                                const url = text.substring(textEnd + 2, urlEnd);
+                                result += `<a href="${this.escapeHtml(url)}">${this.parseInline(linkText)}</a>`;
+                                i = urlEnd + 1;
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    // Bold
+                    if (text.substring(i, i + 2) === '**') {
+                        let end = text.indexOf('**', i + 2);
+                        if (end !== -1) {
+                            result += `<strong>${this.parseInline(text.substring(i + 2, end))}</strong>`;
+                            i = end + 2;
+                            continue;
+                        }
+                    }
+                    
+                    // Italic
+                    if (text[i] === '*') {
+                        let end = text.indexOf('*', i + 1);
+                        if (end !== -1 && !/\w/.test(text[end + 1] || '')) {
+                            result += `<em>${this.parseInline(text.substring(i + 1, end))}</em>`;
+                            i = end + 1;
+                            continue;
+                        }
+                    }
+                    
+                    // Regular character
+                    result += this.escapeHtml(char);
+                    i++;
+                }
+                
+                return result;
+            }
+
+            // Escape HTML special characters
+            escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, c => map[c]);
+            }
+
+            // Peek at multiple characters
+            peek(n = 1) {
+                return this.text.substring(this.pos, this.pos + n);
+            }
+        }
+
+        // Initialize parser
+        const parser = new MarkdownParser();
+
+        // Show toast notification
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdown = markdownInput.value;
+            const html = parser.parse(markdown);
+            preview.innerHTML = html;
+            saveToLocalStorage();
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('markdown-content', markdownInput.value);
+        }
+
+        // Load from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('markdown-content');
+            if (saved) {
+                markdownInput.value = saved;
+            } else {
+                // Default content for first-time users
+                markdownInput.value = `# Welcome to Markdown Editor!
+
+## Features
+
+This is a **split-pane** markdown editor with *live preview*.
+
+### Supported Syntax:
+
+- **Bold text** and *italic text*
+- Headers (# ## ###)
+- Lists:
+  - Unordered items
+  - Nested items
+- Ordered lists (1. 2. 3.)
+- [Links](https://example.com)
+- \`inline code\`
+- Code blocks:
+  \`\`\`javascript
+  function hello() {
+    console.log("Hello, World!");
+  }
+  \`\`\`
+- Blockquotes:
+  > This is a blockquote.
+  > Multiple lines!
+
+---
+Enjoy writing! 🚀`;
+            }
+            updatePreview();
+        }
+
+        // Toggle dark mode
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            themeToggle.textContent = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+
+        // Load theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1, h2, h3 { margin-top: 1.5em; margin-bottom: 0.5em; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 0.3em; }
+        h2 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+        pre { background: #f4f4f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #ddd; padding-left: 1em; color: #666; margin: 1em 0; }
+        a { color: #2196F3; }
+        img { max-width: 100%; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; }
+        th { background: #f5f5f5; }
+    </style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exported-markdown.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('HTML exported successfully!');
+        }
+
+        // Event listeners
+        markdownInput.addEventListener('input', updatePreview);
+        themeToggle.addEventListener('click', toggleTheme);
+        exportBtn.addEventListener('click', exportHTML);
+
+        // Keyboard shortcut for theme toggle (Ctrl/Cmd + D)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                e.preventDefault();
+                toggleTheme();
+            }
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                showToast('Auto-saved to localStorage');
+            }
+        });
+
+        // Initialize
+        loadTheme();
+        loadFromLocalStorage();
+    </script>
+</body>
+</html>

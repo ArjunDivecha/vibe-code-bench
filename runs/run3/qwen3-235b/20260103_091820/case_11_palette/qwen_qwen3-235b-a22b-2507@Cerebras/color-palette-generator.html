@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        :root {
+            --transition-speed: 0.3s;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            color: #333;
+            line-height: 1.6;
+            transition: background 1s ease;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-speed) var(--ease);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            color: white;
+        }
+
+        .palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .color-card {
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-speed) var(--ease);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-display {
+            height: 180px;
+            position: relative;
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 100%;
+            transition: all var(--transition-speed) var(--ease);
+        }
+
+        .lock-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all var(--transition-speed) var(--ease);
+        }
+
+        .lock-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.1);
+        }
+
+        .locked .lock-btn svg {
+            color: #2575fc;
+        }
+
+        .color-info {
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            min-height: 1.5rem;
+        }
+
+        .color-codes {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .color-hex {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .copied {
+            animation: popUp 0.4s ease;
+        }
+
+        .copied .color-swatch {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes popUp {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .locked .color-swatch {
+            border: 3px solid #2575fc;
+            border-radius: 4px;
+        }
+
+        .saved-palettes {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+        }
+
+        .saved-palettes h2 {
+            margin-bottom: 1rem;
+            color: #444;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .saved-palette {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all var(--transition-speed) var(--ease);
+        }
+
+        .saved-palette:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .saved-colors {
+            display: flex;
+            height: 60px;
+        }
+
+        .saved-color {
+            flex: 1;
+            height: 100%;
+        }
+
+        .saved-palette-info {
+            padding: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .delete-palette {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all var(--transition-speed) var(--ease);
+        }
+
+        .delete-palette:hover {
+            color: #e74c3c;
+            opacity: 1;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .hint {
+            margin-top: 1.5rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .palette {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .color-display {
+                height: 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Color Palette Generator</h1>
+            <p class="subtitle">Create beautiful color schemes with a click</p>
+        </header>
+
+        <div class="controls">
+            <button id="generateBtn" class="generate-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3v6"></path>
+                    <path d="M12 21v-6"></path>
+                    <path d="M3 12h6"></path>
+                    <path d="M21 12h-6"></path>
+                    <path d="M6.5 6.5l3 3"></path>
+                    <path d="M14.5 14.5l3 3"></path>
+                    <path d="M14.5 9.5l3-3"></path>
+                    <path d="M6.5 17.5l3-3"></path>
+                </svg>
+                Generate Palette
+            </button>
+            <button id="savePaletteBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save This Palette
+            </button>
+        </div>
+
+        <div class="palette" id="palette"></div>
+
+        <div class="saved-palettes">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                Saved Palettes
+            </h2>
+            <div class="palette-grid" id="savedPalettes"></div>
+        </div>
+
+        <p class="hint">💡 Press the spacebar to generate a new palette</p>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Color name suggestions database
+        const colorNames = [
+            "Crimson Dream", "Ocean Breeze", "Forest Whisper", "Sunset Glow", "Midnight Sky",
+            "Lemon Zest", "Mint Chip", "Lavender Mist", "Coral Kiss", "Slate Gray",
+            "Ruby Slippers", "Azure Flow", "Emerald Isle", "Golden Hour", "Plum Perfect",
+            "Candy Floss", "Denim Dreams", "Olive Garden", "Tangerine Twist", "Royal Purple",
+            "Cobalt Blue", "Rose Gold", "Charcoal Gray", "Baby Blue", "Mango Tango",
+            "Peach Fuzz", "Kiwi Kiss", "Icy Lavender", "Cherry Pop", "Sandstone",
+            "Turquoise Tide", "Pine Green", "Dusty Rose", "Sky High", "Lemon Ice",
+            "Grape Jelly", "Copper Pot", "Steel Gray", "Apricot Fizz", "Sea Glass"
+        ];
+
+        // DOM elements
+        const paletteEl = document.getElementById('palette');
+        const generateBtn = document.getElementById('generateBtn');
+        const savePaletteBtn = document.getElementById('savePaletteBtn');
+        const savedPalettesEl = document.getElementById('savedPalettes');
+        const toastEl = document.getElementById('toast');
+
+        // State
+        let colors = [];
+        let savedPalettes = JSON.parse(localStorage.getItem('colorPalettes')) || [];
+
+        // Utility functions
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 2000);
+        }
+
+        function componentToHex(c) {
+            const hex = c.toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+        function hexToRgb(hex) {
+            const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function getRandomColor() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return rgbToHex(r, g, b);
+        }
+
+        function getComplementaryColor(hex) {
+            const rgb = hexToRgb(hex);
+            const r = 255 - rgb.r;
+            const g = 255 - rgb.g;
+            const b = 255 - rgb.b;
+            return rgbToHex(r, g, b);
+        }
+
+        function getAnalogousColors(hex, count = 2) {
+            const rgb = hexToRgb(hex);
+            const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+            
+            const colors = [];
+            const step = 30; // degrees on the color wheel
+            
+            for (let i = 1; i <= count; i++) {
+                const hue1 = (hsv.h + i * step) % 360;
+                const hue2 = (hsv.h - i * step + 360) % 360;
+                colors.push(hsvToRgb(hue1, hsv.s, hsv.v));
+                colors.push(hsvToRgb(hue2, hsv.s, hsv.v));
+            }
+            
+            return colors.slice(0, count * 2).map(c => rgbToHex(c.r, c.g, c.b));
+        }
+
+        function getTriadicColors(hex) {
+            const rgb = hexToRgb(hex);
+            const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+            
+            const hue1 = (hsv.h + 120) % 360;
+            const hue2 = (hsv.h + 240) % 360;
+            
+            return [
+                hsvToRgb(hue1, hsv.s, hsv.v),
+                hsvToRgb(hue2, hsv.s, hsv.v)
+            ].map(c => rgbToHex(c.r, c.g, c.b));
+        }
+
+        function getTetradicColors(hex) {
+            const rgb = hexToRgb(hex);
+            const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+            
+            const hue1 = (hsv.h + 90) % 360;
+            const hue2 = (hsv.h + 180) % 360;
+            const hue3 = (hsv.h + 270) % 360;
+            
+            return [
+                hsvToRgb(hue1, hsv.s, hsv.v),
+                hsvToRgb(hue2, hsv.s, hsv.v),
+                hsvToRgb(hue3, hsv.s, hsv.v)
+            ].map(c => rgbToHex(c.r, c.g, c.b));
+        }
+
+        function rgbToHsv(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, v = max;
+
+            const d = max - min;
+            s = max === 0 ? 0 : d / max;
+
+            if (max === min) {
+                h = 0;
+            } else {
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return { h: h * 360, s, v };
+        }
+
+        function hsvToRgb(h, s, v) {
+            let r, g, b;
+            const i = Math.floor(h / 60) % 6;
+            const f = h / 60 - Math.floor(h / 60);
+            const p = v * (1 - s);
+            const q = v * (1 - f * s);
+            const t = v * (1 - (1 - f) * s);
+
+            switch (i) {
+                case 0: r = v; g = t; b = p; break;
+                case 1: r = q; g = v; b = p; break;
+                case 2: r = p; g = v; b = t; break;
+                case 3: r = p; g = q; b = v; break;
+                case 4: r = t; g = p; b = v; break;
+                case 5: r = v; g = p; b = q; break;
+            }
+
+            return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+        }
+
+        function getRandomColorScheme() {
+            const schemes = ['random', 'complementary', 'analogous', 'triadic', 'tetradic'];
+            return schemes[Math.floor(Math.random() * schemes.length)];
+        }
+
+        function generateColorPalette() {
+            const scheme = getRandomColorScheme();
+            let newColors = [];
+            
+            // Keep locked colors
+            const lockedColors = colors.filter(color => color.locked);
+            
+            // Generate new colors based on scheme
+            switch (scheme) {
+                case 'complementary': {
+                    if (lockedColors.length > 0) {
+                        const baseColor = lockedColors[Math.floor(Math.random() * lockedColors.length)].hex;
+                        newColors = [baseColor, getComplementaryColor(baseColor)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    } else {
+                        const base = getRandomColor();
+                        const comp = getComplementaryColor(base);
+                        newColors = [base, comp];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    }
+                    break;
+                }
+                
+                case 'analogous': {
+                    if (lockedColors.length > 0) {
+                        const baseColor = lockedColors[Math.floor(Math.random() * lockedColors.length)].hex;
+                        newColors = [baseColor, ...getAnalogousColors(baseColor, 2)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    } else {
+                        const base = getRandomColor();
+                        newColors = [base, ...getAnalogousColors(base, 2)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    }
+                    break;
+                }
+                
+                case 'triadic': {
+                    if (lockedColors.length > 0) {
+                        const baseColor = lockedColors[Math.floor(Math.random() * lockedColors.length)].hex;
+                        newColors = [baseColor, ...getTriadicColors(baseColor)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    } else {
+                        const base = getRandomColor();
+                        newColors = [base, ...getTriadicColors(base)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    }
+                    break;
+                }
+                
+                case 'tetradic': {
+                    if (lockedColors.length > 0) {
+                        const baseColor = lockedColors[Math.floor(Math.random() * lockedColors.length)].hex;
+                        newColors = [baseColor, ...getTetradicColors(baseColor)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    } else {
+                        const base = getRandomColor();
+                        newColors = [base, ...getTetradicColors(base)];
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    }
+                    break;
+                }
+                
+                case 'random':
+                default: {
+                    // Replace unlocked colors with new random ones
+                    if (colors.length === 0) {
+                        // First time generation
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                    } else {
+                        // Keep locked colors, replace others
+                        newColors = colors.map(color => 
+                            color.locked ? color.hex : getRandomColor()
+                        );
+                        // Ensure we have exactly 5 colors
+                        while (newColors.length < 5) {
+                            newColors.push(getRandomColor());
+                        }
+                        while (newColors.length > 5) {
+                            // Remove any extra colors (shouldn't happen)
+                            newColors.pop();
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            // Create color objects with names and lock state
+            colors = newColors.slice(0, 5).map(hex => {
+                // Find existing color object if it exists (to preserve lock state)
+                const existing = colors.find(c => c.hex === hex);
+                return {
+                    hex: hex,
+                    name: colorNames[Math.floor(Math.random() * colorNames.length)],
+                    locked: existing ? existing.locked : false
+                };
+            });
+            
+            renderPalette();
+        }
+
+        function renderPalette() {
+            paletteEl.innerHTML = '';
+            
+            colors.forEach((color, index) => {
+                const card = document.createElement('div');
+                card.className = `color-card ${color.locked ? 'locked' : ''}`;
+                card.dataset.index = index;
+                
+                card.innerHTML = `
+                    <div class="color-display">
+                        <div class="color-swatch" style="background-color: ${color.hex}"></div>
+                        <button class="lock-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lock-icon">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">${color.name}</div>
+                        <div class="color-codes">
+                            <div class="color-hex">${color.hex.toUpperCase()}</div>
+                            <div class="color-rgb">RGB(${hexToRgb(color.hex).r}, ${hexToRgb(color.hex).g}, ${hexToRgb(color.hex).b})</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Lock button
+                const lockBtn = card.querySelector('.lock-btn');
+                lockBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    color.locked = !color.locked;
+                    card.classList.toggle('locked', color.locked);
+                    showToast(color.locked ? 
+                        'Color locked! It will stay when generating new palettes' : 
+                        'Color unlocked');
+                });
+                
+                // Copy color on click
+                card.addEventListener('click', () => {
+                    navigator.clipboard.writeText(color.hex.toUpperCase()).then(() => {
+                        card.classList.add('copied');
+                        showToast(`${color.hex.toUpperCase()} copied to clipboard!`);
+                        setTimeout(() => {
+                            card.classList.remove('copied');
+                        }, 400);
+                    }).catch(err => {
+                        console.error('Could not copy text: ', err);
+                    });
+                });
+                
+                paletteEl.appendChild(card);
+            });
+            
+            // Update background gradient subtly based on palette
+            const gradientColors = colors.slice(0, 2).map(c => c.hex);
+            document.body.style.background = `linear-gradient(135deg, ${gradientColors[0]}22 0%, ${gradientColors[1]}22 100%)`;
+        }
+
+        function saveCurrentPalette() {
+            if (colors.length === 0) {
+                showToast('Generate a palette first!');
+                return;
+            }
+            
+            const palette = colors.map(c => ({
+                hex: c.hex,
+                name: c.name
+            }));
+            
+            savedPalettes.unshift(palette);
+            
+            // Limit to 10 saved palettes
+            if (savedPalettes.length > 10) {
+                savedPalettes.pop();
+            }
+            
+            localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+            renderSavedPalettes();
+            showToast('Palette saved!');
+        }
+
+        function renderSavedPalettes() {
+            savedPalettesEl.innerHTML = '';
+            
+            if (savedPalettes.length === 0) {
+                savedPalettesEl.innerHTML = '<p>No saved palettes yet. Generate and save your favorites!</p>';
+                return;
+            }
+            
+            savedPalettes.forEach((palette, paletteIndex) => {
+                const paletteCard = document.createElement('div');
+                paletteCard.className = 'saved-palette';
+                
+                paletteCard.innerHTML = `
+                    <div class="saved-colors">
+                        ${palette.map(color => `
+                            <div class="saved-color" style="background-color: ${color.hex}" title="${color.hex}"></div>
+                        `).join('')}
+                    </div>
+                    <div class="saved-palette-info">
+                        <span>Palette ${savedPalettes.length - paletteIndex}</span>
+                        <button class="delete-palette" data-index="${paletteIndex}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                
+                // Click to apply saved palette
+                paletteCard.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-palette')) return;
+                    
+                    colors = palette.map(c => ({
+                        hex: c.hex,
+                        name: c.name,
+                        locked: false
+                    }));
+                    renderPalette();
+                    showToast('Palette loaded!');
+                });
+                
+                // Delete button
+                const deleteBtn = paletteCard.querySelector('.delete-palette');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    savedPalettes.splice(paletteIndex, 1);
+                    localStorage.setItem('colorPalettes', JSON.stringify(savedPalettes));
+                    renderSavedPalettes();
+                    showToast('Palette deleted');
+                });
+                
+                savedPalettesEl.appendChild(paletteCard);
+            });
+        }
+
+        // Event Listeners
+        generateBtn.addEventListener('click', generateColorPalette);
+        savePaletteBtn.addEventListener('click', saveCurrentPalette);
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target === document.body) {
+                e.preventDefault();
+                generateColorPalette();
+            }
+        });
+
+        // Initial generation
+        generateColorPalette();
+        renderSavedPalettes();
+    </script>
+</body>
+</html>

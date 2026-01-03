@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e0e0e0;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #dddddd;
+            --accent-color: #4a90d9;
+            --code-bg: #f0f0f0;
+            --blockquote-border: #4a90d9;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #444444;
+            --accent-color: #5da9e9;
+            --code-bg: #3d3d3d;
+            --blockquote-border: #5da9e9;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background-color: var(--bg-primary);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .editor-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            padding: 10px 16px;
+            background-color: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider {
+            width: 4px;
+            background-color: var(--border-color);
+            cursor: col-resize;
+            transition: background-color 0.2s;
+        }
+
+        .divider:hover {
+            background-color: var(--accent-color);
+        }
+
+        #editor {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            border: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--bg-primary);
+            line-height: 1.7;
+        }
+
+        /* Preview Styles */
+        #preview h1, #preview h2, #preview h3, 
+        #preview h4, #preview h5, #preview h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        #preview h1:first-child, #preview h2:first-child, #preview h3:first-child {
+            margin-top: 0;
+        }
+
+        #preview h1 { font-size: 2em; border-bottom: 2px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        #preview h3 { font-size: 1.25em; }
+        #preview h4 { font-size: 1em; }
+        #preview h5 { font-size: 0.875em; }
+        #preview h6 { font-size: 0.85em; color: var(--text-secondary); }
+
+        #preview p {
+            margin-bottom: 1em;
+        }
+
+        #preview strong {
+            font-weight: 600;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview ul, #preview ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+
+        #preview li {
+            margin-bottom: 0.25em;
+        }
+
+        #preview a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview code {
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        #preview pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            padding-left: 16px;
+            margin: 1em 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 2em 0;
+        }
+
+        #preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .status-bar {
+            padding: 6px 16px;
+            background-color: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+
+            .divider {
+                width: 100%;
+                height: 4px;
+                cursor: row-resize;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .toolbar {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📝 Markdown Editor</h1>
+        <div class="toolbar">
+            <button class="btn-secondary" id="darkModeBtn" onclick="toggleDarkMode()">
+                <span id="darkModeIcon">🌙</span>
+                <span id="darkModeText">Dark Mode</span>
+            </button>
+            <button class="btn-secondary" onclick="clearEditor()">
+                🗑️ Clear
+            </button>
+            <button class="btn-primary" onclick="exportHTML()">
+                📄 Export HTML
+            </button>
+        </div>
+    </header>
+
+    <div class="editor-container">
+        <div class="pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="editor" placeholder="Write your markdown here..."></textarea>
+        </div>
+        <div class="divider" id="divider"></div>
+        <div class="pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="charCount">0 characters</span>
+        <span id="wordCount">0 words</span>
+        <span id="lineCount">0 lines</span>
+        <span id="saveStatus">Auto-saved</span>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const lineCount = document.getElementById('lineCount');
+        const saveStatus = document.getElementById('saveStatus');
+
+        // Sample markdown to start with
+        const sampleMarkdown = `# Welcome to Markdown Editor
+
+This is a **live preview** markdown editor. Start typing on the left to see the magic happen!
+
+## Features
+
+- **Bold** text with \`**text**\`
+- *Italic* text with \`*text*\`
+- Headers with \`#\`, \`##\`, \`###\`
+- Lists (ordered and unordered)
+- [Links](https://example.com)
+- Code blocks
+- Blockquotes
+
+## Code Example
+
+\`\`\`javascript
+function greet(name) {
+    console.log("Hello, " + name + "!");
+}
+greet("World");
+\`\`\`
+
+## Blockquote
+
+> "The best way to predict the future is to invent it."
+> — Alan Kay
+
+## Lists
+
+### Unordered List
+- First item
+- Second item
+- Third item
+
+### Ordered List
+1. First step
+2. Second step
+3. Third step
+
+---
+
+Happy writing! 🎉
+`;
+
+        // Initialize
+        function init() {
+            // Load from localStorage or use sample
+            const saved = localStorage.getItem('markdown-content');
+            editor.value = saved !== null ? saved : sampleMarkdown;
+
+            // Load dark mode preference
+            const darkMode = localStorage.getItem('dark-mode') === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+                updateDarkModeButton(true);
+            }
+
+            updatePreview();
+            updateStats();
+        }
+
+        // Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+
+            // Escape HTML
+            html = html.replace(/&/g, '&amp;')
+                       .replace(/</g, '&lt;')
+                       .replace(/>/g, '&gt;');
+
+            // Code blocks (must be processed first)
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                return '<pre><code class="language-' + lang + '">' + code.trim() + '</code></pre>';
+            });
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold and Italic
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+            // Strikethrough
+            html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Images
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+            // Horizontal rule
+            html = html.replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '<hr>');
+
+            // Blockquotes
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+            // Merge consecutive blockquotes
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+
+            // Unordered lists
+            html = html.replace(/^[\-\*\+] (.+)$/gm, '<li>$1</li>');
+
+            // Ordered lists
+            html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
+
+            // Wrap list items
+            html = wrapListItems(html);
+
+            // Paragraphs
+            html = html.split('\n\n').map(block => {
+                block = block.trim();
+                if (block === '') return '';
+                if (block.match(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr|div)/)) {
+                    return block;
+                }
+                // Don't wrap if it's just newlines with list/block elements
+                if (block.includes('<li>') || block.includes('<oli>') || 
+                    block.includes('<pre>') || block.includes('<blockquote>') ||
+                    block.includes('<h1>') || block.includes('<h2>') || 
+                    block.includes('<h3>') || block.includes('<h4>') ||
+                    block.includes('<h5>') || block.includes('<h6>') ||
+                    block.includes('<hr>') || block.includes('<ul>') || 
+                    block.includes('<ol>')) {
+                    return block;
+                }
+                return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+            }).join('\n');
+
+            return html;
+        }
+
+        function wrapListItems(html) {
+            // Wrap unordered list items
+            let inUl = false;
+            let inOl = false;
+            const lines = html.split('\n');
+            const result = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (line.startsWith('<li>')) {
+                    if (!inUl) {
+                        result.push('<ul>');
+                        inUl = true;
+                    }
+                    result.push(line);
+                } else if (line.startsWith('<oli>')) {
+                    if (!inOl) {
+                        result.push('<ol>');
+                        inOl = true;
+                    }
+                    result.push(line.replace('<oli>', '<li>').replace('</oli>', '</li>'));
+                } else {
+                    if (inUl) {
+                        result.push('</ul>');
+                        inUl = false;
+                    }
+                    if (inOl) {
+                        result.push('</ol>');
+                        inOl = false;
+                    }
+                    result.push(line);
+                }
+            }
+
+            if (inUl) result.push('</ul>');
+            if (inOl) result.push('</ol>');
+
+            return result.join('\n');
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdown = editor.value;
+            preview.innerHTML = parseMarkdown(markdown);
+        }
+
+        // Update statistics
+        function updateStats() {
+            const text = editor.value;
+            charCount.textContent = text.length + ' characters';
+            wordCount.textContent = (text.trim() === '' ? 0 : text.trim().split(/\s+/).length) + ' words';
+            lineCount.textContent = text.split('\n').length + ' lines';
+        }
+
+        // Save to localStorage
+        let saveTimeout;
+        function saveContent() {
+            clearTimeout(saveTimeout);
+            saveStatus.textContent = 'Saving...';
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('markdown-content', editor.value);
+                saveStatus.textContent = 'Auto-saved ✓';
+            }, 500);
+        }
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark-mode', isDark);
+            updateDarkModeButton(isDark);
+        }
+
+        function updateDarkModeButton(isDark) {
+            document.getElementById('darkModeIcon').textContent = isDark ? '☀️' : '🌙';
+            document.getElementById('darkModeText').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        }
+
+        // Clear editor
+        function clearEditor() {
+            if (confirm('Are you sure you want to clear the editor?')) {
+                editor.value = '';
+                updatePreview();
+                updateStats();
+                saveContent();
+            }
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.7;
+            color: #333;
+        }
+        h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; }
+        h1 { border-bottom: 2px solid #eee; padding-bottom: 0.3em; }
+        h2 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        code { background: #f5f5f5; padding: 0.2em 0.4em; border-radius: 4px; }
+        pre { background: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #4a90d9; padding-left: 16px; color: #666; font-style: italic; }
+        a { color: #4a90d9; }
+        hr { border: none; border-top: 2px solid #eee; margin: 2em 0; }
+        img { max-width: 100%; }
+    </style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Resizable divider
+        const divider = document.getElementById('divider');
+        let isResizing = false;
+
+        divider.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.editor-container');
+            const containerRect = container.getBoundingClientRect();
+            const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+            
+            if (percentage > 20 && percentage < 80) {
+                const leftPane = container.children[0];
+                const rightPane = container.children[2];
+                leftPane.style.flex = `0 0 ${percentage}%`;
+                rightPane.style.flex = `0 0 ${100 - percentage}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+
+        // Event listeners
+        editor.addEventListener('input', () => {
+            updatePreview();
+            updateStats();
+            saveContent();
+        });
+
+        // Tab key support
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                updatePreview();
+                saveContent();
+            }
+        });
+
+        // Initialize the editor
+        init();
+    </script>
+</body>
+</html>

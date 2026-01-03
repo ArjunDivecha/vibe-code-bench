@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        h1 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            color: #2a5298;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+        
+        .question {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 600px) {
+            .options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .option {
+            background-color: #f0f7ff;
+            border: 2px solid #a0d8ff;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            text-align: left;
+        }
+        
+        .option:hover {
+            background-color: #d0ecff;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .option.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            animation: bounce 0.5s ease;
+        }
+        
+        .option.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .option.disabled {
+            pointer-events: none;
+        }
+        
+        .btn {
+            background-color: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            background-color: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .start-screen, .end-screen {
+            display: block;
+        }
+        
+        .quiz-screen {
+            display: none;
+        }
+        
+        .end-screen h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+        }
+        
+        .final-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+        
+        .score-message {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            color: #555;
+        }
+        
+        @keyframes bounce {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease forwards;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0;
+            z-index: -1;
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 25px;
+        }
+        
+        .correct-feedback {
+            color: #4CAF50;
+        }
+        
+        .incorrect-feedback {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="start-screen fade-in">
+            <h1>Quiz Challenge!</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 30px; color: #555;">
+                Test your knowledge with 10 fun trivia questions. Are you ready?
+            </p>
+            <button id="start-btn" class="btn">Begin Quiz</button>
+        </div>
+        
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="quiz-screen">
+            <div class="quiz-header">
+                <div>Question <span id="current-question">1</span> of 10</div>
+                <div>Score: <span id="score">0</span></div>
+            </div>
+            
+            <div class="progress-bar">
+                <div id="progress" class="progress"></div>
+            </div>
+            
+            <h2 id="question" class="question">What is the question?</h2>
+            
+            <div id="options" class="options"></div>
+            
+            <div id="feedback" class="feedback"></div>
+        </div>
+        
+        <!-- End Screen -->
+        <div id="end-screen" class="end-screen" style="display: none;">
+            <h2>Quiz Complete!</h2>
+            <div id="final-score" class="final-score">8/10</div>
+            <p id="score-message" class="score-message">Great job! You're a trivia master!</p>
+            <button id="restart-btn" class="btn">Play Again</button>
+        </div>
+    </div>
+    
+    <script>
+        // Quiz questions
+        const questions = [
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                correct: 1
+            },
+            {
+                question: "What is the largest mammal in the world?",
+                options: ["African Elephant", "Giraffe", "Blue Whale", "Hippopotamus"],
+                correct: 2
+            },
+            {
+                question: "In which year did the Titanic sink?",
+                options: ["1905", "1912", "1920", "1931"],
+                correct: 1
+            },
+            {
+                question: "What is the chemical symbol for gold?",
+                options: ["Go", "Gd", "Au", "Ag"],
+                correct: 2
+            },
+            {
+                question: "Which country is home to the kangaroo?",
+                options: ["New Zealand", "South Africa", "Australia", "Brazil"],
+                correct: 2
+            },
+            {
+                question: "Who painted the Mona Lisa?",
+                options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
+                correct: 2
+            },
+            {
+                question: "What is the capital of Japan?",
+                options: ["Beijing", "Seoul", "Bangkok", "Tokyo"],
+                correct: 3
+            },
+            {
+                question: "Which element has the atomic number 1?",
+                options: ["Helium", "Oxygen", "Hydrogen", "Carbon"],
+                correct: 2
+            },
+            {
+                question: "How many Harry Potter books are there?",
+                options: ["5", "6", "7", "8"],
+                correct: 2
+            },
+            {
+                question: "What is the largest organ in the human body?",
+                options: ["Liver", "Brain", "Skin", "Heart"],
+                correct: 2
+            }
+        ];
+        
+        // DOM elements
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const currentQuestionEl = document.getElementById('current-question');
+        const scoreEl = document.getElementById('score');
+        const progressEl = document.getElementById('progress');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const feedbackEl = document.getElementById('feedback');
+        const finalScoreEl = document.getElementById('final-score');
+        const scoreMessageEl = document.getElementById('score-message');
+        
+        // Quiz state
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hasAnswered = false;
+        
+        // Start quiz
+        startBtn.addEventListener('click', startQuiz);
+        restartBtn.addEventListener('click', startQuiz);
+        
+        function startQuiz() {
+            // Reset state
+            currentQuestionIndex = 0;
+            score = 0;
+            hasAnswered = false;
+            
+            // Update UI
+            scoreEl.textContent = score;
+            currentQuestionEl.textContent = currentQuestionIndex + 1;
+            
+            // Hide screens
+            startScreen.style.display = 'none';
+            quizScreen.style.display = 'none';
+            endScreen.style.display = 'none';
+            
+            // Show quiz screen
+            quizScreen.style.display = 'block';
+            
+            // Load first question
+            loadQuestion();
+            
+            // Reset progress bar
+            updateProgress();
+        }
+        
+        function loadQuestion() {
+            hasAnswered = false;
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'feedback';
+            
+            const currentQuestion = questions[currentQuestionIndex];
+            questionEl.textContent = currentQuestion.question;
+            currentQuestionEl.textContent = currentQuestionIndex + 1;
+            
+            // Clear previous options
+            optionsEl.innerHTML = '';
+            
+            // Create new options
+            currentQuestion.options.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.textContent = option;
+                optionEl.addEventListener('click', () => selectOption(optionEl, index));
+                optionsEl.appendChild(optionEl);
+            });
+            
+            // Update progress bar
+            updateProgress();
+            
+            // Add fade-in animation
+            questionEl.classList.remove('fade-in');
+            setTimeout(() => {
+                questionEl.classList.add('fade-in');
+            }, 10);
+        }
+        
+        function selectOption(optionEl, selectedOptionIndex) {
+            if (hasAnswered) return;
+            
+            hasAnswered = true;
+            const currentQuestion = questions[currentQuestionIndex];
+            const isCorrect = selectedOptionIndex === currentQuestion.correct;
+            
+            // Disable all options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.add('option-disabled');
+            });
+            
+            // Highlight correct and selected options
+            if (isCorrect) {
+                optionEl.classList.add('correct');
+                score++;
+                scoreEl.textContent = score;
+                feedbackEl.textContent = 'Correct!';
+                feedbackEl.className = 'feedback correct-feedback';
+            } else {
+                optionEl.classList.add('incorrect');
+                document.querySelectorAll('.option')[currentQuestion.correct].classList.add('correct');
+                feedbackEl.textContent = `Wrong! The correct answer is ${currentQuestion.options[currentQuestion.correct]}`;
+                feedbackEl.className = 'feedback incorrect-feedback';
+            }
+            
+            // Move to next question after a delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                
+                if (currentQuestionIndex < questions.length) {
+                    loadQuestion();
+                } else {
+                    showEndScreen();
+                }
+            }, 1500);
+        }
+        
+        function updateProgress() {
+            const progressPercent = (currentQuestionIndex / questions.length) * 100;
+            progressEl.style.width = `${progressPercent}%`;
+        }
+        
+        function showEndScreen() {
+            quizScreen.style.display = 'none';
+            endScreen.style.display = 'block';
+            
+            // Update final score
+            finalScoreEl.textContent = `${score}/${questions.length}`;
+            
+            // Set score message
+            let message = '';
+            if (score === questions.length) {
+                message = "Perfect score! You're a trivia genius!";
+                createConfetti();
+            } else if (score >= questions.length * 0.8) {
+                message = "Great job! You're a trivia master!";
+            } else if (score >= questions.length * 0.6) {
+                message = "Good work! You know your stuff!";
+            } else if (score >= questions.length * 0.4) {
+                message = "Not bad! Keep learning!";
+            } else {
+                message = "Keep practicing! You'll get better!";
+            }
+            
+            scoreMessageEl.textContent = message;
+        }
+        
+        function createConfetti() {
+            // Create confetti elements
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = Math.random() * 100 + 'vh';
+                confetti.style.backgroundColor = getRandomColor();
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                document.body.appendChild(confetti);
+                
+                // Animate confetti
+                const animation = confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(${Math.random() * 100 + 100}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 3000 + 2000,
+                    easing: 'cubic-bezier(0.2, 0.8, 0.7, 1.0)',
+                    delay: Math.random() * 500
+                });
+                
+                animation.onfinish = () => {
+                    confetti.remove();
+                };
+            }
+        }
+        
+        function getRandomColor() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+    </script>
+</body>
+</html>

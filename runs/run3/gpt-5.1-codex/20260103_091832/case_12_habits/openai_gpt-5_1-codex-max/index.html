@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Habit Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #22d3ee;
+      --accent-2: #a855f7;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(34,211,238,0.07), transparent 30%),
+                  radial-gradient(circle at 80% 0%, rgba(168,85,247,0.08), transparent 26%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 32px 16px 12px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: 0.5px;
+    }
+    header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    }
+    form.add-habit {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    form.add-habit input[type="text"] {
+      flex: 1 1 240px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      font-size: 14px;
+    }
+    form.add-habit button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      color: #0b1220;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(168,85,247,0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    form.add-habit button:hover { transform: translateY(-1px); }
+    form.add-habit button:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(168,85,247,0.25); }
+
+    .scroll-wrap {
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 170px 80px 120px repeat(30, minmax(28px, 1fr));
+      gap: 6px;
+      align-items: center;
+      min-width: 900px;
+    }
+    .header-row {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .habit-row {
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(34,211,238,0.02));
+    }
+
+    .habit-name {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f8fafc;
+    }
+    .chip {
+      padding: 4px 8px;
+      background: rgba(34,211,238,0.12);
+      border: 1px solid rgba(34,211,238,0.18);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .streak {
+      color: var(--success);
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .completion {
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .day-header, .day-cell {
+      text-align: center;
+      font-size: 11px;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,0.02);
+      color: var(--muted);
+    }
+    .day-header {
+      border-color: rgba(255,255,255,0.03);
+      background: rgba(255,255,255,0.02);
+    }
+    .day-cell {
+      cursor: pointer;
+      transition: transform 0.05s ease, border-color 0.05s ease, background 0.1s ease;
+    }
+    .day-cell:hover {
+      border-color: rgba(34,211,238,0.25);
+      transform: translateY(-1px);
+    }
+    .day-cell.completed {
+      background: rgba(16,185,129,0.18);
+      border-color: rgba(16,185,129,0.35);
+      color: #d1fae5;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 1px rgba(16,185,129,0.22);
+    }
+    .day-cell.today {
+      border-color: rgba(168,85,247,0.4);
+      box-shadow: 0 0 0 1px rgba(168,85,247,0.22);
+    }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 28px 16px 16px;
+    }
+    .actions {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .delete-btn {
+      background: rgba(239,68,68,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.22);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .summary .pill {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      font-weight: 700;
+    }
+    .pill .value {
+      font-size: 18px;
+      color: #fff;
+    }
+    .pill .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; }
+    .tooltip {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    @media (max-width: 700px) {
+      header h1 { font-size: 26px; }
+      .grid { min-width: 820px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Habit Tracker</h1>
+    <p>Build streaks, stay consistent, and celebrate the tiny wins.</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <form class="add-habit" id="addHabitForm">
+        <input type="text" id="habitInput" placeholder="Add a habit (e.g., Exercise, Read, Meditate)" required />
+        <button type="submit">Add Habit</button>
+      </form>
+
+      <div class="summary" id="summary"></div>
+      <div class="tooltip" id="dateRange"></div>
+
+      <div class="scroll-wrap">
+        <div class="grid header-row" id="dateHeader"></div>
+        <div id="habitsContainer"></div>
+      </div>
+
+      <div class="empty" id="emptyState" style="display:none;">
+        No habits yet. Start by adding one above!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'habitTrackerData_v1';
+    const state = loadState();
+    const dates = buildDateSeries();
+
+    const addForm = document.getElementById('addHabitForm');
+    const habitInput = document.getElementById('habitInput');
+    const dateHeaderEl = document.getElementById('dateHeader');
+    const containerEl = document.getElementById('habitsContainer');
+    const emptyStateEl = document.getElementById('emptyState');
+    const summaryEl = document.getElementById('summary');
+    const dateRangeEl = document.getElementById('dateRange');
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { console.warn('Resetting storage', e); }
+      return { habits: [], records: {} };
+    }
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    function buildDateSeries() {
+      const arr = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setHours(0,0,0,0);
+        d.setDate(d.getDate() - i);
+        arr.push(d);
+      }
+      return arr;
+    }
+    function keyForDate(d) {
+      return d.toISOString().slice(0,10);
+    }
+    function formatDateShort(d) {
+      const opts = { month: 'short', day: 'numeric' };
+      return d.toLocaleDateString(undefined, opts);
+    }
+    function renderDateHeader() {
+      dateHeaderEl.innerHTML = '';
+      const labels = ['Habit', 'Streak', 'Complete'];
+      labels.forEach(txt => {
+        const div = document.createElement('div');
+        div.textContent = txt;
+        dateHeaderEl.appendChild(div);
+      });
+      dates.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'day-header';
+        const dow = d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0,2);
+        div.textContent = dow + ' ' + d.getDate();
+        if (keyForDate(d) === keyForDate(new Date())) {
+          div.style.color = '#fff';
+          div.style.fontWeight = '800';
+        }
+        dateHeaderEl.appendChild(div);
+      });
+    }
+
+    function computeStats() {
+      const todayKey = keyForDate(new Date());
+      let totalChecks = 0;
+      let totalPossible = state.habits.length * dates.length;
+      let todayDone = 0;
+      state.habits.forEach(h => {
+        const rec = state.records[h.id] || {};
+        if (rec[todayKey]) todayDone++;
+        dates.forEach(d => { if (rec[keyForDate(d)]) totalChecks++; });
+      });
+      const pct = totalPossible ? Math.round((totalChecks/totalPossible)*100) : 0;
+      return { totalChecks, totalPossible, pct, todayDone };
+    }
+
+    function renderSummary() {
+      const { pct, todayDone } = computeStats();
+      summaryEl.innerHTML = `
+        <div class="pill"><div class="label">Overall Completion</div><div class="value">${pct}%</div></div>
+        <div class="pill"><div class="label">Today's Wins</div><div class="value">${todayDone}/${state.habits.length || 0}</div></div>
+      `;
+      const start = dates[0];
+      const end = dates[dates.length-1];
+      dateRangeEl.textContent = `Tracking last 30 days: ${formatDateShort(start)} - ${formatDateShort(end)} (today)`;
+    }
+
+    function getStreak(habitId) {
+      const rec = state.records[habitId] || {};
+      let streak = 0;
+      for (let i = dates.length - 1; i >= 0; i--) {
+        const k = keyForDate(dates[i]);
+        if (rec[k]) streak++;
+        else break;
+      }
+      return streak;
+    }
+
+    function renderHabits() {
+      containerEl.innerHTML = '';
+      emptyStateEl.style.display = state.habits.length ? 'none' : 'block';
+      state.habits.forEach(habit => {
+        const row = document.createElement('div');
+        row.className = 'grid habit-row';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'habit-name';
+        nameDiv.innerHTML = `<span>${habit.name}</span>`;
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Remove';
+        deleteBtn.onclick = () => {
+          if (confirm(`Delete habit "${habit.name}"?`)) {
+            delete state.records[habit.id];
+            state.habits = state.habits.filter(h => h.id !== habit.id);
+            saveState(); renderAll();
+          }
+        };
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        actions.appendChild(deleteBtn);
+        nameDiv.appendChild(actions);
+
+        const streakDiv = document.createElement('div');
+        streakDiv.className = 'streak';
+        streakDiv.textContent = getStreak(habit.id) + ' 🔥';
+
+        const completionDiv = document.createElement('div');
+        completionDiv.className = 'completion';
+        const rec = state.records[habit.id] || {};
+        const count = dates.reduce((acc,d)=>acc+(rec[keyForDate(d)]?1:0),0);
+        const pct = Math.round((count / dates.length) * 100);
+        completionDiv.textContent = `${pct}%`;
+
+        row.appendChild(nameDiv);
+        row.appendChild(streakDiv);
+        row.appendChild(completionDiv);
+
+        dates.forEach(d => {
+          const k = keyForDate(d);
+          const btn = document.createElement('div');
+          btn.className = 'day-cell';
+          if (rec[k]) btn.classList.add('completed');
+          if (k === keyForDate(new Date())) btn.classList.add('today');
+          btn.dataset.habit = habit.id;
+          btn.dataset.date = k;
+          btn.title = `${habit.name} on ${formatDateShort(d)}`;
+          btn.textContent = rec[k] ? '✓' : '';
+          btn.onclick = () => toggleCompletion(habit.id, k);
+          row.appendChild(btn);
+        });
+
+        containerEl.appendChild(row);
+      });
+    }
+
+    function toggleCompletion(habitId, dateKey) {
+      const rec = state.records[habitId] || {};
+      if (rec[dateKey]) {
+        delete rec[dateKey];
+      } else {
+        rec[dateKey] = true;
+      }
+      state.records[habitId] = rec;
+      saveState();
+      renderAll();
+    }
+
+    addForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = habitInput.value.trim();
+      if (!name) return;
+      const id = 'h_' + Date.now();
+      state.habits.push({ id, name });
+      state.records[id] = {};
+      saveState();
+      habitInput.value = '';
+      renderAll();
+    });
+
+    function renderAll() {
+      renderDateHeader();
+      renderHabits();
+      renderSummary();
+    }
+
+    // Seed example habits if none present
+    if (!state.habits.length) {
+      state.habits = [
+        { id: 'h_seed1', name: 'Exercise' },
+        { id: 'h_seed2', name: 'Read' },
+        { id: 'h_seed3', name: 'Meditate' },
+      ];
+      state.records = {};
+      saveState();
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>

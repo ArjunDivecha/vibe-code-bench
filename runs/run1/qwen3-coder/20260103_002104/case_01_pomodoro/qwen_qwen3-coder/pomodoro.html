@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            padding: 20px;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .session-display {
+            font-size: 1.5rem;
+            color: #d32f2f;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #333;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .start-btn {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .pause-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .reset-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .tomato-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #d32f2f;
+        }
+
+        .progress-container {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #d32f2f;
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .timer-display {
+                font-size: 3.5rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tomato-icon">🍅</div>
+        <h1>Pomodoro Timer</h1>
+        
+        <div class="session-display" id="sessionDisplay">Work 1</div>
+        
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn">Start</button>
+            <button class="pause-btn" id="pauseBtn">Pause</button>
+            <button class="reset-btn" id="resetBtn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Timer variables
+        let workTime = 25 * 60; // 25 minutes in seconds
+        let breakTime = 5 * 60; // 5 minutes in seconds
+        let currentTime = workTime;
+        let isRunning = false;
+        let isWorkSession = true;
+        let sessionCount = 1;
+        let timerInterval = null;
+        
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionDisplay = document.getElementById('sessionDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressBar = document.getElementById('progressBar');
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+        
+        // Update the display
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(currentTime);
+            
+            // Update progress bar
+            const totalTime = isWorkSession ? workTime : breakTime;
+            const progressPercentage = (1 - (currentTime / totalTime)) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+        
+        // Update session display
+        function updateSessionDisplay() {
+            if (isWorkSession) {
+                sessionDisplay.textContent = `Work ${sessionCount}`;
+            } else {
+                sessionDisplay.textContent = `Break ${sessionCount}`;
+            }
+        }
+        
+        // Start the timer
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            timerInterval = setInterval(() => {
+                currentTime--;
+                updateDisplay();
+                
+                if (currentTime <= 0) {
+                    // Play beep sound
+                    beep();
+                    
+                    if (isWorkSession) {
+                        // Switch to break
+                        isWorkSession = false;
+                        currentTime = breakTime;
+                    } else {
+                        // Switch to work and increment session count
+                        isWorkSession = true;
+                        sessionCount++;
+                        currentTime = workTime;
+                    }
+                    
+                    updateSessionDisplay();
+                }
+            }, 1000);
+        }
+        
+        // Pause the timer
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            clearInterval(timerInterval);
+        }
+        
+        // Reset the timer
+        function resetTimer() {
+            pauseTimer();
+            isWorkSession = true;
+            sessionCount = 1;
+            currentTime = workTime;
+            updateDisplay();
+            updateSessionDisplay();
+            progressBar.style.width = '0%';
+        }
+        
+        // Beep sound function
+        function beep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+            }, 300);
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        // Initialize
+        updateDisplay();
+        updateSessionDisplay();
+    </script>
+</body>
+</html>

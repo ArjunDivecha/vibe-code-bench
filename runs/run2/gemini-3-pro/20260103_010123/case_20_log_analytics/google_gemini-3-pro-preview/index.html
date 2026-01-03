@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Analytics Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-color: #e94560;
+            --text-secondary: #a2a2a2;
+            --accent: #0f3460;
+            --info: #3498db;
+            --warn: #f1c40f;
+            --error: #e74c3c;
+            --critical: #8e44ad;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2, h3 { color: #fff; margin-top: 0; }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .full-width { grid-column: 1 / -1; }
+
+        /* Charts */
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Pie Chart using Conic Gradient */
+        .pie-chart {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(var(--info) 0% 25%, var(--warn) 25% 50%, var(--error) 50% 75%, var(--critical) 75% 100%);
+            position: relative;
+        }
+        .pie-legend {
+            margin-left: 20px;
+            font-size: 0.9em;
+        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; }
+        .color-box { width: 12px; height: 12px; margin-right: 8px; border-radius: 2px; }
+
+        /* Bar Chart SVG */
+        svg { width: 100%; height: 100%; }
+        .bar { fill: var(--error); transition: height 0.3s; }
+        .bar:hover { fill: #c0392b; }
+        .axis { stroke: var(--text-secondary); stroke-width: 1; }
+        .label { fill: var(--text-secondary); font-size: 10px; }
+
+        /* Table */
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        input, select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
+            background: var(--bg-color);
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        th { background-color: var(--accent); }
+        tr:hover { background-color: rgba(255,255,255,0.05); }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .badge-INFO { background-color: rgba(52, 152, 219, 0.2); color: var(--info); }
+        .badge-WARN { background-color: rgba(241, 196, 15, 0.2); color: var(--warn); }
+        .badge-ERROR { background-color: rgba(231, 76, 60, 0.2); color: var(--error); }
+        .badge-CRITICAL { background-color: rgba(142, 68, 173, 0.2); color: var(--critical); }
+
+        /* Top Errors List */
+        ul.error-list { list-style: none; padding: 0; }
+        ul.error-list li {
+            padding: 10px;
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+        }
+        ul.error-list li span.count {
+            background: var(--error);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card full-width">
+            <h1>Server Log Analytics</h1>
+            <p style="color: var(--text-secondary)">Dashboard for server.log</p>
+        </div>
+
+        <!-- Pie Chart -->
+        <div class="card">
+            <h2>Log Level Distribution</h2>
+            <div class="chart-container" id="pieContainer">
+                <div class="pie-chart" id="pieChart"></div>
+                <div class="pie-legend" id="pieLegend"></div>
+            </div>
+        </div>
+
+        <!-- Top Errors -->
+        <div class="card">
+            <h2>Most Common Errors</h2>
+            <ul class="error-list" id="topErrorsList">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card full-width">
+            <h2>Errors per Hour (Timeline)</h2>
+            <div class="chart-container" id="timelineChart">
+                <!-- SVG injected via JS -->
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card full-width">
+            <h2>Log Inspector</h2>
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search critical errors..." onkeyup="filterTable()">
+                <select id="levelFilter" onchange="filterTable()">
+                    <option value="ALL">All Levels</option>
+                    <option value="CRITICAL">Critical (Alert)</option>
+                    <option value="ERROR">Error</option>
+                    <option value="WARN">Warning</option>
+                    <option value="INFO">Info</option>
+                </select>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table id="logTable">
+                    <thead>
+                        <tr>
+                            <th width="180">Timestamp</th>
+                            <th width="100">Level</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COLORS = {
+            INFO: '#3498db',
+            WARN: '#f1c40f',
+            ERROR: '#e74c3c',
+            CRITICAL: '#8e44ad'
+        };
+
+        let allLogs = [];
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                allLogs = data.all_logs;
+                renderPie(data.level_counts);
+                renderTimeline(data.errors_timeline);
+                renderTopErrors(data.top_errors);
+                renderTable(allLogs);
+            } catch (e) {
+                console.error("Failed to fetch data", e);
+            }
+        }
+
+        function renderPie(counts) {
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            let gradientStr = [];
+            let currentDeg = 0;
+
+            const legendEl = document.getElementById('pieLegend');
+            legendEl.innerHTML = '';
+
+            for (const [level, count] of Object.entries(counts)) {
+                if (!COLORS[level]) continue;
+                const pct = (count / total) * 100;
+                const deg = (count / total) * 360;
+                
+                gradientStr.push(`${COLORS[level]} ${currentDeg}deg ${currentDeg + deg}deg`);
+                currentDeg += deg;
+
+                // Legend
+                legendEl.innerHTML += `
+                    <div class="legend-item">
+                        <div class="color-box" style="background: ${COLORS[level]}"></div>
+                        <span>${level}: ${Math.round(pct)}% (${count})</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('pieChart').style.background = `conic-gradient(${gradientStr.join(', ')})`;
+        }
+
+        function renderTimeline(timeline) {
+            const container = document.getElementById('timelineChart');
+            if (!timeline.length) {
+                container.innerHTML = "No error data available.";
+                return;
+            }
+
+            const maxVal = Math.max(...timeline.map(t => t.count));
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const barWidth = (width / timeline.length) - 2;
+            
+            let svgHtml = `<svg viewBox="0 0 ${width} ${height}">`;
+            
+            // X-Axis line
+            svgHtml += `<line x1="0" y1="${height-20}" x2="${width}" y2="${height-20}" class="axis" />`;
+
+            timeline.forEach((item, index) => {
+                const x = index * (width / timeline.length);
+                const barH = (item.count / maxVal) * (height - 40); // Leave space for labels
+                const y = (height - 20) - barH;
+                
+                // Bar
+                svgHtml += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" class="bar" fill="${COLORS.ERROR}">
+                    <title>${item.hour}: ${item.count} errors</title>
+                </rect>`;
+                
+                // Label (every Nth to avoid clutter)
+                if (index % Math.ceil(timeline.length / 10) === 0) {
+                     // Parse hour for short label
+                     const timeLabel = item.hour.split(' ')[1];
+                     svgHtml += `<text x="${x}" y="${height-5}" class="label">${timeLabel}</text>`;
+                }
+            });
+
+            svgHtml += `</svg>`;
+            container.innerHTML = svgHtml;
+        }
+
+        function renderTopErrors(errors) {
+            const list = document.getElementById('topErrorsList');
+            list.innerHTML = errors.map(e => `
+                <li>
+                    <span>${e.message}</span>
+                    <span class="count">${e.count}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderTable(logs) {
+            const tbody = document.getElementById('logTableBody');
+            // Limit initial render to 500 to prevent DOM freeze if massive, 
+            // but we filter anyway.
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td>${log.timestamp}</td>
+                    <td><span class="badge badge-${log.level}">${log.level}</span></td>
+                    <td>${log.message}</td>
+                </tr>
+            `).join('');
+            
+            // Apply initial filter
+            filterTable();
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const level = document.getElementById('levelFilter').value;
+            const rows = document.querySelectorAll('#logTableBody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const rowLevel = row.querySelector('.badge').innerText;
+                
+                const matchesSearch = text.includes(search);
+                const matchesLevel = (level === 'ALL') || (rowLevel === level);
+
+                row.style.display = (matchesSearch && matchesLevel) ? '' : 'none';
+            });
+        }
+
+        // Initialize
+        fetchData();
+        
+        // Auto-refresh every 30s
+        setInterval(fetchData, 30000);
+
+    </script>
+</body>
+</html>

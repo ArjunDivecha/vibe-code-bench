@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <style>
+        /* CSS goes here */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .glassmorphism {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .sidebar {
+            width: 200px;
+            height: 100vh;
+            background-color: #333;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: all 0.3s ease;
+        }
+        .sidebar.active {
+            width: 60px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+        }
+        .sidebar li:hover {
+            background-color: #555;
+        }
+        .sidebar li.active {
+            background-color: #444;
+        }
+        .main-content {
+            margin-left: 200px;
+            padding: 20px;
+        }
+        .widget {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .widget:hover {
+            transform: scale(1.01);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar .progress {
+            height: 20px;
+            background-color: #4caf50;
+            transition: width 0.3s ease;
+        }
+        .timeline {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .timeline li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .timeline li:last-child {
+            margin-bottom: 0;
+        }
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .task-list li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        .task-list li:last-child {
+            margin-bottom: 0;
+        }
+        .new-project-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .new-project-modal form {
+            margin-bottom: 20px;
+        }
+        .new-project-modal form input[type="text"] {
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            width: 100%;
+        }
+        .new-project-modal form button[type="submit"] {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .new-project-modal form button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <ul>
+            <li class="active"><a href="#home">Home</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#settings">Settings</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div class="widget" id="home">
+            <h2>Home</h2>
+            <p>Welcome to the Project Control Center!</p>
+        </div>
+        <div class="widget" id="projects" style="display: none;">
+            <h2>Projects</h2>
+            <ul class="progress-bars">
+                <li>
+                    <span>Project 1</span>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 50%"></div>
+                    </div>
+                </li>
+                <li>
+                    <span>Project 2</span>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 75%"></div>
+                    </div>
+                </li>
+                <li>
+                    <span>Project 3</span>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 25%"></div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="widget" id="settings" style="display: none;">
+            <h2>Settings</h2>
+            <p>Configure your settings here.</p>
+        </div>
+        <button class="new-project-button">New Project</button>
+        <div class="new-project-modal" style="display: none;">
+            <form>
+                <input type="text" placeholder="Project Name">
+                <button type="submit">Create Project</button>
+            </form>
+        </div>
+        <div class="quick-links">
+            <a href="#" class="icon-link"><i class="fas fa-plus"></i></a>
+            <a href="#" class="icon-link"><i class="fas fa-search"></i></a>
+            <a href="#" class="icon-link"><i class="fas fa-cog"></i></a>
+        </div>
+        <div class="task-list">
+            <li><input type="checkbox"> Task 1</li>
+            <li><input type="checkbox"> Task 2</li>
+            <li><input type="checkbox"> Task 3</li>
+        </div>
+        <div class="timeline">
+            <li>
+                <span>2022-01-01</span>
+                <p>Project 1 started</p>
+            </li>
+            <li>
+                <span>2022-01-15</span>
+                <p>Project 2 milestone reached</p>
+            </li>
+            <li>
+                <span>2022-02-01</span>
+                <p>Project 3 completed</p>
+            </li>
+        </div>
+    </div>
+    <script>
+        // JavaScript code goes here
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const newProjectButton = document.querySelector('.new-project-button');
+        const newProjectModal = document.querySelector('.new-project-modal');
+        const projectWidgets = document.querySelectorAll('.widget');
+
+        sidebar.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                const link = e.target;
+                const target = link.getAttribute('href');
+                if (target === '#home') {
+                    projectWidgets.forEach((widget) => {
+                        widget.style.display = 'none';
+                    });
+                    document.getElementById('home').style.display = 'block';
+                } else if (target === '#projects') {
+                    projectWidgets.forEach((widget) => {
+                        widget.style.display = 'none';
+                    });
+                    document.getElementById('projects').style.display = 'block';
+                } else if (target === '#settings') {
+                    projectWidgets.forEach((widget) => {
+                        widget.style.display = 'none';
+                    });
+                    document.getElementById('settings').style.display = 'block';
+                }
+                sidebar.classList.toggle('active');
+                mainContent.style.marginLeft = sidebar.classList.contains('active') ? '60px' : '200px';
+            }
+        });
+
+        newProjectButton.addEventListener('click', () => {
+            newProjectModal.style.display = 'block';
+        });
+
+        newProjectModal.addEventListener('click', (e) => {
+            if (e.target === newProjectModal) {
+                newProjectModal.style.display = 'none';
+            }
+        });
+
+        const tasks = [];
+        const taskList = document.querySelector('.task-list');
+        const localStorageTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        localStorageTasks.forEach((task) => {
+            const newTask = document.createElement('li');
+            newTask.innerHTML = `<input type="checkbox"> ${task}`;
+            taskList.appendChild(newTask);
+            tasks.push(newTask);
+        });
+
+        taskList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'INPUT') {
+                e.target.parentNode.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+                localStorage.setItem('tasks', JSON.stringify(tasks.map((task) => task.textContent)));
+            }
+        });
+    </script>
+</body>
+</html>

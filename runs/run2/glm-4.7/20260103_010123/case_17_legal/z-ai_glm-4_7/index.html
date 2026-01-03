@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1a2332;
+            --bg-hover: #243042;
+            --border-color: #2d3b4e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-blue-dark: #2563eb;
+            --accent-gold: #f59e0b;
+            --highlight-name: #fef3c7;
+            --highlight-date: #dbeafe;
+            --highlight-entity: #d1fae5;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 1.5rem;
+            min-height: calc(100vh - 140px);
+        }
+
+        /* Results List */
+        .results-list {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .results-items {
+            max-height: calc(100vh - 220px);
+            overflow-y: auto;
+        }
+
+        .results-items::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .results-items::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        .results-items::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .case-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .case-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .case-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .case-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .case-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .case-preview {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Detail View */
+        .detail-view {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            padding: 4rem;
+            text-align: center;
+        }
+
+        .detail-placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .detail-content.active {
+            display: flex;
+        }
+
+        .detail-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .detail-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-citation {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: 'Georgia', serif;
+            font-style: italic;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .tab {
+            padding: 0.875rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Summary Tab */
+        .summary-content {
+            padding: 1.5rem;
+        }
+
+        .summary-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .summary-text {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-points li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .key-points li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+        }
+
+        /* Full Text Tab */
+        .full-text-content {
+            padding: 1.5rem;
+            font-family: 'Georgia', serif;
+            line-height: 1.8;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .full-text-content p {
+            margin-bottom: 1rem;
+        }
+
+        .highlight-name {
+            background: rgba(254, 243, 199, 0.3);
+            border-bottom: 2px solid var(--highlight-name);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .highlight-date {
+            background: rgba(219, 234, 254, 0.3);
+            border-bottom: 2px solid var(--highlight-date);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .highlight-entity {
+            background: rgba(209, 250, 229, 0.3);
+            border-bottom: 2px solid var(--highlight-entity);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.625rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .notes-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notes-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .notes-close:hover {
+            color: var(--text-primary);
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .note-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .note-case {
+            font-size: 0.75rem;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .note-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .note-date {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .note-item {
+            position: relative;
+        }
+
+        .note-item:hover .note-delete {
+            opacity: 1;
+        }
+
+        .note-delete:hover {
+            color: #ef4444;
+        }
+
+        .notes-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+        }
+
+        .add-note-form {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .note-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 0.75rem;
+        }
+
+        .note-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 150;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Entity Legend */
+        .entity-legend {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 1.5rem;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-name .legend-color {
+            background: var(--highlight-name);
+        }
+
+        .legend-date .legend-color {
+            background: var(--highlight-date);
+        }
+
+        .legend-entity .legend-color {
+            background: var(--highlight-entity);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+
+            .results-list {
+                max-height: 300px;
+            }
+
+            .detail-view {
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+            }
+
+            .search-container {
+                order: 3;
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .stats {
+                display: none;
+            }
+
+            main {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">⚖</div>
+                <span class="logo-text">Vibe-Law</span>
+            </div>
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search case law by title, court, or keyword...">
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span>📚</span>
+                    <span id="totalCases">15 Cases</span>
+                </div>
+                <div class="stat-item">
+                    <span>📝</span>
+                    <span id="notesCount">0 Notes</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="results-section">
+            <div class="results-list">
+                <div class="results-header">
+                    <h3 style="font-size: 0.9rem; color: var(--text-primary);">Search Results</h3>
+                    <span class="results-count" id="resultsCount">Showing 15 cases</span>
+                </div>
+                <div class="results-items" id="resultsList">
+                    <!-- Cases will be rendered here -->
+                </div>
+            </div>
+
+            <div class="detail-view" id="detailView">
+                <div class="detail-placeholder" id="detailPlaceholder">
+                    <div class="detail-placeholder-icon">⚖️</div>
+                    <h3>Select a Case</h3>
+                    <p style="margin-top: 0.5rem; color: var(--text-muted);">Choose a case from the list to view details, summary, and full text.</p>
+                </div>
+                <div class="detail-content" id="detailContent">
+                    <div class="detail-header">
+                        <h2 class="detail-title" id="detailTitle"></h2>
+                        <p class="detail-citation" id="detailCitation"></p>
+                    </div>
+                    <div class="tabs">
+                        <button class="tab active" data-tab="summary">Summary</button>
+                        <button class="tab" data-tab="fulltext">Full Text</button>
+                    </div>
+                    <div class="tab-content active" id="tab-summary">
+                        <div class="summary-content" id="summaryContent"></div>
+                    </div>
+                    <div class="tab-content" id="tab-fulltext">
+                        <div class="full-text-content" id="fullTextContent"></div>
+                        <div class="entity-legend" id="entityLegend" style="display: none;">
+                            <div class="legend-item legend-name">
+                                <div class="legend-color"></div>
+                                <span>Names</span>
+                            </div>
+                            <div class="legend-item legend-date">
+                                <div class="legend-color"></div>
+                                <span>Dates</span>
+                            </div>
+                            <div class="legend-item legend-entity">
+                                <div class="legend-color"></div>
+                                <span>Entities</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="extractEntitiesBtn">
+                            <span>✨</span> Extract Entities
+                        </button>
+                        <button class="btn btn-secondary" id="addNoteBtn">
+                            <span>📝</span> Add Note
+                        </button>
+                        <button class="btn btn-secondary" id="toggleNotesBtn">
+                            <span>📋</span> View Notes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="notes-sidebar" id="notesSidebar">
+        <div class="notes-header">
+            <h3 class="notes-title">📋 My Notes</h3>
+            <button class="notes-close" id="notesClose">×</button>
+        </div>
+        <div class="notes-list" id="notesList">
+            <div class="notes-empty">No notes saved yet. Select a case and add notes to get started.</div>
+        </div>
+        <div class="add-note-form" id="addNoteForm" style="display: none;">
+            <textarea class="note-input" id="noteInput" placeholder="Enter your note about this case..."></textarea>
+            <button class="btn btn-primary" id="saveNoteBtn" style="width: 100%;">Save Note</button>
+        </div>
+    </div>
+
+    <script>
+        // Mock Legal Cases Data
+        const cases = [
+            {
+                id: 1,
+                title: "Miranda v. Arizona",
+                court: "Supreme Court of the United States",
+                date: "June 13, 1966",
+                citation: "384 U.S. 436",
+                preview: "The Supreme Court held that the Fifth Amendment's protection against self-incrimination requires law enforcement officials to advise a suspect of their rights before interrogation begins.",
+                summary: {
+                    holding: "The Court held that the prosecution may not use statements stemming from custodial interrogation unless it demonstrates the use of procedural safeguards effective to secure the privilege against self-incrimination.",
+                    keyFacts: "Ernesto Miranda was arrested and interrogated by police without being informed of his right to counsel or his right against self-incrimination. He signed a written confession that was used at trial.",
+                    ruling: "5-4 decision in favor of Miranda. Chief Justice Earl Warren delivered the majority opinion.",
+                    impact: "Established the 'Miranda Rights' that must be read to suspects upon arrest."
+                },
+                fullText: `IN THE SUPREME COURT OF THE UNITED STATES
+
+ERNESTO ARTURO MIRANDA, PETITIONER
+v.
+ARIZONA
+
+ON WRIT OF CERTIORARI TO THE SUPREME COURT OF ARIZONA
+
+June 13, 1966
+
+Mr. Chief Justice WARREN delivered the opinion of the Court.
+
+The cases before us raise questions which go to the roots of our concepts of American criminal jurisprudence: the restraints society must observe consistent with the Federal Constitution in prosecuting individuals for crime. More specifically, we deal with the admissibility of statements obtained from an individual who is subjected to custodial police interrogation and the necessity for procedures which assure that the individual is accorded his privilege under the Fifth Amendment to the United States Constitution not to be compelled to incriminate himself.
+
+We dealt with certain phases of this problem recently in Escobedo v. Illinois, 378 U. S. 478 (1964). In Escobedo, as well as in the other cases to be reviewed in this opinion, the defendant was questioned by police officers, detectives, or a prosecuting attorney in a room in which he was cut off from the outside world. In none of these cases was the defendant given a full and effective warning of his rights at the outset of the interrogation process. In all the cases, the questioning elicited oral admissions and, in three of them, signed statements that were admitted at trial.
+
+Chief Justice Warren, speaking for the Court in Escobedo, said: "It was at this point that our investigation of the case began to show the real nature of the problem. We learned that on the evening of January 30, 1960, while Escobedo was under arrest, he was arraigned and attempted to secure counsel. He was denied this request. After the arraignment, a police officer engaged Escobedo in conversation which the State concedes was an attempt to obtain information from Escobedo about the death of his brother-in-law. Escobedo's counsel arrived at the police station while Escobedo was being interrogated and was repeatedly refused permission to see or consult with his client."`
+            },
+            {
+                id: 2,
+                title: "Brown v. Board of Education",
+                court: "Supreme Court of the United States",
+                date: "May 17, 1954",
+                citation: "347 U.S. 483",
+                preview: "Landmark decision declaring state laws establishing separate public schools for black and white students to be unconstitutional.",
+                summary: {
+                    holding: "Separate educational facilities are inherently unequal and violate the Equal Protection Clause of the Fourteenth Amendment.",
+                    keyFacts: "Multiple cases from Kansas, South Carolina, Virginia, and Delaware were consolidated. Black children had been denied admission to public schools attended by white children under laws requiring or permitting segregation.",
+                    ruling: "9-0 unanimous decision. Chief Justice Earl Warren delivered the opinion.",
+                    impact: "Overturned Plessy v. Ferguson (1896) and initiated the desegregation of public schools nationwide."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+OLIVER BROWN, ET AL.
+v.
+BOARD OF EDUCATION OF TOPEKA, ET AL.
+
+APPEAL FROM THE UNITED STATES DISTRICT COURT FOR THE DISTRICT OF KANSAS
+
+May 17, 1954
+
+Mr. Chief Justice WARREN delivered the opinion of the Court.
+
+These cases come to us from the States of Kansas, South Carolina, Virginia, and Delaware. They are premised on different facts and different local conditions, but a common legal question justifies their consideration together in this consolidated opinion.
+
+In each of the cases, minors of the Negro race, through their legal representatives, seek the aid of the courts in obtaining admission to the public schools of their community on a nonsegregated basis. In each instance, they had been denied admission to schools attended by white children under laws requiring or permitting segregation according to race. This segregation was alleged to deprive the plaintiffs of the equal protection of the laws under the Fourteenth Amendment.
+
+In the Kansas case, Brown v. Board of Education, the plaintiffs are Negro children of elementary school age residing in Topeka. They brought this action in the United States District Court for the District of Kansas to enjoin enforcement of a Kansas statute which permits, but does not require, cities of more than 15,000 population to maintain separate school facilities for Negro and white students.
+
+The District Court found that segregation in public education has a detrimental effect upon Negro children, but denied relief on the ground that the Negro and white schools were substantially equal with respect to buildings, transportation, curricula, and educational qualifications of teachers.`
+            },
+            {
+                id: 3,
+                title: "Roe v. Wade",
+                court: "Supreme Court of the United States",
+                date: "January 22, 1973",
+                citation: "410 U.S. 113",
+                preview: "Landmark decision on the issue of abortion, ruling that the Constitution of the United States generally protected a pregnant woman's liberty to choose to have an abortion.",
+                summary: {
+                    holding: "The Constitution protects a pregnant woman's liberty to choose to have an abortion without excessive government restriction, balancing this right against the government's interests in protecting women's health and prenatal life.",
+                    keyFacts: "Jane Roe, a pseudonym for Norma McCorvey, challenged Texas criminal abortion laws which prohibited abortions except to save the mother's life.",
+                    ruling: "7-2 decision. Justice Harry Blackmun wrote the majority opinion.",
+                    impact: "Established the trimester framework for abortion regulation. Later overturned by Dobbs v. Jackson Women's Health Organization (2022)."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+JANE ROE, ET AL.
+v.
+HENRY WADE, DISTRICT ATTORNEY OF DALLAS COUNTY
+
+ON APPEAL FROM THE UNITED STATES DISTRICT COURT FOR THE NORTHERN DISTRICT OF TEXAS
+
+January 22, 1973
+
+Mr. Justice BLACKMUN delivered the opinion of the Court.
+
+This Texas federal appeal and its Georgia companion, Doe v. Bolton, present constitutional challenges to state criminal abortion legislation. The Texas statutes under attack here are typical of those that have been in effect in many States for approximately a century. The criminal prohibitions were enacted in the 19th Century and remained substantially unchanged until the latter part of the 20th Century.
+
+The principal thrust of appellant's attack on the Texas statutes is that they improperly invade a right, said to be possessed by the pregnant woman, to choose to terminate her pregnancy. Appellant would discover this right in the concept of personal "liberty" embodied in the Fourteenth Amendment's Due Process Clause; or in personal marital, familial, and sexual privacy said to be protected by the Bill of Rights or its penumbras; or among those rights reserved to the people by the Ninth Amendment.
+
+Before addressing this claim, we feel it desirable briefly to survey, in several aspects, the history of abortion, for such insight as that history may afford us, and then to examine the state purposes and interests behind the criminal abortion laws.`
+            },
+            {
+                id: 4,
+                title: "Marbury v. Madison",
+                court: "Supreme Court of the United States",
+                date: "February 24, 1803",
+                citation: "5 U.S. 137",
+                preview: "Foundational case establishing the principle of judicial review, giving the Supreme Court the power to declare laws unconstitutional.",
+                summary: {
+                    holding: "It is emphatically the province and duty of the judicial department to say what the law is. The Court has the authority to declare acts of Congress unconstitutional.",
+                    keyFacts: "William Marbury had been appointed as a justice of the peace by President Adams but his commission was not delivered before Jefferson took office. Madison, the new Secretary of State, refused to deliver it.",
+                    ruling: "Unanimous decision. Chief Justice John Marshall wrote the opinion.",
+                    impact: "Established judicial review as a fundamental power of the federal judiciary."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+WILLIAM MARBURY
+v.
+JAMES MADISON, Secretary of State of the United States
+
+February 24, 1803
+
+Mr. Chief Justice MARSHALL delivered the opinion of the Court.
+
+At the last term, on the affidavits then read and filed with the clerk, a rule was granted in this case, requiring the Secretary of State to show cause why a mandamus should not issue, directing him to deliver to William Marbury his commission as a justice of the peace for the county of Washington, in the District of Columbia.
+
+The cause of this delay was, that in the year 1800, an act was passed for the better organization of the judiciary of the United States. It vested in the President the power of appointing, in certain cases, officers of the courts of the United States. Under this act, commissions were signed by the President, and the seal of the United States affixed.
+
+William Marbury, since denominated as the plaintiff, was one of the persons appointed. His commission was signed by the President and sealed with the seal of the United States, but was never delivered to him. After the qualification of Mr. Jefferson as President, he directed Mr. Madison, his Secretary of State, not to deliver the commission.`
+            },
+            {
+                id: 5,
+                title: "Gideon v. Wainwright",
+                court: "Supreme Court of the United States",
+                date: "March 18, 1963",
+                citation: "372 U.S. 335",
+                preview: "Established that states are required under the Sixth Amendment to provide an attorney to defendants in criminal cases who cannot afford their own lawyers.",
+                summary: {
+                    holding: "The Sixth Amendment's guarantee of counsel is a fundamental right essential to a fair trial, applicable to the states through the Fourteenth Amendment.",
+                    keyFacts: "Clarence Earl Gideon was charged with breaking and entering. He requested an attorney but was denied because Florida only provided counsel for capital cases. He represented himself and was convicted.",
+                    ruling: "9-0 unanimous decision. Justice Hugo Black wrote the majority opinion.",
+                    impact: "Extended the right to counsel to all felony cases in state courts."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+CLARENCE EARL GIDEON
+v.
+LOUIS L. WAINWRIGHT, DIRECTOR, DIVISION OF CORRECTIONS
+
+ON CERTIORARI TO THE SUPREME COURT OF FLORIDA
+
+March 18, 1963
+
+Mr. Justice BLACK delivered the opinion of the Court.
+
+Petitioner was charged in a Florida State Court with having broken and entered a poolroom with intent to commit a misdemeanor. This offense is a felony under Florida law. Appearing in court without funds and without a lawyer, petitioner asked the Florida trial judge to appoint counsel for him. The judge denied the request on the ground that under Florida law the only time a defendant can be appointed counsel is when he is charged with a capital offense.
+
+Petitioner thereupon conducted his own defense without assistance of counsel. He was found guilty by a jury and the court sentenced him to five years in the state prison. Later, petitioner filed in the Florida Supreme Court this habeas corpus petition attacking his conviction on the ground that the trial court's refusal to appoint counsel for him denied him rights "guaranteed by the Constitution and the Bill of Rights by the United States Government."`
+            },
+            {
+                id: 6,
+                title: "Citizens United v. FEC",
+                court: "Supreme Court of the United States",
+                date: "January 21, 2010",
+                citation: "558 U.S. 310",
+                preview: "Landmark case concerning campaign finance, holding that the free speech clause of the First Amendment prohibits the government from restricting independent expenditures for political communications by corporations.",
+                summary: {
+                    holding: "Political speech does not lose First Amendment protection simply because its source is a corporation. The government may not suppress political speech on the basis of the speaker's corporate identity.",
+                    keyFacts: "Citizens United, a conservative nonprofit organization, sought to air a film critical of Hillary Clinton and to advertise the film during television broadcasts in the 2008 presidential election.",
+                    ruling: "5-4 decision. Justice Anthony Kennedy wrote the majority opinion.",
+                    impact: "Overturned portions of Bipartisan Campaign Reform Act and led to significant changes in campaign finance law."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+CITIZENS UNITED, APPELLANT
+v.
+FEDERAL ELECTION COMMISSION
+
+ON APPEAL FROM THE UNITED STATES DISTRICT COURT FOR THE DISTRICT OF COLUMBIA
+
+January 21, 2010
+
+Mr. Justice KENNEDY delivered the opinion of the Court.
+
+The Government may regulate corporate political speech through disclaimer and disclosure requirements, but it may not suppress that speech altogether. The Court has recognized that "the First Amendment applies fully and equally to both the for-profit and the not-for-profit segments of the community."
+
+The case concerns whether Congress may regulate, and if so to what extent, corporate expenditures for political speech. Bipartisan Campaign Reform Act of 2002 (BCRA) prohibits corporations and unions from using their general treasury funds to make independent expenditures for "electioneering communications" or for speech that expressly advocates the election or defeat of a candidate.
+
+This case began when Citizens United, a nonprofit corporation, released "Hillary: The Movie," a documentary critical of then-Senator Hillary Clinton. The organization wanted to air advertisements for the film and to make the movie available through video-on-demand within 30 days of the 2008 Democratic primaries.`
+            },
+            {
+                id: 7,
+                title: "United States v. Nixon",
+                court: "Supreme Court of the United States",
+                date: "July 24, 1974",
+                citation: "418 U.S. 683",
+                preview: "Unanimous ruling that President Nixon must comply with a subpoena for tape recordings, leading to his resignation.",
+                summary: {
+                    holding: "The President is not absolutely immune from judicial process and must comply with a properly issued subpoena, even for confidential communications.",
+                    keyFacts: "The Special Prosecutor subpoenaed tape recordings of conversations between President Nixon and his advisers. Nixon claimed executive privilege.",
+                    ruling: "8-0 unanimous decision (Justice Rehnquist recused himself). Chief Justice Warren Burger wrote the opinion.",
+                    impact: "Established limits on executive privilege and led directly to Nixon's resignation."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+UNITED STATES
+v.
+RICHARD M. NIXON, PRESIDENT OF THE UNITED STATES
+
+ON PETITION FOR A WRIT OF CERTIORARI BEFORE JUDGMENT TO THE UNITED STATES COURT OF APPEALS FOR THE DISTRICT OF COLUMBIA CIRCUIT
+
+July 24, 1974
+
+Mr. Chief Justice BURGER delivered the opinion of the Court.
+
+This case presents for review the denial of a motion, filed in the District Court on behalf of the President of the United States, in the course of a pending criminal prosecution, to quash a third-party subpoena duces tecum issued by the United States District Court for the District of Columbia, pursuant to Rule 17(c) of the Federal Rules of Criminal Procedure.
+
+The subpoena was served on the President's custodian of records, and it required the production of certain tape recordings and documents relating to precisely identified conversations and meetings between the President and others. The President moved to quash the subpoena on the ground that it was "unreasonable and oppressive," and that the materials sought were "privileged."
+
+The District Court denied the motion to quash, and the Court of Appeals affirmed. The President then sought certiorari before judgment in this Court, which we granted.`
+            },
+            {
+                id: 8,
+                title: "Obergefell v. Hodges",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2015",
+                citation: "576 U.S. 644",
+                preview: "Landmark civil rights case establishing that the fundamental right to marry is guaranteed to same-sex couples under the Due Process and Equal Protection Clauses of the Fourteenth Amendment.",
+                summary: {
+                    holding: "The Constitution grants same-sex couples the right to marry, requiring all states to issue marriage licenses to same-sex couples and to recognize same-sex marriages validly performed in other states.",
+                    keyFacts: "Multiple plaintiffs from Ohio, Michigan, Kentucky, and Tennessee challenged state bans on same-sex marriage and refusals to recognize same-sex marriages from other states.",
+                    ruling: "5-4 decision. Justice Anthony Kennedy wrote the majority opinion.",
+                    impact: "Legalized same-sex marriage nationwide in the United States."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+JAMES OBERGEFELL, ET AL.
+v.
+RICHARD HODGES, DIRECTOR, OHIO DEPARTMENT OF HEALTH, ET AL.
+
+ON WRIT OF CERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE SIXTH CIRCUIT
+
+June 26, 2015
+
+Mr. Justice KENNEDY delivered the opinion of the Court.
+
+The Constitution promises liberty to all within its reach, a liberty that includes certain specific rights that allow persons, within a lawful realm, to define and express their identity. The petitioners in these cases seek to find that liberty by marrying someone of the same sex and having their marriages deemed lawful on the same terms and conditions as marriages between persons of the opposite sex.
+
+These cases come from Michigan, Kentucky, Ohio, and Tennessee. They involve same-sex couples who sought to marry or have their marriages recognized in their home States. Each State's laws defined marriage as a union between one man and one woman. The petitioners argued that these laws violated the Fourteenth Amendment.
+
+The Court now holds that same-sex couples may exercise the fundamental right to marry. No longer may this liberty be denied to them. The right to personal choice regarding marriage is inherent in the concept of individual autonomy.`
+            },
+            {
+                id: 9,
+                title: "Bush v. Gore",
+                court: "Supreme Court of the United States",
+                date: "December 12, 2000",
+                citation: "531 U.S. 98",
+                preview: "The Supreme Court case that resolved the disputed 2000 presidential election, effectively ending the recount in Florida.",
+                summary: {
+                    holding: "The Florida Supreme Court's scheme for recounting ballots was unconstitutional, and no alternative recount method could be established within the time limit set by federal law.",
+                    keyFacts: "The election between George W. Bush and Al Gore hinged on Florida's electoral votes. The Florida Supreme Court ordered a manual recount of disputed ballots.",
+                    ruling: "5-4 decision. The per curiam opinion was issued, with various concurring and dissenting opinions.",
+                    impact: "Effectively decided the 2000 presidential election in favor of George W. Bush."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+GEORGE W. BUSH, ET AL.
+v.
+ALBERT GORE, JR., ET AL.
+
+ON CERTIORARI TO THE FLORIDA SUPREME COURT
+
+December 12, 2000
+
+Per Curiam.
+
+The petitioners, George W. Bush and Richard Cheney, filed a bill of complaint in the Supreme Court of Florida, pursuant to Fla. Stat. § 86.011 (2000), against the respondents, various Florida election officials, seeking a writ of mandamus to require the respondents to include in the certified results of the Florida presidential election certain disputed ballots that had not been counted.
+
+The Florida Supreme Court ordered that the manual recount of ballots from Miami-Dade County be included in the certified results. The petitioners sought review of this decision in the United States Supreme Court, arguing that the recount violated the Equal Protection Clause of the Fourteenth Amendment.
+
+The issue before this Court is whether the Florida Supreme Court's recount scheme violates the Equal Protection Clause. We conclude that it does.`
+            },
+            {
+                id: 10,
+                title: "Dred Scott v. Sandford",
+                court: "Supreme Court of the United States",
+                date: "March 6, 1857",
+                citation: "60 U.S. 393",
+                preview: "Notorious decision holding that African Americans could not be American citizens and therefore had no standing to sue in federal court.",
+                summary: {
+                    holding: "People of African descent, whether enslaved or free, could not be American citizens and therefore had no standing to sue in federal court. The Missouri Compromise was unconstitutional.",
+                    keyFacts: "Dred Scott, an enslaved man, sued for his freedom arguing that his residence in free territory made him free.",
+                    ruling: "7-2 decision. Chief Justice Roger Taney wrote the majority opinion.",
+                    impact: "One of the Court's most infamous decisions, contributing to sectional tensions leading to the Civil War. Overturned by the 14th Amendment."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+DRED SCOTT
+v.
+JOHN F. A. SANDFORD
+
+March 6, 1857
+
+Mr. Chief Justice TANEY delivered the opinion of the Court.
+
+The question is simply this: Can a negro, whose ancestors were imported into this country, and sold as slaves, become a member of the political community formed and brought into existence by the Constitution of the United States, and as such become entitled to all the rights, and privileges, and immunities, guarantied by that instrument to the citizen? One of which rights is the privilege of suing in a court of the United States in the cases specified in the Constitution.
+
+We think they are not, and that they are not included, and were not intended to be included, under the word "citizens" in the Constitution, and can therefore claim none of the rights and privileges which that instrument provides for and secures to citizens of the United States. On the contrary, they were at that time considered as a subordinate and inferior class of beings, who had been subjugated by the dominant race, and, whether emancipated or not, yet remained subject to their authority, and had no rights or privileges but such as those who held the power and the Government might choose to grant them.`
+            },
+            {
+                id: 11,
+                title: "New York Times Co. v. Sullivan",
+                court: "Supreme Court of the United States",
+                date: "March 9, 1964",
+                citation: "376 U.S. 254",
+                preview: "Landmark First Amendment case establishing the 'actual malice' standard for defamation claims by public officials.",
+                summary: {
+                    holding: "The First Amendment prohibits public officials from recovering damages for defamation unless they prove 'actual malice' — that the statement was made with knowledge of falsity or reckless disregard for the truth.",
+                    keyFacts: "L.B. Sullivan, an elected commissioner in Montgomery, Alabama, sued the New York Times over an advertisement that contained minor inaccuracies about civil rights protests.",
+                    ruling: "9-0 unanimous decision. Justice William Brennan wrote the majority opinion.",
+                    impact: "Established significant protections for press freedom and public debate about public officials."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+NEW YORK TIMES CO.
+v.
+L. B. SULLIVAN
+
+ON WRIT OF CERTIORARI TO THE SUPREME COURT OF ALABAMA
+
+March 9, 1964
+
+Mr. Justice BRENNAN delivered the opinion of the Court.
+
+We are required in this case to determine for the first time the extent to which the constitutional protections for speech and press limit a State's power to award damages in a libel action brought by a public official against critics of his official conduct.
+
+The case concerns a full-page advertisement that appeared in the New York Times on March 29, 1960. The advertisement, entitled "Heed Their Rising Voices," described events in Montgomery, Alabama, during the civil rights movement and solicited funds for defense efforts.
+
+L.B. Sullivan, one of three elected commissioners of Montgomery, claimed the advertisement contained false statements that reflected on him in his official capacity. Although not named in the advertisement, he argued that the criticism of the police constituted criticism of him as a commissioner responsible for police operations.
+
+The Alabama courts found for Sullivan and awarded damages of $500,000. The judgment was affirmed by the Alabama Supreme Court.`
+            },
+            {
+                id: 12,
+                title: "Mapp v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 19, 1961",
+                citation: "367 U.S. 643",
+                preview: "Extended the exclusionary rule to state courts, requiring that evidence obtained in violation of the Fourth Amendment cannot be used in state criminal prosecutions.",
+                summary: {
+                    holding: "All evidence obtained by searches and seizures in violation of the Federal Constitution is inadmissible in state court proceedings.",
+                    keyFacts: "Police entered Dollree Mapp's home without a warrant based on information about a bombing suspect. They found obscene materials instead and arrested her.",
+                    ruling: "6-3 decision. Justice Tom Clark wrote the majority opinion.",
+                    impact: "Applied the federal exclusionary rule to the states through the Fourteenth Amendment."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+DOLLREE MAPP
+v.
+OHIO
+
+ON CERTIORARI TO THE SUPREME COURT OF OHIO
+
+June 19, 1961
+
+Mr. Justice CLARK delivered the opinion of the Court.
+
+This case presents serious questions concerning the role of the Fourth Amendment in the federal system in the light of the principle that "the security of one's privacy against arbitrary intrusion by the police — which is at the core of the Fourth Amendment — is basic to a free society."
+
+On May 23, 1957, three Cleveland police officers arrived at petitioner's residence pursuant to information that a person wanted for questioning in connection with a recent bombing was hiding there. The officers knocked on the door and demanded entrance, but petitioner, after telephoning her attorney, refused to admit them without a search warrant.
+
+The officers watched the house for several hours. When additional officers arrived, they again sought entrance. When petitioner still refused to admit them, one of the officers opened a door window, reached in, and unlocked the door from the inside. The officers then entered.`
+            },
+            {
+                id: 13,
+                title: "District of Columbia v. Heller",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2008",
+                citation: "554 U.S. 570",
+                preview: "Landmark case holding that the Second Amendment protects an individual's right to possess a firearm for traditionally lawful purposes, such as self-defense within the home.",
+                summary: {
+                    holding: "The Second Amendment protects an individual's right to possess a firearm unconnected with service in a militia, and to use that firearm for traditionally lawful purposes, including self-defense within the home.",
+                    keyFacts: "Dick Heller, a special police officer, challenged D.C.'s handgun ban and requirement that firearms be kept unloaded and disassembled or trigger-locked.",
+                    ruling: "5-4 decision. Justice Antonin Scalia wrote the majority opinion.",
+                    impact: "First Supreme Court case to affirm that the Second Amendment protects an individual right to bear arms."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+DISTRICT OF COLUMBIA
+v.
+DICK ANTHONY HELLER
+
+ON WRIT OF CERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE DISTRICT OF COLUMBIA CIRCUIT
+
+June 26, 2008
+
+Mr. Justice SCALIA delivered the opinion of the Court.
+
+We consider whether a District of Columbia prohibition on the possession of usable handguns in the home violates the Second Amendment to the Constitution.
+
+The Second Amendment provides: "A well regulated Militia, being necessary to the security of a free State, the right of the people to keep and bear Arms, shall not be infringed." The District of Columbia generally prohibits the possession of handguns. It is a crime to carry an unregistered firearm, and the registration of handguns is prohibited. Wholly apart from that prohibition, no person may carry a handgun without a license, but the chief of police may issue licenses for 1-year periods. And District of Columbia law also requires residents to keep their lawfully owned firearms, such as registered long guns, "unloaded and disassembled or bound by a trigger lock or similar device" unless they are located in a place of business or are being used for lawful recreational activities.`
+            },
+            {
+                id: 14,
+                title: "Tinker v. Des Moines",
+                court: "Supreme Court of the United States",
+                date: "February 24, 1969",
+                citation: "393 U.S. 503",
+                preview: "Landmark case establishing that students do not "shed their constitutional rights to freedom of speech or expression at the schoolhouse gate."",
+                summary: {
+                    holding: "Students have First Amendment rights in public schools, and schools may only restrict student speech if it would substantially disrupt or interfere with the rights of others.",
+                    keyFacts: "Students wore black armbands to school to protest the Vietnam War. The school suspended them, leading to a First Amendment challenge.",
+                    ruling: "7-2 decision. Justice Abe Fortas wrote the majority opinion.",
+                    impact: "Established significant protections for student speech in public schools."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+JOHN F. TINKER AND MARY BETH TINKER, MINORS, BY THEIR FATHER AND NEXT FRIEND, LEONARD TINKER, AND CHRISTOPHER ECKHARDT, MINOR, BY HIS MOTHER AND NEXT FRIEND, BARBARA ECKHARDT
+v.
+DES MOINES INDEPENDENT COMMUNITY SCHOOL DISTRICT
+
+ON CERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE EIGHTH CIRCUIT
+
+February 24, 1969
+
+Mr. Justice FORTAS delivered the opinion of the Court.
+
+Petitioners, three public school pupils in Des Moines, Iowa, were suspended from school for wearing black armbands to protest the Government's policy in Vietnam. They sought nominal damages and an injunction against a regulation that the respondents had promulgated banning the wearing of armbands. The District Court dismissed the complaint on the ground that the regulation was within the Board's power, despite the absence of any finding of substantial interference with the conduct of school activities. The Court of Appeals, sitting en banc, affirmed by an equally divided court.
+
+The problem posed by the present case does not relate to regulation of the length of skirts or the type of clothing, to hair style, or deportment. It does not concern aggressive, disruptive action or even group demonstrations. Our problem involves direct, primary First Amendment rights akin to "pure speech."`
+            },
+            {
+                id: 15,
+                title: "Furman v. Georgia",
+                court: "Supreme Court of the United States",
+                date: "June 29, 1972",
+                citation: "408 U.S. 238",
+                preview: "Landmark case that struck down all existing death penalty statutes as unconstitutional, leading to a moratorium on capital punishment.",
+                summary: {
+                    holding: "The imposition and carrying out of the death penalty in the cases before us constitute cruel and unusual punishment in violation of the Eighth and Fourteenth Amendments.",
+                    keyFacts: "Three consolidated cases involving death sentences for murder and rape. The Court found the arbitrary application of the death penalty unconstitutional.",
+                    ruling: "5-4 decision, but with nine separate opinions. No single opinion commanded a majority.",
+                    impact: "Led to a nationwide moratorium on executions and required states to rewrite their death penalty statutes."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+WILLIAM HENRY FURMAN
+v.
+STATE OF GEORGIA
+
+ON CERTIORARI TO THE SUPREME COURT OF GEORGIA
+
+June 29, 1972
+
+Per Curiam.
+
+The Court holds that the imposition and carrying out of the death penalty in these cases constitute cruel and unusual punishment in violation of the Eighth and Fourteenth Amendments. The judgment in each case is therefore reversed insofar as it leaves undisturbed the death sentence imposed, and the cases are remanded for further proceedings.
+
+Mr. Justice DOUGLAS, concurring.
+
+The question of whether the death penalty is cruel and unusual within the meaning of the Eighth Amendment is an issue that has long troubled the Court. In these cases, we must determine whether the death penalty, as administered in the United States today, violates the constitutional prohibition against cruel and unusual punishment.
+
+The death penalty is unique in its severity and irrevocability. It is different in kind from any other punishment imposed under our system of criminal justice.`
+            }
+        ];
+
+        // State
+        let currentCase = null;
+        let notes = JSON.parse(localStorage.getItem('vibelaw-notes') || '[]');
+        let entitiesExtracted = false;
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const totalCases = document.getElementById('totalCases');
+        const notesCount = document.getElementById('notesCount');
+        const detailPlaceholder = document.getElementById('detailPlaceholder');
+        const detailContent = document.getElementById('detailContent');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCitation = document.getElementById('detailCitation');
+        const summaryContent = document.getElementById('summaryContent');
+        const fullTextContent = document.getElementById('fullTextContent');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const extractEntitiesBtn = document.getElementById('extractEntitiesBtn');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const toggleNotesBtn = document.getElementById('toggleNotesBtn');
+        const notesSidebar = document.getElementById('notesSidebar');
+        const notesClose = document.getElementById('notesClose');
+        const notesList = document.getElementById('notesList');
+        const addNoteForm = document.getElementById('addNoteForm');
+        const noteInput = document.getElementById('noteInput');
+        const saveNoteBtn = document.getElementById('saveNoteBtn');
+        const overlay = document.getElementById('overlay');
+        const entityLegend = document.getElementById('entityLegend');
+
+        // Initialize
+        function init() {
+            renderCases(cases);
+            updateNotesCount();
+            setupEventListeners();
+        }
+
+        // Render Cases
+        function renderCases(casesToRender) {
+            resultsList.innerHTML = casesToRender.map(c => `
+                <div class="case-item" data-id="${c.id}">
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-meta">
+                        <span>🏛️ ${c.court}</span>
+                        <span>📅 ${c.date}</span>
+                    </div>
+                    <div class="case-preview">${c.preview}</div>
+                </div>
+            `).join('');
+
+            resultsCount.textContent = `Showing ${casesToRender.length} cases`;
+
+            // Add click listeners
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const caseId = parseInt(item.dataset.id);
+                    selectCase(caseId);
+                });
+            });
+        }
+
+        // Select Case
+        function selectCase(caseId) {
+            currentCase = cases.find(c => c.id === caseId);
+            if (!currentCase) return;
+
+            // Update active state
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.classList.remove('active');
+                if (parseInt(item.dataset.id) === caseId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Show detail view
+            detailPlaceholder.style.display = 'none';
+            detailContent.classList.add('active');
+
+            // Populate details
+            detailTitle.textContent = currentCase.title;
+            detailCitation.textContent = `${currentCase.citation} • ${currentCase.court} • ${currentCase.date}`;
+
+            // Populate summary
+            summaryContent.innerHTML = `
+                <div class="summary-section">
+                    <div class="summary-label">Holding</div>
+                    <p class="summary-text">${currentCase.summary.holding}</p>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Key Facts</div>
+                    <p class="summary-text">${currentCase.summary.keyFacts}</p>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Ruling</div>
+                    <p class="summary-text">${currentCase.summary.ruling}</p>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Impact</div>
+                    <p class="summary-text">${currentCase.summary.impact}</p>
+                </div>
+            `;
+
+            // Populate full text
+            fullTextContent.innerHTML = currentCase.fullText.split('\n\n').map(p => `<p>${p}</p>`).join('');
+
+            // Reset entity extraction
+            entitiesExtracted = false;
+            entityLegend.style.display = 'none';
+
+            // Switch to summary tab
+            switchTab('summary');
+        }
+
+        // Switch Tab
+        function switchTab(tabName) {
+            tabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+            tabContents.forEach(content => {
+                content.classList.toggle('active', content.id === `tab-${tabName}`);
+            });
+        }
+
+        // Search
+        function searchCases(query) {
+            const lowerQuery = query.toLowerCase();
+            const filtered = cases.filter(c => 
+                c.title.toLowerCase().includes(lowerQuery) ||
+                c.court.toLowerCase().includes(lowerQuery) ||
+                c.preview.toLowerCase().includes(lowerQuery) ||
+                c.citation.toLowerCase().includes(lowerQuery)
+            );
+            renderCases(filtered);
+        }
+
+        // Extract Entities
+        function extractEntities() {
+            if (!currentCase || entitiesExtracted) return;
+
+            // Patterns for entity extraction
+            const patterns = {
+                names: /\b([A-Z][a-z]+ [A-Z][a-z]+(?:\s+(?:v\.|vs\.|et al\.?)))\b/g,
+                dates: /\b((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b/g,
+                entities: /\b((?:Supreme Court|District Court|Constitution|Amendment|Congress|President|Justice|Judge|Attorney|Attorney General|Secretary of State|United States|District of Columbia|Florida|Texas|Ohio|Alabama|Georgia|Kansas|Virginia|South Carolina|Michigan|Kentucky|California|New York))\b/g
+            };
+
+            let text = currentCase.fullText;
+
+            // Highlight entities
+            text = text.replace(patterns.names, '<span class="highlight-name">$1</span>');
+            text = text.replace(patterns.dates, '<span class="highlight-date">$1</span>');
+            text = text.replace(patterns.entities, '<span class="highlight-entity">$1</span>');
+
+            fullTextContent.innerHTML = text.split('\n\n').map(p => `<p>${p}</p>`).join('');
+            
+            entitiesExtracted = true;
+            entityLegend.style.display = 'flex';
+        }
+
+        // Notes Functions
+        function saveNote() {
+            const noteText = noteInput.value.trim();
+            if (!noteText || !currentCase) return;
+
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: noteText,
+                date: new Date().toLocaleString()
+            };
+
+            notes.unshift(note);
+            localStorage.setItem('vibelaw-notes', JSON.stringify(notes));
+            noteInput.value = '';
+            renderNotes();
+            updateNotesCount();
+        }
+
+        function deleteNote(noteId) {
+            notes = notes.filter(n => n.id !== noteId);
+            localStorage.setItem('vibelaw-notes', JSON.stringify(notes));
+            renderNotes();
+            updateNotesCount();
+        }
+
+        function renderNotes() {
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="notes-empty">No notes saved yet. Select a case and add notes to get started.</div>';
+                return;
+            }
+
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <button class="note-delete" onclick="deleteNote(${note.id})">×</button>
+                    <div class="note-case">${note.caseTitle}</div>
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-date">${note.date}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateNotesCount() {
+            notesCount.textContent = `${notes.length} Notes`;
+        }
+
+        function openNotesSidebar() {
+            notesSidebar.classList.add('open');
+            overlay.classList.add('active');
+            renderNotes();
+        }
+
+        function closeNotesSidebar() {
+            notesSidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        function showAddNoteForm() {
+            addNoteForm.style.display = 'block';
+            noteInput.focus();
+            if (!notesSidebar.classList.contains('open')) {
+                openNotesSidebar();
+            }
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            searchInput.addEventListener('input', (e) => searchCases(e.target.value));
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            extractEntitiesBtn.addEventListener('click', extractEntities);
+
+            addNoteBtn.addEventListener('click', showAddNoteForm);
+            toggleNotesBtn.addEventListener('click', openNotesSidebar);
+            notesClose.addEventListener('click', closeNotesSidebar);
+            overlay.addEventListener('click', closeNotesSidebar);
+
+            saveNoteBtn.addEventListener('click', saveNote);
+        }
+
+        // Make deleteNote available globally
+        window.deleteNote = deleteNote;
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>

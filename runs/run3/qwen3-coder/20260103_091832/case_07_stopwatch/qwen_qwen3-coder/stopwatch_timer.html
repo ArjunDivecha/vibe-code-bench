@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch & Timer</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #121212;
+            margin: 0;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        h1 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+        
+        .mode-toggle {
+            margin-bottom: 1.5rem;
+        }
+        
+        .toggle-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .toggle-btn.active {
+            background-color: #4CAF50;
+            color: #121212;
+            font-weight: bold;
+        }
+        
+        .display {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: #4CAF50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+        
+        .controls {
+            margin: 1.5rem 0;
+        }
+        
+        .btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            margin: 0.25rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+        }
+        
+        .btn-warning {
+            background-color: #FF9800;
+        }
+        
+        .btn-danger {
+            background-color: #F44336;
+        }
+        
+        .btn-secondary {
+            background-color: #607D8B;
+        }
+        
+        .timer-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .input-group label {
+            margin-bottom: 0.5rem;
+        }
+        
+        .input-group input {
+            width: 60px;
+            padding: 0.5rem;
+            text-align: center;
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        
+        .lap-times {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1.5rem;
+            border-top: 1px solid #333;
+            padding-top: 1rem;
+        }
+        
+        .lap-times h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .lap-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+        
+        .lap-item:last-child {
+            border-bottom: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Digital Stopwatch & Timer</h1>
+        
+        <div class="mode-toggle">
+            <button id="stopwatchBtn" class="toggle-btn active">Stopwatch</button>
+            <button id="timerBtn" class="toggle-btn">Timer</button>
+        </div>
+        
+        <div id="stopwatchMode">
+            <div class="display" id="stopwatchDisplay">00:00:00.00</div>
+            <div class="controls">
+                <button id="startStopwatch" class="btn btn-primary">Start</button>
+                <button id="stopStopwatch" class="btn btn-warning">Stop</button>
+                <button id="lapStopwatch" class="btn btn-secondary">Lap</button>
+                <button id="resetStopwatch" class="btn btn-danger">Reset</button>
+            </div>
+            <div class="lap-times">
+                <h3>Lap Times</h3>
+                <div id="lapList"></div>
+            </div>
+        </div>
+        
+        <div id="timerMode" class="hidden">
+            <div class="timer-inputs">
+                <div class="input-group">
+                    <label for="hours">Hours</label>
+                    <input type="number" id="hours" min="0" max="23" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="minutes">Minutes</label>
+                    <input type="number" id="minutes" min="0" max="59" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="seconds">Seconds</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0">
+                </div>
+            </div>
+            <div class="display" id="timerDisplay">00:00:00</div>
+            <div class="controls">
+                <button id="startTimer" class="btn btn-primary">Start</button>
+                <button id="pauseTimer" class="btn btn-warning">Pause</button>
+                <button id="resetTimer" class="btn btn-danger">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stopwatch variables
+        let stopwatchInterval = null;
+        let stopwatchStartTime = 0;
+        let stopwatchElapsedTime = 0;
+        let stopwatchRunning = false;
+        let lapCounter = 1;
+        
+        // Timer variables
+        let timerInterval = null;
+        let timerTotalSeconds = 0;
+        let timerRemainingSeconds = 0;
+        let timerRunning = false;
+        let timerPaused = false;
+        
+        // DOM Elements
+        const stopwatchBtn = document.getElementById('stopwatchBtn');
+        const timerBtn = document.getElementById('timerBtn');
+        const stopwatchMode = document.getElementById('stopwatchMode');
+        const timerMode = document.getElementById('timerMode');
+        const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const startStopwatchBtn = document.getElementById('startStopwatch');
+        const stopStopwatchBtn = document.getElementById('stopStopwatch');
+        const lapStopwatchBtn = document.getElementById('lapStopwatch');
+        const resetStopwatchBtn = document.getElementById('resetStopwatch');
+        const startTimerBtn = document.getElementById('startTimer');
+        const pauseTimerBtn = document.getElementById('pauseTimer');
+        const resetTimerBtn = document.getElementById('resetTimer');
+        const lapList = document.getElementById('lapList');
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        
+        // Format time for display
+        function formatTime(ms) {
+            let hours = Math.floor(ms / 3600000);
+            let minutes = Math.floor((ms % 3600000) / 60000);
+            let seconds = Math.floor((ms % 60000) / 1000);
+            let milliseconds = Math.floor((ms % 1000) / 10);
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Format time for timer display (no milliseconds)
+        function formatTimerTime(seconds) {
+            let hours = Math.floor(seconds / 3600);
+            let minutes = Math.floor((seconds % 3600) / 60);
+            let secs = seconds % 60;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Stopwatch functions
+        function startStopwatch() {
+            if (!stopwatchRunning) {
+                stopwatchStartTime = Date.now() - stopwatchElapsedTime;
+                stopwatchInterval = setInterval(updateStopwatch, 10);
+                stopwatchRunning = true;
+            }
+        }
+        
+        function stopStopwatch() {
+            if (stopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                stopwatchRunning = false;
+            }
+        }
+        
+        function resetStopwatch() {
+            stopStopwatch();
+            stopwatchElapsedTime = 0;
+            stopwatchDisplay.textContent = "00:00:00.00";
+            lapList.innerHTML = "";
+            lapCounter = 1;
+        }
+        
+        function lapStopwatch() {
+            if (stopwatchRunning) {
+                const lapTime = document.createElement('div');
+                lapTime.className = 'lap-item';
+                lapTime.textContent = `Lap ${lapCounter}: ${stopwatchDisplay.textContent}`;
+                lapList.prepend(lapTime);
+                lapCounter++;
+            }
+        }
+        
+        function updateStopwatch() {
+            stopwatchElapsedTime = Date.now() - stopwatchStartTime;
+            stopwatchDisplay.textContent = formatTime(stopwatchElapsedTime);
+        }
+        
+        // Timer functions
+        function startTimer() {
+            if (!timerRunning) {
+                if (!timerPaused) {
+                    // Get time from inputs
+                    const hours = parseInt(hoursInput.value) || 0;
+                    const minutes = parseInt(minutesInput.value) || 0;
+                    const seconds = parseInt(secondsInput.value) || 0;
+                    
+                    timerTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+                    
+                    if (timerTotalSeconds <= 0) {
+                        alert("Please set a valid time");
+                        return;
+                    }
+                    
+                    timerRemainingSeconds = timerTotalSeconds;
+                }
+                
+                timerInterval = setInterval(updateTimer, 1000);
+                timerRunning = true;
+                timerPaused = false;
+                
+                // Disable inputs while timer is running
+                hoursInput.disabled = true;
+                minutesInput.disabled = true;
+                secondsInput.disabled = true;
+            }
+        }
+        
+        function pauseTimer() {
+            if (timerRunning) {
+                clearInterval(timerInterval);
+                timerRunning = false;
+                timerPaused = true;
+            }
+        }
+        
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerPaused = false;
+            timerDisplay.textContent = "00:00:00";
+            
+            // Enable inputs
+            hoursInput.disabled = false;
+            minutesInput.disabled = false;
+            secondsInput.disabled = false;
+        }
+        
+        function updateTimer() {
+            timerRemainingSeconds--;
+            timerDisplay.textContent = formatTimerTime(timerRemainingSeconds);
+            
+            if (timerRemainingSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerRunning = false;
+                timerDisplay.textContent = "00:00:00";
+                
+                // Enable inputs
+                hoursInput.disabled = false;
+                minutesInput.disabled = false;
+                secondsInput.disabled = false;
+                
+                // Alert user
+                alert("Time's up!");
+                
+                // Play sound (using Web Audio API)
+                playAlertSound();
+            }
+        }
+        
+        // Play alert sound using Web Audio API
+        function playAlertSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 880; // A5 note
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 1000);
+            } catch (e) {
+                console.log("Could not play sound:", e);
+            }
+        }
+        
+        // Mode switching
+        function showStopwatch() {
+            stopwatchBtn.classList.add('active');
+            timerBtn.classList.remove('active');
+            stopwatchMode.classList.remove('hidden');
+            timerMode.classList.add('hidden');
+        }
+        
+        function showTimer() {
+            timerBtn.classList.add('active');
+            stopwatchBtn.classList.remove('active');
+            timerMode.classList.remove('hidden');
+            stopwatchMode.classList.add('hidden');
+        }
+        
+        // Event listeners
+        stopwatchBtn.addEventListener('click', showStopwatch);
+        timerBtn.addEventListener('click', showTimer);
+        
+        startStopwatchBtn.addEventListener('click', startStopwatch);
+        stopStopwatchBtn.addEventListener('click', stopStopwatch);
+        resetStopwatchBtn.addEventListener('click', resetStopwatch);
+        lapStopwatchBtn.addEventListener('click', lapStopwatch);
+        
+        startTimerBtn.addEventListener('click', startTimer);
+        pauseTimerBtn.addEventListener('click', pauseTimer);
+        resetTimerBtn.addEventListener('click', resetTimer);
+        
+        // Initialize
+        showStopwatch();
+    </script>
+</body>
+</html>

@@ -104,6 +104,21 @@ python -m vibe_eval dashboard results/TIMESTAMP_results.json
 python -m vibe_eval show results/TIMESTAMP_results.json
 ```
 
+## 📊 Generating Reports
+
+We include scripts to merge and average results across multiple runs:
+
+```bash
+# Merge split result files from a parallel run
+python merge_run.py runs/run1 -o runs/run1_full.json
+
+# Average multiple runs
+python average_results.py runs/run1_full.json runs/run2_full.json -o final.json
+
+# Generate Markdown report
+python generate_report.py final.json -o REPORT.md
+```
+
 ## 🔧 Configuration
 
 ### Environment Variables
@@ -140,15 +155,20 @@ I want a simple recipe organizer:
 Single HTML file, save to localStorage.
 ```
 
-## 📈 Sample Results
+## 📈 Benchmark Results (v1.0)
+Full report: **[BENCHMARK_REPORT.md](BENCHMARK_REPORT.md)**
 
-From our benchmark run (Claude Sonnet 4.5 vs Llama 3.1 8B):
+| Rank | Model | Score (0-100) |
+|------|-------|-------------------|
+| 1 🏆 | `gpt-5.1-codex` | **87.4** |
+| 2 🥈 | `claude-opus-4.5`* | **85.8** |
+| 3 🥉 | `glm-4.7` | **85.3** |
+| 4 | `claude-sonnet-4.5` | 84.4 |
+| 5 | `gemini-3-flash` | 81.9 |
+| ... | | |
+| 12 | `llama-3.1-8b` | 25.3 |
 
-| Metric | Llama 3.1 8B | Claude Sonnet 4.5 |
-|--------|--------------|-------------------|
-| Avg Score | 26.8 | **87.8** |
-| Generation Time | **18s** | 25 min |
-| Cost | **<$0.01** | ~$1.20 |
+*(Opus score impacted by content filtering on legal case)*
 
 ## 🤝 Contributing
 

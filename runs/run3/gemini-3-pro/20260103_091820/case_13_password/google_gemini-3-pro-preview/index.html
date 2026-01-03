@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Password Generator</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #111827;
+                --card-bg: #1f2937;
+                --primary: #60a5fa;
+                --primary-hover: #3b82f6;
+                --text-main: #f9fafb;
+                --text-muted: #9ca3af;
+                --border-color: #374151;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .value-display {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="number"] {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--bg-color);
+            color: var(--text-main);
+            width: 80px;
+            font-size: 1rem;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-generate:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-generate:active {
+            transform: scale(0.98);
+        }
+
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .password-item {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .password-text {
+            font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+            font-size: 1.1rem;
+            word-break: break-all;
+            flex-grow: 1;
+        }
+
+        .strength-indicator {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            background: var(--border-color);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        .password-meta {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 0.25rem;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            transition: color 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .copy-btn:hover {
+            color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .copy-btn svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .history-section {
+            margin-top: 2rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-header h2 {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .clear-history {
+            font-size: 0.9rem;
+            color: var(--danger);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-color);
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .history-item .copy-small {
+            font-size: 0.8rem;
+            color: var(--primary);
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-main);
+            color: var(--bg-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Utility for strength colors */
+        .strength-weak { background-color: var(--danger); }
+        .strength-medium { background-color: var(--warning); }
+        .strength-strong { background-color: var(--success); }
+        
+        .strength-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .text-weak { color: var(--danger); }
+        .text-medium { color: var(--warning); }
+        .text-strong { color: var(--success); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>Password Generator</h1>
+        
+        <!-- Controls -->
+        <div class="control-group">
+            <div class="label-row">
+                <label for="length">Password Length</label>
+                <span class="value-display" id="length-val">16</span>
+            </div>
+            <input type="range" id="length" min="8" max="32" value="16">
+        </div>
+
+        <div class="options-grid">
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="uppercase" checked>
+                <span>Uppercase (A-Z)</span>
+            </label>
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="lowercase" checked>
+                <span>Lowercase (a-z)</span>
+            </label>
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="numbers" checked>
+                <span>Numbers (0-9)</span>
+            </label>
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="symbols" checked>
+                <span>Symbols (!@#$)</span>
+            </label>
+        </div>
+
+        <div class="quantity-control">
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" min="1" max="50" value="1">
+        </div>
+
+        <button class="btn-generate" id="generate-btn">Generate Passwords</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results-area" class="results-section"></div>
+
+    <!-- History -->
+    <div class="history-section" id="history-container" style="display: none;">
+        <div class="history-header">
+            <h2>Recent History</h2>
+            <button class="clear-history" id="clear-history">Clear History</button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+    // State
+    const state = {
+        length: 16,
+        uppercase: true,
+        lowercase: true,
+        numbers: true,
+        symbols: true,
+        quantity: 1,
+        history: []
+    };
+
+    // Charsets
+    const CHARS = {
+        upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        lower: 'abcdefghijklmnopqrstuvwxyz',
+        number: '0123456789',
+        symbol: '!@#$%^&*()_+~`|}{[]:;?><,./-='
+    };
+
+    // Elements
+    const els = {
+        length: document.getElementById('length'),
+        lengthVal: document.getElementById('length-val'),
+        upper: document.getElementById('uppercase'),
+        lower: document.getElementById('lowercase'),
+        numbers: document.getElementById('numbers'),
+        symbols: document.getElementById('symbols'),
+        quantity: document.getElementById('quantity'),
+        generateBtn: document.getElementById('generate-btn'),
+        resultsArea: document.getElementById('results-area'),
+        historyContainer: document.getElementById('history-container'),
+        historyList: document.getElementById('history-list'),
+        clearHistory: document.getElementById('clear-history'),
+        toast: document.getElementById('toast')
+    };
+
+    // Init
+    function init() {
+        loadHistory();
+        renderHistory();
+        
+        // Listeners
+        els.length.addEventListener('input', (e) => {
+            state.length = parseInt(e.target.value);
+            els.lengthVal.textContent = state.length;
+        });
+
+        [els.upper, els.lower, els.numbers, els.symbols].forEach(el => {
+            el.addEventListener('change', updateState);
+        });
+
+        els.quantity.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value);
+            if (val < 1) val = 1;
+            if (val > 50) val = 50;
+            state.quantity = val;
+            els.quantity.value = val;
+        });
+
+        els.generateBtn.addEventListener('click', generatePasswords);
+        els.clearHistory.addEventListener('click', clearHistory);
+    }
+
+    function updateState() {
+        state.uppercase = els.upper.checked;
+        state.lowercase = els.lower.checked;
+        state.numbers = els.numbers.checked;
+        state.symbols = els.symbols.checked;
+    }
+
+    // crypto.getRandomValues for better randomness
+    function getSecureRandomInt(max) {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] % max;
+    }
+
+    function generateString(length, chars) {
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(getSecureRandomInt(chars.length));
+        }
+        return result;
+    }
+
+    function calculateStrength(password) {
+        let score = 0;
+        if (password.length >= 8) score += 10;
+        if (password.length >= 12) score += 10;
+        if (password.length >= 16) score += 10;
+        if (/[A-Z]/.test(password)) score += 10;
+        if (/[a-z]/.test(password)) score += 10;
+        if (/[0-9]/.test(password)) score += 10;
+        if (/[^A-Za-z0-9]/.test(password)) score += 10;
+
+        // Max score roughly 70
+        let percent = Math.min(100, (score / 70) * 100);
+        
+        let label = 'Weak';
+        let cls = 'weak';
+        if (score > 40) { label = 'Medium'; cls = 'medium'; }
+        if (score > 60) { label = 'Strong'; cls = 'strong'; }
+
+        return { score, percent, label, cls };
+    }
+
+    function generatePasswords() {
+        // Validation
+        if (!state.uppercase && !state.lowercase && !state.numbers && !state.symbols) {
+            showToast("Please select at least one character type");
+            return;
+        }
+
+        let charset = "";
+        if (state.uppercase) charset += CHARS.upper;
+        if (state.lowercase) charset += CHARS.lower;
+        if (state.numbers) charset += CHARS.number;
+        if (state.symbols) charset += CHARS.symbol;
+
+        els.resultsArea.innerHTML = '';
+        const newPasswords = [];
+
+        for (let i = 0; i < state.quantity; i++) {
+            const pwd = generateString(state.length, charset);
+            newPasswords.push(pwd);
+            createPasswordCard(pwd);
+        }
+
+        addToHistory(newPasswords);
+    }
+
+    function createPasswordCard(password) {
+        const strength = calculateStrength(password);
+        
+        const card = document.createElement('div');
+        card.className = 'password-item';
+        
+        card.innerHTML = `
+            <div class="password-meta">
+                <div class="password-text">${escapeHtml(password)}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="strength-indicator">
+                        <div class="strength-bar strength-${strength.cls}" style="width: ${strength.percent}%"></div>
+                    </div>
+                </div>
+                <div class="strength-text text-${strength.cls}">${strength.label}</div>
+            </div>
+            <button class="copy-btn" title="Copy to clipboard" onclick="copyToClipboard('${escapeJs(password)}')">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+            </button>
+        `;
+        
+        els.resultsArea.appendChild(card);
+    }
+
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast("Copied to clipboard!");
+        } catch (err) {
+            // Fallback
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            showToast("Copied to clipboard!");
+        }
+    }
+
+    function showToast(msg) {
+        els.toast.textContent = msg;
+        els.toast.classList.add('show');
+        setTimeout(() => {
+            els.toast.classList.remove('show');
+        }, 2000);
+    }
+
+    // History Logic
+    function addToHistory(passwords) {
+        // Add new items to start
+        state.history = [...passwords, ...state.history].slice(0, 20); // Keep last 20
+        saveHistory();
+        renderHistory();
+    }
+
+    function saveHistory() {
+        localStorage.setItem('pwdGenHistory', JSON.stringify(state.history));
+    }
+
+    function loadHistory() {
+        const stored = localStorage.getItem('pwdGenHistory');
+        if (stored) {
+            try {
+                state.history = JSON.parse(stored);
+            } catch (e) {
+                state.history = [];
+            }
+        }
+    }
+
+    function clearHistory() {
+        state.history = [];
+        saveHistory();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        if (state.history.length === 0) {
+            els.historyContainer.style.display = 'none';
+            return;
+        }
+        els.historyContainer.style.display = 'block';
+        els.historyList.innerHTML = '';
+        
+        state.history.forEach(pwd => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <span>${escapeHtml(pwd)}</span>
+                <button class="copy-small" onclick="copyToClipboard('${escapeJs(pwd)}')">Copy</button>
+            `;
+            els.historyList.appendChild(div);
+        });
+    }
+
+    // Utils
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(text) {
+        return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // Start
+    init();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sleek Calculator</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --panel: #1e293b;
+        --accent: #22c55e;
+        --accent-2: #38bdf8;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+    }
+    * {
+        box-sizing: border-box;
+        user-select: none;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 20% 20%, #1f2937, transparent 30%),
+                    radial-gradient(circle at 80% 10%, #0ea5e9, transparent 25%),
+                    radial-gradient(circle at 50% 80%, #22c55e33, transparent 35%),
+                    var(--bg);
+        color: var(--text);
+    }
+    .calculator {
+        width: 340px;
+        background: linear-gradient(145deg, #111827, #0b1220);
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 10px 25px rgba(0,0,0,0.25);
+        padding: 20px;
+        border: 1px solid rgba(255,255,255,0.04);
+    }
+    .display {
+        background: linear-gradient(135deg, #0f172a, #0b1220);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 12px 14px;
+        min-height: 72px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .display .sub {
+        font-size: 14px;
+        color: var(--muted);
+        min-height: 18px;
+    }
+    .display .main {
+        font-size: 32px;
+        font-weight: 600;
+        margin-top: 4px;
+        word-break: break-all;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+    }
+    button {
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+        background: #1e293b;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
+        cursor: pointer;
+    }
+    button:active {
+        transform: translateY(1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    button.operator {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: #e0f2fe;
+    }
+    button.equals {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #ecfdf3;
+    }
+    button.clear {
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        color: #fff7ed;
+    }
+    button.zero {
+        grid-column: span 2;
+    }
+    .footer {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+    }
+</style>
+</head>
+<body>
+<div class="calculator">
+    <div class="display" id="display">
+        <div class="sub" id="display-sub"></div>
+        <div class="main" id="display-main">0</div>
+    </div>
+    <div class="grid">
+        <button class="clear" data-action="clear">C</button>
+        <button data-action="back">⌫</button>
+        <button class="operator" data-operator="÷">÷</button>
+        <button class="operator" data-operator="×">×</button>
+
+        <button data-digit="7">7</button>
+        <button data-digit="8">8</button>
+        <button data-digit="9">9</button>
+        <button class="operator" data-operator="−">−</button>
+
+        <button data-digit="4">4</button>
+        <button data-digit="5">5</button>
+        <button data-digit="6">6</button>
+        <button class="operator" data-operator="+">+</button>
+
+        <button data-digit="1">1</button>
+        <button data-digit="2">2</button>
+        <button data-digit="3">3</button>
+        <button class="equals" data-action="equals">=</button>
+
+        <button class="zero" data-digit="0">0</button>
+        <button data-action="decimal">.</button>
+        <button data-action="noop" style="visibility:hidden;"></button>
+    </div>
+    <div class="footer">Use keyboard: 0-9, + - * /, Enter, C, Backspace</div>
+</div>
+
+<script>
+(() => {
+    const displayMain = document.getElementById('display-main');
+    const displaySub = document.getElementById('display-sub');
+
+    let current = '0';
+    let previous = '';
+    let operator = null;
+    let justEvaluated = false;
+    let error = false;
+
+    const updateDisplay = () => {
+        displayMain.textContent = current || '0';
+        let subText = '';
+        if (error) {
+            displaySub.textContent = '';
+            return;
+        }
+        if (previous !== '' && operator) {
+            subText = `${previous} ${operator} ${current ? '' : ''}`;
+        }
+        displaySub.textContent = subText;
+    };
+
+    const resetAll = () => {
+        current = '0';
+        previous = '';
+        operator = null;
+        justEvaluated = false;
+        error = false;
+        updateDisplay();
+    };
+
+    const inputDigit = (digit) => {
+        if (error) return;
+        if (justEvaluated && !operator) {
+            current = '0';
+            justEvaluated = false;
+        }
+        if (current === '0' && digit !== '0') {
+            current = digit;
+        } else if (current === '0' && digit === '0') {
+            current = '0';
+        } else {
+            current += digit;
+        }
+        updateDisplay();
+    };
+
+    const inputDecimal = () => {
+        if (error) return;
+        if (justEvaluated && !operator) {
+            current = '0';
+            justEvaluated = false;
+        }
+        if (!current.includes('.')) {
+            current = current || '0';
+            current += '.';
+            updateDisplay();
+        }
+    };
+
+    const backspace = () => {
+        if (error) return;
+        if (justEvaluated && !operator) {
+            resetAll();
+            return;
+        }
+        current = current.slice(0, -1);
+        if (!current) current = '0';
+        updateDisplay();
+    };
+
+    const setOperator = (op) => {
+        if (error) return;
+        if (current === '' && previous !== '') {
+            operator = op;
+            updateDisplay();
+            return;
+        }
+        if (previous !== '' && operator && current !== '') {
+            const result = compute();
+            if (error) return;
+            previous = result;
+            current = '';
+            operator = op;
+            updateDisplay();
+            return;
+        }
+        previous = current || previous || '0';
+        current = '';
+        operator = op;
+        justEvaluated = false;
+        updateDisplay();
+    };
+
+    const compute = () => {
+        if (operator === null || current === '' || error) return;
+        const a = parseFloat(previous);
+        const b = parseFloat(current);
+        let result;
+
+        if (operator === '÷') {
+            if (b === 0) {
+                displayMain.textContent = 'Cannot divide by zero';
+                displaySub.textContent = '';
+                error = true;
+                return;
+            }
+            result = a / b;
+        } else if (operator === '×') {
+            result = a * b;
+        } else if (operator === '−') {
+            result = a - b;
+        } else if (operator === '+') {
+            result = a + b;
+        }
+        // avoid scientific notation for large numbers and trim
+        result = +result.toFixed(12);
+        return result.toString();
+    };
+
+    const evaluate = () => {
+        if (error || operator === null || current === '') return;
+        const result = compute();
+        if (error) return;
+        displaySub.textContent = `${previous} ${operator} ${current} =`;
+        previous = '';
+        current = result || '0';
+        operator = null;
+        justEvaluated = true;
+        updateDisplay();
+    };
+
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => handleInput(btn));
+    });
+
+    const handleInput = (btn) => {
+        if (btn.dataset.digit !== undefined) {
+            inputDigit(btn.dataset.digit);
+        } else if (btn.dataset.operator) {
+            setOperator(btn.dataset.operator);
+        } else if (btn.dataset.action === 'decimal') {
+            inputDecimal();
+        } else if (btn.dataset.action === 'clear') {
+            resetAll();
+        } else if (btn.dataset.action === 'equals') {
+            evaluate();
+        } else if (btn.dataset.action === 'back') {
+            backspace();
+        }
+    };
+
+    const keyMap = {
+        '+': '+',
+        '-': '−',
+        '*': '×',
+        'x': '×',
+        'X': '×',
+        '/': '÷'
+    };
+
+    window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (/\d/.test(key)) {
+            inputDigit(key);
+        } else if (key === '.' || key === ',') {
+            inputDecimal();
+        } else if (key in keyMap) {
+            setOperator(keyMap[key]);
+        } else if (key === 'Enter' || key === '=') {
+            e.preventDefault();
+            evaluate();
+        } else if (key === 'Backspace') {
+            backspace();
+        } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+            resetAll();
+        }
+    });
+
+    updateDisplay();
+})();
+</script>
+</body>
+</html>

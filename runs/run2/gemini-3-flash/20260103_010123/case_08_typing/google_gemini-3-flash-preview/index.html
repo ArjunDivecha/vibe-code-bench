@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Typer - Typing Test</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary: #4a90e2;
+            --correct: #2ecc71;
+            --incorrect: #e74c3c;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        #text-display {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            user-select: none;
+            word-wrap: break-word;
+        }
+
+        .char {
+            border-bottom: 2px solid transparent;
+        }
+
+        .char.correct {
+            color: var(--correct);
+        }
+
+        .char.incorrect {
+            color: var(--incorrect);
+            background-color: #fadbd8;
+        }
+
+        .char.current {
+            border-bottom: 2px solid var(--primary);
+            background-color: #ebf5fb;
+        }
+
+        #input-box {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #input-box:focus {
+            border-color: var(--primary);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        #results-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <span id="timer" class="stat-value">30</span>
+                <span class="stat-label">Seconds</span>
+            </div>
+            <div class="stat-box">
+                <span id="wpm" class="stat-value">0</span>
+                <span class="stat-label">WPM</span>
+            </div>
+            <div class="stat-box">
+                <span id="accuracy" class="stat-value">100</span>
+                <span class="stat-label">Accuracy %</span>
+            </div>
+        </div>
+
+        <div id="text-display"></div>
+        
+        <textarea id="input-box" placeholder="Start typing here..." rows="3" autofocus></textarea>
+
+        <div class="controls">
+            <button id="reset-btn">Restart Test</button>
+        </div>
+    </div>
+
+    <div id="results-modal">
+        <div class="modal-content">
+            <h2>Test Complete!</h2>
+            <p id="final-stats"></p>
+            <button onclick="resetTest()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const samples = [
+            "The quick brown fox jumps over the lazy dog. This classic sentence contains every letter of the English alphabet at least once.",
+            "Programming is the process of creating a set of instructions that tell a computer how to perform a task. It is both an art and a science.",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts. Believe in yourself and all that you are.",
+            "The stars twinkle brightly in the night sky, reminding us of the vastness of the universe and our small but significant place within it.",
+            "Coffee is a brewed drink prepared from roasted coffee beans, the seeds of berries from certain flowering plants in the Coffea genus.",
+            "Artificial intelligence is intelligence demonstrated by machines, as opposed to the natural intelligence displayed by animals and humans.",
+            "A journey of a thousand miles begins with a single step. Do not fear moving slowly, fear only standing still in your progress.",
+            "Web development involves building and maintaining websites. It includes aspects such as web design, web publishing, and database management.",
+            "The ocean is a continuous body of salt water that covers more than seventy percent of the Earth's surface and contains diverse life.",
+            "Climate change includes both global warming driven by human-induced emissions of greenhouse gases and the resulting large-scale shifts."
+        ];
+
+        const TIME_LIMIT = 30;
+        let timer = TIME_LIMIT;
+        let interval = null;
+        let isStarted = false;
+        let currentSample = "";
+        let charIndex = 0;
+        let mistakes = 0;
+
+        const displayArea = document.getElementById('text-display');
+        const inputBox = document.getElementById('input-box');
+        const timerEl = document.getElementById('timer');
+        const wpmEl = document.getElementById('wpm');
+        const accEl = document.getElementById('accuracy');
+        const resetBtn = document.getElementById('reset-btn');
+        const modal = document.getElementById('results-modal');
+        const finalStats = document.getElementById('final-stats');
+
+        function initTest() {
+            clearInterval(interval);
+            isStarted = false;
+            timer = TIME_LIMIT;
+            charIndex = 0;
+            mistakes = 0;
+            
+            inputBox.value = "";
+            inputBox.disabled = false;
+            timerEl.innerText = timer;
+            wpmEl.innerText = 0;
+            accEl.innerText = 100;
+            modal.style.display = "none";
+
+            // Pick random sample
+            currentSample = samples[Math.floor(Math.random() * samples.length)];
+            
+            // Render characters
+            displayArea.innerHTML = "";
+            currentSample.split("").forEach(char => {
+                let span = document.createElement('span');
+                span.classList.add('char');
+                span.innerText = char;
+                displayArea.appendChild(span);
+            });
+            displayArea.children[0].classList.add('current');
+            inputBox.focus();
+        }
+
+        function startTimer() {
+            interval = setInterval(() => {
+                if (timer > 0) {
+                    timer--;
+                    timerEl.innerText = timer;
+                    updateStats();
+                } else {
+                    finishTest();
+                }
+            }, 1000);
+        }
+
+        function updateStats() {
+            // WPM: (Total Correct Chars / 5) / (Time Elapsed in Minutes)
+            let timePassed = TIME_LIMIT - timer;
+            if (timePassed <= 0) return;
+
+            let correctChars = charIndex - mistakes;
+            let wpm = Math.round((correctChars / 5) / (timePassed / 60));
+            wpmEl.innerText = wpm < 0 || !wpm || wpm === Infinity ? 0 : wpm;
+
+            let accuracy = Math.round(((charIndex - mistakes) / charIndex) * 100);
+            accEl.innerText = charIndex === 0 ? 100 : (accuracy < 0 ? 0 : accuracy);
+        }
+
+        function finishTest() {
+            clearInterval(interval);
+            inputBox.disabled = true;
+            modal.style.display = "flex";
+            
+            let timePassed = TIME_LIMIT - timer;
+            let wpm = wpmEl.innerText;
+            let accuracy = accEl.innerText;
+            
+            finalStats.innerHTML = `
+                <strong>WPM:</strong> ${wpm}<br>
+                <strong>Accuracy:</strong> ${accuracy}%<br>
+                <strong>Mistakes:</strong> ${mistakes}
+            `;
+        }
+
+        inputBox.addEventListener('input', (e) => {
+            if (!isStarted) {
+                isStarted = true;
+                startTimer();
+            }
+
+            const characters = displayArea.querySelectorAll('.char');
+            const typedText = inputBox.value.split("");
+            
+            // Check if user is deleting
+            if (e.inputType === "deleteContentBackward") {
+                if (charIndex > 0) {
+                    charIndex--;
+                    characters[charIndex].classList.remove('correct', 'incorrect');
+                }
+            } else {
+                let typedChar = typedText[typedText.length - 1];
+                
+                if (charIndex < characters.length) {
+                    if (typedChar === currentSample[charIndex]) {
+                        characters[charIndex].classList.add('correct');
+                    } else {
+                        mistakes++;
+                        characters[charIndex].classList.add('incorrect');
+                    }
+                    charIndex++;
+                }
+            }
+
+            // Update highlighting
+            characters.forEach(span => span.classList.remove('current'));
+            if (charIndex < characters.length) {
+                characters[charIndex].classList.add('current');
+            } else {
+                finishTest();
+            }
+
+            updateStats();
+        });
+
+        // Prevent pasting
+        inputBox.onpaste = e => e.preventDefault();
+
+        resetBtn.addEventListener('click', initTest);
+
+        function resetTest() {
+            initTest();
+        }
+
+        // Initialize on load
+        window.onload = initTest;
+    </script>
+</body>
+</html>

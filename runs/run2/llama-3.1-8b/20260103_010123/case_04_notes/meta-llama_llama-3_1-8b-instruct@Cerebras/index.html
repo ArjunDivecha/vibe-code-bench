@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Taking App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        
+        #notes-app {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .note {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .note-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .note-content {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .note-edit {
+            display: none;
+        }
+        
+        .note-edit textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .note-edit button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .note-edit button:hover {
+            background-color: #3e8e41;
+        }
+        
+        .search-bar {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+        }
+        
+        .search-bar button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .search-bar button:hover {
+            background-color: #3e8e41;
+        }
+    </style>
+</head>
+<body>
+    <div id="notes-app">
+        <h1>Note Taking App</h1>
+        <div class="note-list"></div>
+        <div class="search-bar">
+            <input id="search-input" type="search" placeholder="Search notes...">
+            <button id="search-btn">Search</button>
+        </div>
+    </div>
+    <script>
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        let noteList = document.querySelector('.note-list');
+        let searchInput = document.querySelector('#search-input');
+        let searchBtn = document.querySelector('#search-btn');
+        let editNote = null;
+
+        function renderNotes() {
+            noteList.innerHTML = '';
+            notes.forEach((note) => {
+                let noteHTML = `
+                    <div class="note">
+                        <h2 class="note-title">${note.title}</h2>
+                        <p class="note-content">${note.content}</p>
+                        <button class="note-edit-btn">Edit</button>
+                        <button class="note-delete-btn">Delete</button>
+                    </div>
+                `;
+                let noteDiv = document.createElement('div');
+                noteDiv.innerHTML = noteHTML;
+                noteList.appendChild(noteDiv);
+                noteDiv.querySelector('.note-edit-btn').addEventListener('click', () => {
+                    editNote = note;
+                    showEditNote(note);
+                });
+                noteDiv.querySelector('.note-delete-btn').addEventListener('click', () => {
+                    notes = notes.filter((n) => n.title !== note.title);
+                    localStorage.setItem('notes', JSON.stringify(notes));
+                    renderNotes();
+                });
+            });
+        }
+
+        function showEditNote(note) {
+            let editHTML = `
+                <div class="note-edit">
+                    <textarea class="note-edit-textarea">${note.content}</textarea>
+                    <button class="note-edit-save-btn">Save</button>
+                </div>
+            `;
+            let editDiv = document.querySelector('.note-list');
+            editDiv.innerHTML = editHTML;
+            editDiv.querySelector('.note-edit-textarea').value = note.content;
+            editDiv.querySelector('.note-edit-save-btn').addEventListener('click', () => {
+                note.content = editDiv.querySelector('.note-edit-textarea').value;
+                notes = notes.map((n) => n.title === note.title ? note : n);
+                localStorage.setItem('notes', JSON.stringify(notes));
+                renderNotes();
+            });
+        }
+
+        renderNotes();
+
+        searchBtn.addEventListener('click', () => {
+            let searchTerm = searchInput.value.toLowerCase();
+            if (searchTerm) {
+                notes = notes.filter((note) => note.title.toLowerCase().includes(searchTerm) || note.content.toLowerCase().includes(searchTerm));
+                localStorage.setItem('notes', JSON.stringify(notes));
+                renderNotes();
+            } else {
+                renderNotes();
+            }
+        });
+    </script>
+</body>
+</html>

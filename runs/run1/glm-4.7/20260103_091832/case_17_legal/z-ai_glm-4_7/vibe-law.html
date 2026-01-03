@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1a2332;
+            --bg-hover: #243045;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: #1e293b;
+            --highlight-name: #f59e0b;
+            --highlight-date: #10b981;
+            --highlight-org: #8b5cf6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #1e40af);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .logo-text span {
+            color: var(--accent);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 64px);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            min-width: 400px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .results-count {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .case-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .case-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .case-card.active {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+
+        .case-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .case-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .case-snippet {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            width: 55%;
+            min-width: 500px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            position: absolute;
+            right: 0;
+            top: 64px;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .detail-panel.open {
+            transform: translateX(0);
+        }
+
+        .detail-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .detail-title-section {
+            flex: 1;
+        }
+
+        .detail-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .detail-citation {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .detail-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .detail-close:hover {
+            color: var(--text-primary);
+        }
+
+        /* Tabs */
+        .detail-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            background: var(--bg-tertiary);
+        }
+
+        .tab {
+            padding: 1rem 1.25rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .detail-actions {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .action-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Detail Content */
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .summary-text {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .full-text {
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .full-text p {
+            margin-bottom: 1rem;
+        }
+
+        /* Entity Highlights */
+        .highlight-name {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--highlight-name);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .highlight-date {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--highlight-date);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .highlight-org {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--highlight-org);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 280px;
+            background: var(--bg-tertiary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .notes-count {
+            background: var(--accent);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        .note-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .note-case {
+            font-size: 0.7rem;
+            color: var(--accent);
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .note-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .note-item:hover .note-delete {
+            opacity: 1;
+        }
+
+        .note-delete:hover {
+            color: #ef4444;
+        }
+
+        .add-note-section {
+            padding: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .add-note-textarea {
+            width: 100%;
+            padding: 0.6rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        .add-note-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .add-note-btn {
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .add-note-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-subtext {
+            font-size: 0.875rem;
+            opacity: 0.7;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .detail-panel {
+                width: 70%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .notes-sidebar {
+                display: none;
+            }
+            .detail-panel {
+                width: 100%;
+                min-width: 100%;
+            }
+            .search-container {
+                margin: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">⚖️</div>
+            <div class="logo-text">Vibe<span>-Law</span></div>
+        </div>
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search case law by title, court, or keyword...">
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+            <button class="btn btn-primary" onclick="toggleNotesPanel()">Notes</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="results-panel">
+            <div class="results-header">
+                <h2 style="font-size: 1.1rem; font-weight: 600;">Case Results</h2>
+                <span class="results-count" id="resultsCount">15 cases found</span>
+            </div>
+            <div class="results-list" id="resultsList">
+                <!-- Cases will be rendered here -->
+            </div>
+        </div>
+
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header">
+                <div class="detail-title-section">
+                    <h3 class="detail-title" id="detailTitle">Select a case to view details</h3>
+                    <p class="detail-citation" id="detailCitation"></p>
+                </div>
+                <button class="detail-close" onclick="closeDetail()">×</button>
+            </div>
+            <div class="detail-tabs">
+                <button class="tab active" onclick="switchTab('summary')" data-tab="summary">Summary</button>
+                <button class="tab" onclick="switchTab('fulltext')" data-tab="fulltext">Full Text</button>
+            </div>
+            <div class="detail-actions">
+                <button class="action-btn" id="extractBtn" onclick="toggleEntityExtraction()">
+                    <span>🏷️</span> Extract Entities
+                </button>
+                <button class="action-btn" onclick="addSelectedNote()">
+                    <span>📌</span> Save Selection
+                </button>
+            </div>
+            <div class="detail-content">
+                <div class="tab-content active" id="summaryTab">
+                    <div class="summary-section">
+                        <div class="summary-label">Case Overview</div>
+                        <p class="summary-text" id="summaryOverview"></p>
+                    </div>
+                    <div class="summary-section">
+                        <div class="summary-label">Key Holdings</div>
+                        <p class="summary-text" id="summaryHoldings"></p>
+                    </div>
+                    <div class="summary-section">
+                        <div class="summary-label">Legal Principles</div>
+                        <p class="summary-text" id="summaryPrinciples"></p>
+                    </div>
+                </div>
+                <div class="tab-content" id="fulltextTab">
+                    <div class="full-text" id="fullText"></div>
+                </div>
+            </div>
+            <div class="notes-sidebar">
+                <div class="notes-header">
+                    <span class="notes-title">Saved Notes</span>
+                    <span class="notes-count" id="notesCount">0</span>
+                </div>
+                <div class="notes-list" id="notesList">
+                    <!-- Notes will be rendered here -->
+                </div>
+                <div class="add-note-section">
+                    <textarea class="add-note-textarea" id="noteInput" placeholder="Add a note about the selected text..."></textarea>
+                    <button class="add-note-btn" onclick="addNote()">Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Legal Cases Data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Miranda v. Arizona",
+                court: "Supreme Court of the United States",
+                date: "June 13, 1966",
+                citation: "384 U.S. 436",
+                snippet: "The Supreme Court held that the Fifth Amendment's protection against self-incrimination requires law enforcement officials to advise a suspect of their rights before interrogation begins.",
+                summary: {
+                    overview: "This landmark decision established that detained criminal suspects must be informed of their constitutional rights before being interrogated by police. The ruling created what are now known as 'Miranda Rights.'",
+                    holdings: "The Court held that both inculpatory and exculpatory statements made in response to interrogation by a defendant in police custody will be admissible at trial only if the prosecution can show that the defendant was informed of the right to consult with an attorney and against self-incrimination.",
+                    principles: "Fifth Amendment protection against self-incrimination; Sixth Amendment right to counsel; Due process clause of the Fourteenth Amendment."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Chief Justice WARREN delivered the opinion of the Court.
+
+The cases before us raise questions which go to the roots of our concepts of American criminal jurisprudence: the restraints society must observe consistent with the Federal Constitution in prosecuting individuals for crime. More specifically, we deal with the admissibility of statements obtained from an individual who is subjected to custodial police interrogation and the necessity for procedures which assure that the individual is accorded his privilege under the Fifth Amendment to the Constitution not to be compelled to incriminate himself.
+
+We dealt with certain phases of this problem recently in Escobedo v. Illinois, 378 U.S. 478 (1964). In Escobedo, as well as in the instant cases, the defendant was in police custody and interrogation was begun. In Escobedo, however, the suspect had requested and been denied an opportunity to consult with his lawyer, and the police had not effectively advised him of his right to remain silent.
+
+In the instant cases, we have no such clear situations. We might find it difficult to hold that a defendant who was not advised of his right to remain silent was prejudiced by that failure. However, we cannot ignore the practical realities of law enforcement. The atmosphere and environment of incommunicado interrogation is inherently coercive. The Constitution does not require any specific code of procedures for protecting the privilege against self-incrimination. It does require, however, that the individual be accorded his privilege under the Fifth Amendment.
+
+Accordingly, we hold that when an individual is taken into custody or otherwise deprived of his freedom by the authorities in any significant way and is subjected to questioning, the privilege against self-incrimination is jeopardized. Procedural safeguards must be employed to protect the privilege.
+
+The defendant must be warned prior to any questioning that he has the right to remain silent, that anything he says can be used against him in a court of law, that he has the right to the presence of an attorney, and that if he cannot afford an attorney one will be appointed for him prior to any questioning if he so desires.`
+            },
+            {
+                id: 2,
+                title: "Brown v. Board of Education",
+                court: "Supreme Court of the United States",
+                date: "May 17, 1954",
+                citation: "347 U.S. 483",
+                snippet: "The Court declared that state laws establishing separate public schools for black and white students were unconstitutional, overturning Plessy v. Ferguson.",
+                summary: {
+                    overview: "This historic decision unanimously ruled that racial segregation in public schools violated the Equal Protection Clause of the Fourteenth Amendment, effectively overturning the 'separate but equal' doctrine established in Plessy v. Ferguson.",
+                    holdings: "Segregation of children in public schools solely on the basis of race deprives children of the minority group of equal educational opportunities, even though the physical facilities and other tangible factors may be equal.",
+                    principles: "Equal Protection Clause of the Fourteenth Amendment; 'Separate but equal' doctrine rejected; Education as a fundamental right."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Chief Justice WARREN delivered the opinion of the Court.
+
+These cases come to us from the States of Kansas, South Carolina, Virginia, and Delaware. They are premised on different facts and different local conditions, but a common legal question justifies their consideration together in this consolidated opinion.
+
+In each of the cases, minors of the Negro race, through their legal representatives, seek the aid of the courts in obtaining admission to the public schools of their community on a nonsegregated basis. In each instance, they had been denied admission to schools attended by white children under laws requiring or permitting segregation according to race. This segregation was alleged to deprive the plaintiffs of the equal protection of the laws under the Fourteenth Amendment.
+
+The plaintiffs contend that segregated public schools are not 'equal' and cannot be made 'equal,' and that hence they are deprived of the equal protection of the laws.
+
+Today, education is perhaps the most important function of state and local governments. Compulsory school attendance laws and the great expenditures for education both demonstrate our recognition of the importance of education to our democratic society. It is required in the performance of our most basic public responsibilities, even service in the armed forces. It is the very foundation of good citizenship. Today it is a principal instrument in awakening the child to cultural values, in preparing him for later professional training, and in helping him to adjust normally to his environment. In these days, it is doubtful that any child may reasonably be expected to succeed in life if he is denied the opportunity of an education. Such an opportunity, where the state has undertaken to provide it, is a right which must be made available to all on equal terms.
+
+We conclude that, in the field of public education, the doctrine of 'separate but equal' has no place. Separate educational facilities are inherently unequal.`
+            },
+            {
+                id: 3,
+                title: "Roe v. Wade",
+                court: "Supreme Court of the United States",
+                date: "January 22, 1973",
+                citation: "410 U.S. 113",
+                snippet: "The Court ruled that the Constitution protects a pregnant woman's liberty to choose to have an abortion without excessive government restriction.",
+                summary: {
+                    overview: "This decision established a woman's legal right to have an abortion under the constitutional right to privacy, while allowing states to regulate abortion to protect maternal health and potential life.",
+                    holdings: "The Constitution does not explicitly mention any right of privacy, but the Court recognized that a right of personal privacy does exist under the Constitution, extending to a woman's decision whether to terminate her pregnancy.",
+                    principles: "Right to privacy under Due Process Clause; State interests in protecting maternal health and potential life; Trimester framework for regulation."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice BLACKMUN delivered the opinion of the Court.
+
+This Texas federal appeal and its Georgia companion, Doe v. Bolton, present constitutional challenges to state criminal abortion legislation. The Texas statutes under attack here are typical of those that have been in effect in many States for approximately a century. The Georgia statutes, in contrast, have a modern cast and are a legislative product that, to an extent at least, obviously reflects the influences of recent attitudinal changes, of medical advances, and of new thinking about an old issue.
+
+We forthwith acknowledge our awareness of the sensitive and emotional nature of the controversy of the subject of this litigation. A person's right to privacy, whether it be founded in the Fourteenth Amendment's concept of personal liberty and restrictions upon state action or in the Ninth Amendment's reservation of rights to the people, is broad enough to encompass a woman's decision whether or not to terminate her pregnancy.
+
+The Constitution does not explicitly mention any right of privacy. However, the Court has recognized that a right of personal privacy does exist under the Constitution. In a line of decisions, however, the Court has held that the right of personal privacy includes the abortion decision.
+
+The principal thrust of appellant's attack on the Texas statutes is that they improperly invade a right, said to be possessed by the pregnant woman, to choose to terminate her pregnancy. Appellant would discover this right in the concept of personal 'liberty' embodied in the Fourteenth Amendment's Due Process Clause; or in personal marital, familial, and sexual privacy said to be protected by the Bill of Rights or its penumbras.
+
+We recognize the right of the individual, married or single, to be free from unwarranted governmental intrusion into matters so fundamentally affecting a person as the decision whether to bear or beget a child.`
+            },
+            {
+                id: 4,
+                title: "Marbury v. Madison",
+                court: "Supreme Court of the United States",
+                date: "February 24, 1803",
+                citation: "5 U.S. 137",
+                snippet: "This case established the principle of judicial review, affirming the Supreme Court's power to strike down laws that violate the Constitution.",
+                summary: {
+                    overview: "Perhaps the most significant case in American constitutional law, Marbury established the doctrine of judicial review, giving the Supreme Court the power to declare acts of Congress unconstitutional.",
+                    holdings: "It is emphatically the province and duty of the judicial department to say what the law is. Those who apply the rule to particular cases must of necessity expound and interpret that rule.",
+                    principles: "Judicial review; Separation of powers; Constitution as supreme law of the land."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Chief Justice MARSHALL delivered the opinion of the Court.
+
+At the last term, on the affidavits then read and filed with the clerk, a rule was granted in this case, directing the Secretary of State to show cause why a mandamus should not issue, directing him to deliver to William Marbury his commission as a justice of the peace for the county of Washington, in the district of Columbia.
+
+The peculiar delicacy of this case, the novelty of some of its circumstances, and the real difficulty attending the points which occur in it, require a complete exposition of the principles on which the opinion to be given by the court is founded.
+
+These principles have been, on the side of the applicant, very ably argued at the bar. In rendering the opinion of the court, there will be some departure in form, though not in substance, from the points stated in that argument.
+
+In the order in which the court has viewed this subject, the following questions have been considered and decided:
+
+1st. Has the applicant a right to the commission he demands?
+
+2d. If he has a right, and that right has been violated, do the laws of his country afford him a remedy?
+
+3d. If they do afford him a remedy, is it a mandamus issuing from this court?
+
+The question whether an act repugnant to the constitution can become the law of the land is a question deeply interesting to the United States; but, happily, not of an intricacy proportioned to its interest. It seems only necessary to recognise certain principles, supposed to have been long and well established, to decide it.
+
+That the people have an original right to establish, for their future government, such principles as, in their opinion, shall most conduce to their own happiness, is the basis on which the whole American fabric has been erected.
+
+The powers of the legislature are defined and limited; and that those limits may not be mistaken, or forgotten, the constitution is written. To what purpose are powers limited, and to what purpose is that limitation committed to writing, if these limits may, at any time, be passed by those intended to be restrained?
+
+It is emphatically the province and duty of the judicial department to say what the law is.`
+            },
+            {
+                id: 5,
+                title: "Gideon v. Wainwright",
+                court: "Supreme Court of the United States",
+                date: "March 18, 1963",
+                citation: "372 U.S. 335",
+                snippet: "The Court held that the Sixth Amendment's guarantee of counsel is a fundamental right essential to a fair trial, applicable to the states through the Fourteenth Amendment.",
+                summary: {
+                    overview: "This unanimous decision established that states are required under the Sixth Amendment to provide an attorney to defendants in criminal cases who cannot afford their own lawyers.",
+                    holdings: "The right of an indigent defendant in a criminal trial to have the assistance of counsel is a fundamental right essential to a fair trial, and the Sixth Amendment's guarantee applies to the states through the Fourteenth Amendment.",
+                    principles: "Sixth Amendment right to counsel; Fourteenth Amendment Due Process Clause; Incorporation doctrine; Right to fair trial."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice BLACK delivered the opinion of the Court.
+
+Petitioner was charged in a Florida State Court with having broken and entered a poolroom with intent to commit a misdemeanor. This offense is a felony under Florida law. Appearing in court without funds and without a lawyer, petitioner asked the Florida trial judge to appoint counsel for him, whereupon the following colloquy took place:
+
+The COURT: Mr. Gideon, I am sorry, but I cannot appoint Counsel to represent you in this case. Under the laws of the State of Florida, the only time the Court can appoint Counsel to represent a Defendant is when that person is charged with a capital offense. I am sorry, but I will have to deny your request to appoint Counsel to defend you in this case.
+
+GIDEON: The United States Supreme Court says I am entitled to be represented by Counsel.
+
+Put to trial before a jury, Gideon conducted his defense about as well as could be expected from a layman. He made an opening statement to the jury, cross-examined the State's witnesses, presented witnesses in his own defense, declined to testify himself, and made a short argument to the jury. The jury returned a verdict of guilty, and petitioner was sentenced to serve five years in the state prison.
+
+From that conviction, petitioner appealed to the Supreme Court of Florida, which affirmed without opinion. Gideon then filed in the Supreme Court of the United States a petition for certiorari, which was granted.
+
+In our adversary system of criminal justice, any person haled into court who is too poor to hire a lawyer cannot be assured a fair trial unless counsel is provided for him. This seems to us to be an obvious truth. Governments, both state and federal, quite properly spend vast sums of money to establish machinery to try defendants accused of crime. Lawyers to prosecute are everywhere deemed essential to protect the public's interest in the enforcement of criminal law.
+
+The right of one charged with crime to counsel may not be deemed fundamental and essential to fair trials in some countries, but it is in ours. From the very beginning, our state and national constitutions and laws have laid great emphasis on procedural and substantive safeguards designed to assure fair trials before impartial tribunals in which every defendant stands equal before the law.`
+            },
+            {
+                id: 6,
+                title: "Citizens United v. FEC",
+                court: "Supreme Court of the United States",
+                date: "January 21, 2010",
+                citation: "558 U.S. 310",
+                snippet: "The Court held that the free speech clause of the First Amendment prohibits the government from restricting independent expenditures for political communications by corporations.",
+                summary: {
+                    overview: "This controversial ruling held that the First Amendment prohibits the government from restricting independent political expenditures by corporations and unions, effectively allowing unlimited corporate spending in elections.",
+                    holdings: "The Government may not suppress political speech on the basis of the speaker's corporate identity. No sufficient governmental interest justifies limits on the political speech of nonprofit or for-profit corporations.",
+                    principles: "First Amendment freedom of speech; Corporate personhood; Campaign finance regulation; Political speech protection."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice KENNEDY delivered the opinion of the Court.
+
+The Government may regulate corporate political speech through disclaimer and disclosure requirements, but it may not suppress that speech altogether. This Court has recognized that "the First Amendment applies to corporations and unions in the same way it applies to individuals."
+
+The Court has recognized that First Amendment protection extends to corporations. In First National Bank of Boston v. Bellotti, this Court rejected the suggestion that the speech at issue was not protected because it was "communicated by the corporate form." The Court explained: "The proper question therefore is not whether corporations 'have' First Amendment rights and, if so, whether they are coextensive with those of natural persons. Instead, the question is whether [the] statute abridges expression that the First Amendment was meant to protect."
+
+If the First Amendment has any force, it prohibits Congress from fining or jailing citizens, or associations of citizens, for simply engaging in political speech. The Government may regulate corporate political speech through disclaimer and disclosure requirements, but it may not suppress that speech altogether.
+
+The appearance of influence or access, furthermore, will not cause the electorate to lose faith in our democracy. By definition, an independent expenditure is political speech presented to the electorate that is not coordinated with a candidate.
+
+The fact that a corporation, unlike an individual, may have long-term economic interests that may be affected by political outcomes does not justify limiting its speech. The First Amendment does not permit the State to sacrifice speech for efficiency.
+
+If the speech in question were a television broadcast, a cable program, or a blog entry, the Government could not prohibit its dissemination. It makes no difference that the speech in question was funded by a corporation rather than an individual.`
+            },
+            {
+                id: 7,
+                title: "Obergefell v. Hodges",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2015",
+                citation: "576 U.S. 644",
+                snippet: "The Court ruled that the fundamental right to marry is guaranteed to same-sex couples under the Due Process and Equal Protection Clauses of the Fourteenth Amendment.",
+                summary: {
+                    overview: "This historic decision legalized same-sex marriage nationwide, holding that the Fourteenth Amendment requires states to license marriages between two people of the same sex and to recognize such marriages performed in other states.",
+                    holdings: "The right to marry is a fundamental right inherent in the liberty of the person, and under the Due Process and Equal Protection Clauses of the Fourteenth Amendment, couples of the same sex may not be deprived of that right.",
+                    principles: "Fourteenth Amendment Due Process and Equal Protection Clauses; Fundamental right to marry; Dignity and autonomy of individuals; State recognition of marriages."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice KENNEDY delivered the opinion of the Court.
+
+The Constitution promises liberty to all within its reach, a liberty that includes certain specific rights that allow persons, within a lawful realm, to define and express their identity. The petitioners in these cases seek to find that liberty by marrying someone of the same sex and having their marriages deemed lawful on the same terms as marriages between persons of the opposite sex.
+
+The identification and protection of fundamental rights is an enduring part of the judicial duty to interpret the Constitution. That responsibility, however, "has not been reduced to any formula." Rather, it requires courts to exercise reasoned judgment in identifying interests of the person so fundamental that the State must accord them its respect.
+
+The right to personal choice regarding marriage is inherent in the concept of individual autonomy. This abiding connection between marriage and liberty is why Loving invalidated interracial marriage bans under the Due Process Clause. Decisions about marriage are among the most intimate that an individual can make.
+
+The nature of marriage is that, through its enduring bond, two persons together can find other freedoms, such as expression, intimacy, and spirituality. This is true for all persons, whatever their sexual orientation.
+
+There is no difference between same- and opposite-sex couples with respect to this principle. Yet by virtue of their exclusion from that institution, same-sex couples are denied the constellation of benefits that the States have linked to marriage.
+
+The right to marry is fundamental as a matter of history and tradition, but rights come not from ancient sources alone. They rise, too, from a better informed understanding of how constitutional imperatives define a liberty that remains urgent in our own era. Many who deem same-sex marriage to be wrong reach that conclusion based on decent and honorable religious or philosophical premises, and neither they nor their beliefs are disparaged here. But when that sincere, personal opposition becomes enacted law and public policy, the necessary consequence is to put the imprimatur of the State itself on an exclusion that soon demeans or stigmatizes those whose own liberty is then denied.
+
+The Constitution grants them that right. The judgment of the Court of Appeals for the Sixth Circuit is reversed.`
+            },
+            {
+                id: 8,
+                title: "United States v. Nixon",
+                court: "Supreme Court of the United States",
+                date: "July 24, 1974",
+                citation: "418 U.S. 683",
+                snippet: "The Court unanimously ruled that President Nixon must comply with a subpoena for tape recordings, rejecting his claim of absolute executive privilege.",
+                summary: {
+                    overview: "This unanimous decision established that executive privilege is not absolute and that the President is not above the law, leading to Nixon's resignation in the Watergate scandal.",
+                    holdings: "Neither the doctrine of separation of powers nor the need for confidentiality of high-level communications can sustain an absolute, unqualified Presidential privilege of immunity from judicial process under all circumstances.",
+                    principles: "Executive privilege; Separation of powers; Rule of law; Judicial review; Due process."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Chief Justice BURGER delivered the opinion of the Court.
+
+This case presents for review the denial of a motion, filed in the District Court on behalf of the President of the United States, in the course of a pending criminal prosecution, to quash a third-party subpoena duces tecum issued by the United States District Court for the District of Columbia, pursuant to a rule of the Court, and to enjoin the Special Prosecutor from compliance with the subpoena.
+
+The Special Prosecutor, a subordinate executive officer, the respondent here, is conducting the prosecution on behalf of the United States. The subpoena was served upon the President's personal aide, calling for the production before trial of certain tapes, memoranda, papers, and transcripts.
+
+The President moved to quash the subpoena, asserting that he was not required to produce the materials, that the District Court was without jurisdiction to issue the subpoena, and that the subpoena violated the principle of executive privilege and the President's constitutional separation of powers.
+
+The question whether executive privilege exists and, if so, its scope is a constitutional issue. The President's counsel argued that the privilege is absolute, particularly with respect to communications between the President and his close advisors.
+
+The Court recognizes the necessity for protection of the public interest in candid, objective, and even blunt or harsh opinions in Presidential decisionmaking. A President and those who assist him must be free to explore alternatives in the process of shaping policies and making decisions and to do so in a way many would be unwilling to express except privately.
+
+But this privilege is not absolute. The President's need for complete candor and objectivity from advisors calls for great deference from the courts. However, neither the doctrine of separation of powers nor the generalized need for confidentiality of high-level communications can sustain an absolute, unqualified Presidential privilege of immunity from judicial process under all circumstances.
+
+The President's claim of absolute privilege must be rejected. The Court has held that executive privilege is constitutionally based, but it is not absolute. When the privilege depends solely on the broad, undifferentiated claim of public interest in the confidentiality of such conversations, a confrontation with other values arises.
+
+Absent a claim of need to protect military, diplomatic, or sensitive national security secrets, we find it difficult to accept the argument that the President is entitled to absolute executive privilege.`
+            },
+            {
+                id: 9,
+                title: "New York Times Co. v. Sullivan",
+                court: "Supreme Court of the United States",
+                date: "March 9, 1964",
+                citation: "376 U.S. 254",
+                snippet: "The Court established the 'actual malice' standard for defamation claims by public officials, requiring proof that false statements were made with knowledge of falsity or reckless disregard for truth.",
+                summary: {
+                    overview: "This landmark First Amendment decision established that public officials cannot recover damages for defamation unless they prove 'actual malice' — that the statement was made with knowledge of its falsity or with reckless disregard for truth.",
+                    holdings: "The constitutional guarantees require a federal rule that prohibits a public official from recovering damages for a defamatory falsehood relating to his official conduct unless he proves 'actual malice' — that the statement was made with knowledge of its falsity or with reckless disregard for whether it was true or false.",
+                    principles: "First Amendment freedom of speech and press; Defamation law; Actual malice standard; Public officials doctrine."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice BRENNAN delivered the opinion of the Court.
+
+We are required in this case to determine for the first time the extent to which the constitutional protections for speech and press limit a State's power to award damages for libel in a civil action by a public official against critics of his official conduct.
+
+The case concerns an advertisement published in The New York Times on behalf of a group whose nominal chairman was Dr. Martin Luther King, Jr. The advertisement described police action in Montgomery, Alabama, against peaceful demonstrations by students.
+
+The respondent, an elected commissioner of the city of Montgomery, filed a libel action in a state court alleging that the advertisement and the alleged refusal of the Times to publish a retraction defamed him. The jury returned a verdict for the respondent, and the judgment was affirmed by the Supreme Court of Alabama.
+
+We hold that the rule of law applied by the Alabama courts is constitutionally deficient for failure to provide the safeguards for freedom of speech and of the press that are required by the First and Fourteenth Amendments in a libel action brought by a public official against critics of his official conduct.
+
+The constitutional guarantees require, we think, a federal rule that prohibits a public official from recovering damages for a defamatory falsehood relating to his official conduct unless he proves "actual malice" — that the statement was made with knowledge of its falsity or with reckless disregard of whether it was true or false.
+
+Error may have been committed in good faith; it is error nonetheless. That would be a dangerous rule to press. It would give public officials an unchecked power to punish their critics.
+
+The present advertisement, as an expression of grievance and protest on one of the major public issues of our time, would seem clearly to qualify for the constitutional protection. The question is whether it forfeits that protection by the falsity of some of its factual statements and by its alleged defamation of the respondent.
+
+We conclude that it does not. The First Amendment protects the publication of all statements, even false ones, about the conduct of public officials except when statements are made with actual malice.`
+            },
+            {
+                id: 10,
+                title: "District of Columbia v. Heller",
+                court: "Supreme Court of the United States",
+                date: "June 26, 2008",
+                citation: "554 U.S. 570",
+                snippet: "The Court held that the Second Amendment protects an individual's right to possess a firearm for self-defense, unconnected with service in a militia.",
+                summary: {
+                    overview: "This decision held that the Second Amendment protects an individual's right to possess a firearm for traditionally lawful purposes, such as self-defense within the home, and that federal handgun bans and trigger lock requirements violate that right.",
+                    holdings: "The Second Amendment protects an individual right to possess a firearm unconnected with service in a militia, and to use that arm for traditionally lawful purposes, such as self-defense within the home.",
+                    principles: "Second Amendment right to keep and bear arms; Individual rights interpretation; Self-defense; Precedent and historical analysis."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice SCALIA delivered the opinion of the Court.
+
+We consider whether a District of Columbia prohibition on the possession of usable handguns in the home violates the Second Amendment to the Constitution.
+
+The Second Amendment provides: "A well regulated Militia, being necessary to the security of a free State, the right of the people to keep and bear Arms, shall not be infringed."
+
+The District of Columbia generally prohibits the possession of handguns. It is a crime to carry an unregistered firearm, and the registration of handguns is prohibited. Wholly apart from that prohibition, no person may carry a handgun without a license, but the chief of police may issue licenses for 1-year periods. District law also requires residents to keep their lawfully owned firearms, such as registered long guns, "unloaded and disassembled or bound by a trigger lock."
+
+The question presented by this case is whether the District's prohibition on the possession of usable handguns in the home violates the Second Amendment.
+
+The Second Amendment's prefatory clause announces a purpose, but does not limit or expand the scope of the second clause. The operative clause's text and history demonstrate that it connotes an individual right to keep and bear arms.
+
+We hold that the Second Amendment protects an individual right to possess a firearm unconnected with service in a militia, and to use that arm for traditionally lawful purposes, such as self-defense within the home. The District's total ban on handgun possession in the home amounts to a prohibition of an entire class of "arms" that Americans overwhelmingly choose for the lawful purpose of self-defense.
+
+Under any of the standards of scrutiny that we have applied to enumerated constitutional rights, banning from the home "the most preferred firearm in the nation to 'keep' and use for protection of one's home and family," would fail constitutional muster.`
+            },
+            {
+                id: 11,
+                title: "Bush v. Gore",
+                court: "Supreme Court of the United States",
+                date: "December 12, 2000",
+                citation: "531 U.S. 98",
+                snippet: "The Court ruled that the Florida Supreme Court's method for recounting ballots violated the Equal Protection Clause, effectively ending the 2000 presidential election recount.",
+                summary: {
+                    overview: "This controversial decision effectively resolved the 2000 presidential election by holding that Florida's recount procedures violated the Equal Protection Clause, leading to George W. Bush's victory.",
+                    holdings: "The Florida Supreme Court's recount scheme violated the Equal Protection Clause because it lacked equal and uniform standards for evaluating the ballots from different precincts.",
+                    principles: "Equal Protection Clause; Due process; Election law; Federal jurisdiction over state elections; Article II electors clause."
+                },
+                fullText: `PER CURIAM OPINION
+
+The petitioners, George W. Bush and Richard Cheney, seek a writ of certiorari to review the judgment of the Florida Supreme Court in a case involving the recount of presidential election ballots in Florida.
+
+On December 8, 2000, the Florida Supreme Court ordered a manual recount of all "under-votes" in the state — ballots that had shown no vote for president when counted by machine. The court ordered that the recount be conducted statewide and that the results be included in the tally for the presidential election.
+
+The petitioners contend that the recount ordered by the Florida Supreme Court violates the Equal Protection Clause of the Fourteenth Amendment because it fails to provide equal treatment of ballots cast in different counties.
+
+The problem here is that different counties used different standards to determine what counted as a vote. Some counties counted dimpled chads, others did not. Some counted hanging chads, others did not. This lack of uniformity means that similarly situated voters were treated differently.
+
+We hold that the Florida Supreme Court's recount scheme violates the Equal Protection Clause. The recount procedures, as implemented, are not uniform. Different counties used different standards to determine what counted as a legal vote. This violates the fundamental principle that all votes must be treated equally.
+
+The State Supreme Court did not specify standards to ensure the equal treatment of ballots. The absence of such standards means that some voters may have had their votes counted while others, whose ballots were similarly marked, did not.
+
+Because it is evident that any recount seeking to meet the December 12 date set by Congress, even if it commenced at this moment, could not be conducted in compliance with the requirements of equal protection and due process, we reverse the judgment of the Florida Supreme Court.`
+            },
+            {
+                id: 12,
+                title: "Terry v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 10, 1968",
+                citation: "392 U.S. 1",
+                snippet: "The Court held that police may stop and frisk a person if they have reasonable suspicion that criminal activity is afoot and that the person may be armed and dangerous.",
+                summary: {
+                    overview: "This decision established the constitutionality of stop-and-frisk procedures, allowing police officers to conduct limited searches for weapons based on reasonable suspicion rather than probable cause.",
+                    holdings: "Where a police officer observes unusual conduct which leads him reasonably to conclude in light of his experience that criminal activity may be afoot and that the persons with whom he is dealing may be armed and presently dangerous, he is entitled for the protection of himself and others in the area to conduct a carefully limited search of the outer clothing of such persons in an attempt to discover weapons.",
+                    principles: "Fourth Amendment search and seizure; Reasonable suspicion standard; Stop and frisk; Police officer safety."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Chief Justice WARREN delivered the opinion of the Court.
+
+This case presents serious questions concerning the role of the Fourth Amendment in the confrontation on the street between the citizen and the policeman investigating suspicious circumstances.
+
+Petitioner Terry was convicted of carrying a concealed weapon. The conviction was based on evidence discovered when a police officer stopped and frisked him on a Cleveland street. The officer had observed Terry and another man pacing back and forth in front of a store, looking into the window, and conferring with each other.
+
+The officer, who was experienced in the detection of pickpockets, believed that the men were "casing" the store for a robbery. When the officer approached them and identified himself as a police officer, Terry mumbled something in response. The officer grabbed Terry, spun him around, and patted down the outside of his clothing. He felt a pistol in Terry's jacket pocket and removed it.
+
+The question before us is whether the officer's search of Terry violated the Fourth Amendment's prohibition against unreasonable searches and seizures.
+
+We hold that the Fourth Amendment does not require a police officer who lacks the precise level of information necessary for probable cause to arrest to simply shrug his shoulders and allow a crime to occur or a criminal to escape. On the contrary, we recognize that it may be the essence of good police work to adopt an intermediate response.
+
+A police officer may in appropriate circumstances and in an appropriate manner approach a person for purposes of investigating possibly criminal behavior even though there is no probable cause to make an arrest. And if, in the course of this investigation, the officer identifies himself as a policeman and makes reasonable inquiries, and if nothing in the initial stages of the encounter serves to dispel his reasonable fear for his own or others' safety, he is entitled for the protection of himself and others in the area to conduct a carefully limited search of the outer clothing of such persons in an attempt to discover weapons which might be used to assault him.`
+            },
+            {
+                id: 13,
+                title: "Mapp v. Ohio",
+                court: "Supreme Court of the United States",
+                date: "June 19, 1961",
+                citation: "367 U.S. 643",
+                snippet: "The Court extended the exclusionary rule to state courts, holding that evidence obtained in violation of the Fourth Amendment cannot be used in state criminal prosecutions.",
+                summary: {
+                    overview: "This decision applied the exclusionary rule to the states through the Fourteenth Amendment, requiring state courts to exclude evidence obtained through unconstitutional searches and seizures.",
+                    holdings: "All evidence obtained by searches and seizures in violation of the Constitution is, by that same authority, inadmissible in a state court. The exclusionary rule applies to state proceedings through the Fourteenth Amendment.",
+                    principles: "Fourth Amendment protection against unreasonable searches and seizures; Exclusionary rule; Incorporation doctrine; Due process."
+                },
+                fullText: `OPINION OF THE COURT
+
+Mr. Justice CLARK delivered the opinion of the Court.
+
+This case presents serious questions concerning the role of the Fourth Amendment in the application of the exclusionary rule to state criminal proceedings.
+
+Petitioner Dollree Mapp was convicted of possessing obscene materials after an admittedly illegal search of her home by Cleveland police. The police had entered her home without a warrant, claiming they were searching for a bombing suspect. When they did not find the suspect, they conducted a search of the house and found obscene materials.
+
+The question before us is whether evidence obtained in violation of the Fourth Amendment may be used in a state criminal prosecution. In Wolf v. Colorado, this Court held that the Fourth Amendment was applicable to the States through the Fourteenth Amendment, but that the exclusionary rule was not.
+
+We conclude that the exclusionary rule is an essential part of both the Fourth and Fourteenth Amendments, and that the States are bound by the rule. The rule is justified by the need to deter police misconduct and to maintain judicial integrity.
+
+The rule's purpose is to deter — to compel respect for the constitutional guaranty by removing the incentive to disregard it. If the police know that evidence obtained illegally cannot be used against a defendant, they will be less likely to engage in illegal searches and seizures.
+
+Moreover, the exclusionary rule is necessary to maintain the integrity of the judiciary. The courts should not be complicit in violations of the Constitution by admitting evidence obtained through illegal means.
+
+We therefore hold that all evidence obtained by searches and seizures in violation of the Federal Constitution is inadmissible in a state court. This extends the exclusionary rule to the states and overrules Wolf v. Colorado insofar as it holds to the contrary.`
+            },
+            {
+                id: 14,
+                title: "Shaw v. Reno",
+                court: "Supreme Court of the United States",
+                date: "June 28, 1993",
+                citation: "509 U.S. 630",
+                snippet: "The Court held that redistricting based on race, even when done to create majority-minority districts, may violate the Equal Protection Clause if it is not narrowly tailored to serve a compelling interest.",
+                summary: {
+                    overview: "This decision established that racial gerrymandering — the drawing of legislative districts primarily on the basis of race — is subject to strict scrutiny under the Equal Protection Clause.",
+                    holdings: "A reapportionment plan that includes in one district individuals who belong to the same race, but who are otherwise unconnected by common interests, may be subject to strict scrutiny under the Equal Protection Clause.",
+                    principles: "Equal Protection Clause; Racial gerrymandering; Strict scrutiny; Voting rights; Redistricting."
+                },
+                fullText: `OPINION OF THE COURT
+
+Ms. Justice O'CONNOR delivered the opinion of the Court.
+
+This case involves a challenge under the Equal Protection Clause of the Fourteenth Amendment to the redistricting plan enacted by the North Carolina General Assembly. The plan created one district with a majority black population.
+
+The appellants are five North Carolina residents who claim that the State's creation of a majority-black district violated the Equal Protection Clause. They argue that the district was drawn primarily on the basis of race, without sufficient justification.
+
+The question before us is whether North Carolina's creation of a majority-black district can be justified under the Equal Protection Clause. We hold that redistricting based on race, even when done to create majority-minority districts, is subject to strict scrutiny.
+
+Racial classifications of any sort pose the risk of placing individuals within racial groups for purposes that may be stigmatizing. When the State classifies individuals by race, it must have a compelling interest and must narrowly tailor its actions to achieve that interest.
+
+The State's interest in complying with the Voting Rights Act may be compelling in some circumstances. However, the State must show that its race-based districting is narrowly tailored to achieve that interest. The mere creation of a majority-black district is not sufficient justification for racial classification.
+
+We therefore hold that North Carolina's creation of a majority-black district is subject to strict scrutiny under the Equal Protection Clause. The State must demonstrate that the district is narrowly tailored to serve a compelling governmental interest.`
+            },
+            {
+                id: 15,
+                title: "Furman v. Georgia",
+                court: "Supreme Court of the United States",
+                date: "June 29, 1972",
+                citation: "408 U.S. 238",
+                snippet: "The Court ruled that the death penalty, as administered, violated the Eighth Amendment's prohibition against cruel and unusual punishment, leading to a moratorium on executions.",
+                summary: {
+                    overview: "This decision effectively suspended the death penalty in the United States by holding that its arbitrary application constituted cruel and unusual punishment under the Eighth Amendment.",
+                    holdings: "The imposition and carrying out of the death penalty in these cases constitute cruel and unusual punishment in violation of the Eighth and Fourteenth Amendments. The death penalty is arbitrarily applied, creating a real risk that it is being imposed arbitrarily.",
+                    principles: "Eighth Amendment cruel and unusual punishment; Fourteenth Amendment due process; Arbitrary application of death penalty; Proportionality review."
+                },
+                fullText: `PER CURIAM OPINION
+
+These cases present the question whether the death penalty is cruel and unusual punishment in violation of the Eighth and Fourteenth Amendments.
+
+The cases involve three men convicted of murder and sentenced to death. In each case, the death penalty was imposed under a statute that gave the jury complete discretion to choose between death and life imprisonment.
+
+The question before us is whether these death sentences are constitutional. We hold that they are not. The death penalty, as administered, violates the Eighth Amendment's prohibition against cruel and unusual punishment.
+
+The problem is that the death penalty is arbitrarily imposed. There is no meaningful basis for distinguishing the few who are sentenced to die from the many who are sentenced to prison. The risk of arbitrary imposition is simply too great.
+
+The Eighth Amendment's prohibition against cruel and unusual punishment demands more than that the punishment not be physically cruel. It also requires that the punishment not be excessive, and that it be applied in a non-arbitrary manner.
+
+The death penalty, as currently administered, fails this test. It is imposed in an arbitrary and capricious manner, with no meaningful basis for distinguishing those who receive the death penalty from those who do not.
+
+We therefore hold that these death sentences are unconstitutional. The death penalty, as currently administered, violates the Eighth and Fourteenth Amendments.`
+            }
+        ];
+
+        // State
+        let currentCase = null;
+        let entityExtractionEnabled = false;
+        let notes = JSON.parse(localStorage.getItem('vibe-law-notes') || '[]');
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const detailPanel = document.getElementById('detailPanel');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCitation = document.getElementById('detailCitation');
+        const summaryOverview = document.getElementById('summaryOverview');
+        const summaryHoldings = document.getElementById('summaryHoldings');
+        const summaryPrinciples = document.getElementById('summaryPrinciples');
+        const fullText = document.getElementById('fullText');
+        const notesList = document.getElementById('notesList');
+        const notesCount = document.getElementById('notesCount');
+        const noteInput = document.getElementById('noteInput');
+        const extractBtn = document.getElementById('extractBtn');
+
+        // Initialize
+        function init() {
+            renderCases(mockCases);
+            renderNotes();
+            setupEventListeners();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            searchInput.addEventListener('input', handleSearch);
+            document.addEventListener('selectionchange', handleSelection);
+        }
+
+        // Search
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            const filtered = mockCases.filter(c => 
+                c.title.toLowerCase().includes(query) ||
+                c.court.toLowerCase().includes(query) ||
+                c.snippet.toLowerCase().includes(query)
+            );
+            renderCases(filtered);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            renderCases(mockCases);
+        }
+
+        // Render Cases
+        function renderCases(cases) {
+            resultsCount.textContent = `${cases.length} case${cases.length !== 1 ? 's' : ''} found`;
+            
+            if (cases.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">No cases found</div>
+                        <div class="empty-state-subtext">Try adjusting your search terms</div>
+                    </div>
+                `;
+                return;
+            }
+
+            resultsList.innerHTML = cases.map(c => `
+                <div class="case-card ${currentCase?.id === c.id ? 'active' : ''}" onclick="openCase(${c.id})">
+                    <div class="case-title">${c.title}</div>
+                    <div class="case-meta">
+                        <span>🏛️ ${c.court}</span>
+                        <span>📅 ${c.date}</span>
+                        <span>📄 ${c.citation}</span>
+                    </div>
+                    <div class="case-snippet">${c.snippet}</div>
+                </div>
+            `).join('');
+        }
+
+        // Open Case
+        function openCase(id) {
+            currentCase = mockCases.find(c => c.id === id);
+            if (!currentCase) return;
+
+            // Update UI
+            detailTitle.textContent = currentCase.title;
+            detailCitation.textContent = `${currentCase.citation} • ${currentCase.court} • ${currentCase.date}`;
+            summaryOverview.textContent = currentCase.summary.overview;
+            summaryHoldings.textContent = currentCase.summary.holdings;
+            summaryPrinciples.textContent = currentCase.summary.principles;
+            fullText.textContent = currentCase.fullText;
+
+            // Reset entity extraction
+            entityExtractionEnabled = false;
+            extractBtn.classList.remove('active');
+
+            // Open panel
+            detailPanel.classList.add('open');
+            
+            // Update active state in list
+            renderCases(mockCases.filter(c => {
+                const query = searchInput.value.toLowerCase();
+                return !query || 
+                    c.title.toLowerCase().includes(query) ||
+                    c.court.toLowerCase().includes(query) ||
+                    c.snippet.toLowerCase().includes(query);
+            }));
+        }
+
+        // Close Detail
+        function closeDetail() {
+            detailPanel.classList.remove('open');
+            currentCase = null;
+            renderCases(mockCases.filter(c => {
+                const query = searchInput.value.toLowerCase();
+                return !query || 
+                    c.title.toLowerCase().includes(query) ||
+                    c.court.toLowerCase().includes(query) ||
+                    c.snippet.toLowerCase().includes(query);
+            }));
+        }
+
+        // Tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`${tab}Tab`).classList.add('active');
+        }
+
+        // Entity Extraction
+        function toggleEntityExtraction() {
+            entityExtractionEnabled = !entityExtractionEnabled;
+            extractBtn.classList.toggle('active', entityExtractionEnabled);
+            
+            if (entityExtractionEnabled && currentCase) {
+                const highlighted = extractEntities(currentCase.fullText);
+                fullText.innerHTML = highlighted;
+            } else if (currentCase) {
+                fullText.textContent = currentCase.fullText;
+            }
+        }
+
+        function extractEntities(text) {
+            // Entity patterns (simulated)
+            const patterns = [
+                { regex: /\b(Mr\.|Mrs\.|Ms\.|Dr\.|Justice|Chief Justice|Judge)\s+[A-Z][a-z]+/g, class: 'highlight-name' },
+                { regex: /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/g, class: 'highlight-date' },
+                { regex: /\b\d{4}\b/g, class: 'highlight-date' },
+                { regex: /\b(Supreme Court|District Court|Congress|Senate|House|Constitution|Amendment)\b/g, class: 'highlight-org' },
+                { regex: /\b(United States|America|Florida|Georgia|Alabama|Ohio|Texas|California|New York)\b/g, class: 'highlight-org' },
+                { regex: /\b(Petitioner|Respondent|Appellant|Appellee|Defendant|Plaintiff)\b/g, class: 'highlight-name' }
+            ];
+
+            let result = text;
+            const usedRanges = [];
+
+            patterns.forEach(({ regex, class: className }) => {
+                result = result.replace(regex, (match) => {
+                    return `<span class="${className}">${match}</span>`;
+                });
+            });
+
+            return result;
+        }
+
+        // Selection handling
+        let selectedText = '';
+        function handleSelection() {
+            const selection = window.getSelection();
+            selectedText = selection.toString().trim();
+        }
+
+        function addSelectedNote() {
+            if (!selectedText) {
+                alert('Please select some text first');
+                return;
+            }
+            noteInput.value = `"${selectedText.substring(0, 100)}${selectedText.length > 100 ? '...' : ''}"`;
+            noteInput.focus();
+        }
+
+        // Notes
+        function addNote() {
+            const text = noteInput.value.trim();
+            if (!text || !currentCase) {
+                alert('Please enter a note and select a case');
+                return;
+            }
+
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: text,
+                date: new Date().toLocaleDateString()
+            };
+
+            notes.unshift(note);
+            saveNotes();
+            renderNotes();
+            noteInput.value = '';
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            saveNotes();
+            renderNotes();
+        }
+
+        function saveNotes() {
+            localStorage.setItem('vibe-law-notes', JSON.stringify(notes));
+        }
+
+        function renderNotes() {
+            notesCount.textContent = notes.length;
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📝</div>
+                        <div style="font-size: 0.8rem;">No notes yet</div>
+                    </div>
+                `;
+                return;
+            }
+
+            notesList.innerHTML = notes.map(n => `
+                <div class="note-item">
+                    <button class="note-delete" onclick="deleteNote(${n.id})">×</button>
+                    <div class="note-case">${n.caseTitle}</div>
+                    <div class="note-text">${n.text}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">${n.date}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleNotesPanel() {
+            const sidebar = document.querySelector('.notes-sidebar');
+            sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

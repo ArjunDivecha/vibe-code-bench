@@ -1,0 +1,1527 @@
+{
+  "timestamp": "2026-01-03T09:18:20.974640",
+  "models": [
+    "meta-llama/llama-3.1-8b-instruct@Cerebras"
+  ],
+  "cases": [
+    "case_01_pomodoro",
+    "case_02_quiz",
+    "case_03_calculator",
+    "case_04_notes",
+    "case_05_weather",
+    "case_06_kanban",
+    "case_07_stopwatch",
+    "case_08_typing",
+    "case_09_expenses",
+    "case_10_memory",
+    "case_11_palette",
+    "case_12_habits",
+    "case_13_password",
+    "case_14_units",
+    "case_15_markdown",
+    "case_16_repostats",
+    "case_17_legal",
+    "case_18_slides",
+    "case_19_control_center",
+    "case_20_log_analytics"
+  ],
+  "timeout_minutes": 15,
+  "case_results": {
+    "case_01_pomodoro": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Critical timer logic error: seconds++ before checking causes timer to skip from 1:00 to 0:00, never displaying 0:00. Timer transitions are broken - when minutes becomes -1, it sets to 5 but never resets seconds. The playSound function is attached to timer click instead of automatic triggering at 0:00. Would run but with severely broken functionality."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing critical features: No automatic sound when timer hits 0, no automatic transition between work/break sessions (isRunning set to false stops timer), session counting logic is backwards (increments break during work transition). Has basic timer display, buttons, and session labels but core pomodoro functionality is broken."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Timer display is incorrect due to increment-before-check logic. Sessions don't automatically transition. Break counter increments at wrong time. The timer would appear to malfunction to users, jumping from 1:00 to 0:00 and stopping instead of continuing to next session."
+          },
+          "direction_following": {
+            "score": 6,
+            "reason": "Built as single HTML file as requested, has tomato red theme, includes all UI elements. However, the core requirement of automatic work/break cycling is broken. Sound plays on manual click instead of automatically at timer end."
+          },
+          "code_quality": {
+            "score": 4,
+            "reason": "No error handling for audio playback. Timer logic is fundamentally flawed with increment-before-check pattern. State management is confusing with isRunning being set false during transitions. Button state management is inconsistent. Variable naming is adequate but logic flow is poor."
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Poor implementation of core timer logic. The increment-before-decrement pattern is counterintuitive and error-prone. State transitions are handled awkwardly. The solution works against standard timer patterns rather than following established countdown timer conventions."
+          },
+          "total_score": 38.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_02_quiz": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code has critical bugs that prevent proper execution. The start screen is set to display:none initially and never shown. The checkAnswer function uses a broken ID extraction method (this.id.slice(5)) that will fail. The score display shows '0/10' but never updates during the quiz. Multiple runtime errors would occur."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing several key features: No visual highlighting of right/wrong answers after clicking (spec explicitly requested this), score doesn't update during quiz (only at end), animations are minimal and don't work as intended, no proper indication of which answer was selected vs correct answer. Has basic structure but missing critical interactive feedback."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "The quiz would be confusing to use. No visual feedback when answers are selected, score doesn't update until the end, the 'Correct!' message appears but user can't see which option they clicked or which was correct. The animation doesn't highlight right/wrong as requested. Questions are generic and not 'fun' as specified."
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Follows basic structure but misses key requirements. Created single HTML file as requested, has 10 questions with 4 options each, shows one at a time. However, doesn't highlight right/wrong answers visually, score tracking is broken during quiz, and animations don't meet spec. Questions aren't particularly 'fun' or about 'random topics' as requested."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality with multiple issues: No error handling, broken DOM manipulation logic, event listeners added incorrectly (recreating elements loses listeners), hardcoded IDs that break, no input validation, repetitive code that should be refactored into functions. The checkAnswer function's ID extraction is fundamentally broken."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation with repetitive code, poor state management, and convoluted logic. The approach of recreating DOM elements repeatedly is inefficient. No separation of concerns, mixing presentation and logic. The broken ID slicing approach shows poor understanding of event handling."
+          },
+          "total_score": 35.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_03_calculator": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code will run but has critical security flaw using eval() which is dangerous. Basic syntax is correct but the calculator doesn't handle division by zero gracefully as required - it just returns Infinity. The use of eval() for calculation is a major execution concern."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing several key features: No keyboard support at all (spec said 'would be nice'), uses * and / instead of \u00d7 and \u00f7 as specified, no proper division by zero handling (just shows Infinity), calculator doesn't look like a real calculator (buttons not in proper grid layout), missing + button entirely in the HTML."
+          },
+          "output_quality": {
+            "score": 5,
+            "reason": "Basic calculations work but output quality is compromised by: eval() allowing invalid expressions, no input validation, division by zero shows 'Infinity' instead of graceful handling, no formatting of results (long decimals not handled), can enter multiple operators in a row."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Failed to follow several specifications: Wrong operator symbols (* instead of \u00d7, / instead of \u00f7), missing + button completely, doesn't look like a real calculator (linear button layout), no keyboard support despite being requested, calculator is too small and cramped."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Major security issue using eval() - this is a well-known bad practice. No input validation, no error handling beyond a basic try-catch that shows an alert, inline onclick handlers instead of proper event listeners, no separation of concerns, hardcoded styles and logic."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "This is a naive, insecure implementation. Using eval() for a calculator is the opposite of elegant - it's dangerous and lazy. No thought given to input validation, state management, or proper calculator logic. The layout is primitive and doesn't resemble a real calculator at all."
+          },
+          "total_score": 39.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_04_notes": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) editForm.noteId, editForm.noteTitle, editForm.noteContent don't exist (should be document.getElementById), 2) Math.random() used as ID will create floating point numbers that won't match in comparisons, 3) No initialization of note list on page load, 4) Missing format button functionality despite CSS for it"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No delete functionality at all (-2), 2) No view/display of note content, only titles shown (-2), 3) No formatting implementation despite CSS for bold/italic buttons (-1), 4) Search doesn't reset when cleared, 5) Can't return to create form after clicking edit"
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "App would barely function: notes can't be viewed (only titles in list), can't be deleted, edit form references non-existent form fields so editing would crash, no visual feedback for user actions, empty notes can be created"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted single HTML file as requested and minimal design, but failed to implement several core requirements (delete, view content, formatting). Structure is there but execution is incomplete"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere, will crash on null values. Duplicate code for rendering note list (should be extracted). Poor form field access pattern. No validation of inputs. No defensive programming. Inconsistent property access methods"
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Overly simplistic approach with significant architectural flaws. Using Math.random() for IDs is problematic. No separation of concerns. Repetitive code. Missing basic UX considerations like clearing forms after submission"
+          },
+          "total_score": 30.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_05_weather": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) Chart.js library is not included but code tries to use it (new Chart() will fail), 2) updateChart() is called immediately on load which will crash, 3) City info positioning logic uses offsetTop/offsetLeft on elements that may not be rendered yet, 4) The chart canvas element exists but without Chart.js it's useless"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) Background color does NOT change based on weather conditions as required, 2) Chart functionality is broken (no Chart.js included), 3) City detail display is poorly implemented - creates multiple overlapping divs instead of showing/hiding properly, 4) No proper weather icons - just random emojis that don't match conditions (\ud83d\uddfd for NY, \ud83c\udf33 for Sydney)"
+          },
+          "output_quality": {
+            "score": 4,
+            "reason": "Basic display works but: 1) Chart will never render due to missing library, 2) City details overlay poorly and stack up with multiple clicks, 3) Weather icons don't match conditions (city icons instead of weather icons), 4) No visual feedback for weather conditions via background colors"
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Partially follows spec: Has 5 cities with temp/condition/humidity, has click interaction, attempts chart and responsive design. But fails on: proper weather icons (uses city icons), background color changes, and working chart implementation"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor implementation: 1) No error handling at all, 2) Creates duplicate DOM elements on each click instead of toggling visibility, 3) Hardcoded positioning that breaks easily, 4) Uses external library (Chart.js) without including it, 5) Inconsistent data structure between HTML and JS"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant solution: Creates new DOM elements on every click leading to memory leaks, positioning logic is fragile, attempts to use Chart.js for simple bar chart that could be done with CSS/Canvas, poor separation of concerns with data mixed into HTML"
+          },
+          "total_score": 33.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_06_kanban": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: querySelector('.todo button') returns null, data structure mismatch (stores 'card' but loads 'title'), dropCard function incorrectly appends e.target instead of creating new card element, getPriorityColor returns color names instead of hex values, and drag/drop implementation is fundamentally broken."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing delete functionality entirely (-2), edit only changes title not priority (-1), priority system based on text content instead of user selection (-1), drag and drop is broken (-2), localStorage implementation is flawed (-1). Only basic card creation and partial edit work."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The board would barely function. Cards can be created but not properly dragged between columns. The priority system requires specific keywords in titles. localStorage data structure doesn't match loading logic. Visual feedback is poor with no clear priority indicators."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Built without frameworks as requested, has three columns, but priority implementation is wrong (should be user-selectable, not keyword-based), missing delete feature, and drag-drop doesn't work properly. The spec asked for clicking to edit OR delete, neither fully implemented."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling whatsoever, inconsistent data structures, hardcoded column references, poor separation of concerns, no input validation, memory leaks from event listeners on deleted elements, and confusing variable names (e.g., 'card' stores text content)."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation with redundant code (getPriority and getPriorityColor do the same thing), poor abstraction, mixing data and presentation logic, and a fundamentally flawed approach to drag and drop that shows lack of understanding of the API."
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_07_stopwatch": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: stopwatchTime is used before declaration in updateStopwatchTime(), timer-display element doesn't exist in HTML but is referenced in JavaScript, timer div element selector is incorrect (should be class selector), intervalId variable conflicts between global and local scope in timer functions, and time variable in startTimer() is const but attempts to decrement it."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: no toggle button to switch between modes (only clickable header), no digital clock display styling as specified, timer mode is completely broken and non-functional, no sound/alert implementation beyond basic alert(), milliseconds display is incorrect (shows 3 digits instead of 2), and the UI doesn't properly hide/show elements between modes."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Stopwatch might partially work but timer is completely broken. The display format is wrong for milliseconds, lap times would accumulate incorrectly, timer countdown logic is fundamentally flawed with const variable mutation attempt, and mode switching doesn't actually work properly to display the correct interface."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to build both stopwatch and timer but missed key requirements: no proper mode toggle (just clickable text), doesn't look like a digital clock display as specified, timer implementation is broken, and the single HTML file requirement is met but the implementation is incomplete."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code organization with mixed concerns, no error handling whatsoever, variable scoping issues throughout, inconsistent naming conventions, hardcoded magic numbers, no input validation, and the timer logic is fundamentally broken with const mutation attempts."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very poor implementation with numerous bugs, no separation of concerns, repetitive code, inefficient event handling, and a confusing UI that doesn't match the spec. The approach to mode switching is particularly inelegant with manual show/hide of every element."
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_08_typing": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) startTime is never initialized before first use, causing NaN in WPM calculation 2) endTime is used before being set 3) DOM manipulation in input handler creates duplicate elements on every keystroke 4) substr() is deprecated 5) Timer logic references undefined startTime on first run"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No real-time highlighting of correct/incorrect characters as specified 2) WPM calculation is broken (divides by 0 initially) 3) No visual indication of which characters are correct/incorrect in the display text 4) Timer doesn't work properly on first load 5) Submit button behavior is unclear 6) Has duplicate text samples instead of 10 unique ones"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Output would be severely broken: 1) WPM shows NaN or Infinity due to division errors 2) Accuracy calculation only works for sequential typing 3) No visual feedback for correct/incorrect characters 4) Timer displays incorrectly 5) Stats accumulate duplicate DOM elements 6) Final stats appear in wrong location"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to follow spec but missed key requirements: 1) No character-by-character highlighting 2) Timer implementation is confused (counts up but mentions 30 seconds) 3) Only 5 unique text samples instead of 10 4) Submit button wasn't requested in spec 5) Missing proper visual feedback during typing"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality: 1) No error handling whatsoever 2) Global variables everywhere 3) DOM manipulation creates memory leaks 4) Uses deprecated substr() 5) Inconsistent timer logic 6) No input validation 7) Hardcoded magic numbers 8) Poor variable naming"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation: 1) Messy DOM manipulation that creates duplicate elements 2) Confusing timer logic 3) Poor state management 4) No separation of concerns 5) Hacky approach to starting the test 6) Overall architecture is poorly thought out"
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_09_expenses": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has critical runtime errors: Chart.js library is not included but Chart() constructor is called, causing immediate crash. The renderChart() function has a nested script tag inside innerHTML which won't execute. Missing form reset after submission. The chart rendering logic would fail even if Chart.js was included due to the malformed innerHTML approach."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing key features: No total spending display, no breakdown by category summary, filter UI is poor (uses prompts instead of proper UI), no visual indication of filtered vs unfiltered state, expense list display is very basic with no formatting or organization, no delete/edit functionality for expenses."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Even if it ran, the output would be poor: expense list has no formatting for currency, no sorting, basic unstyled divs. Filter uses browser prompts which is terrible UX. No validation on amount input (can enter negative). Date defaults to empty. No feedback when expense is added."
+          },
+          "direction_following": {
+            "score": 6,
+            "reason": "Follows basic structure of single HTML file and implements core features, but execution is poor. Uses localStorage as requested. Has the required categories. However, the 'nice, clean design' requirement is not met - styling is minimal and layout is basic."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere - localStorage operations, form validation, or chart rendering could all fail silently. Poor separation of concerns with HTML generation in JavaScript strings. The renderChart function is particularly bad with nested script tags. No input validation beyond HTML5 required attribute. Currency amounts stored as floats (precision issues)."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very inelegant implementation: uses prompts for filtering instead of proper UI, innerHTML for script injection (won't work), no modular structure, hardcoded colors array that doesn't match number of categories, repetitive code, poor UX patterns throughout."
+          },
+          "total_score": 35.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_10_memory": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has critical bugs that prevent proper execution. Only creates 8 cards instead of 16 (spec requires 8 pairs = 16 cards). No emoji/symbols shown on cards - they remain blank. Missing duplicate creation logic for pairs. The game cannot function as a memory game without pairs to match."
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most core features: No 16 cards (only 8), no pairs created, no emojis/symbols on cards, no win detection, no final stats display, no proper card face display, animations are minimal (only basic transform). The fundamental game mechanic of matching pairs is broken."
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The game is fundamentally broken - you cannot play a memory game with 8 unique cards that have no visible content. Cards don't show any symbols when flipped. The matching logic compares dataset values but there are no duplicate values to match. Timer and move counter work but are meaningless without a playable game."
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to follow the spec but failed on core requirements. Created a grid structure and basic flip mechanics, but missed the fundamental requirement of 16 cards with 8 pairs. No emojis/symbols used. Animations are minimal, not 'fun' as requested."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling whatsoever. Logic is fundamentally flawed - creates unique cards instead of pairs. No shuffle function. Hardcoded grid size. No validation for game state. The checkMatch function will never find matches because all cards have unique values. Missing basic game logic."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Poor implementation that misunderstands the core concept of a memory game. The approach of creating 8 unique cards shows fundamental misunderstanding. No clever solutions, just broken logic. Code structure is basic but the implementation is too flawed to be considered adequate."
+          },
+          "total_score": 20.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_11_palette": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: getRandomColor() generates invalid hex codes (missing padding), hexToRgb() expects hex but receives rgb() string format, palette.querySelector() is called on wrong object in loadPalette(), colors array is never populated but referenced, spacebar event doesn't check for locked colors, copy-to-clipboard functionality is completely missing despite being required"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: no copy-to-clipboard on click (major requirement), locked colors don't persist through generation, color name suggestions are primitive (only 7 basic names), saved palettes don't actually restore properly, no visual feedback for copying, no proper palette management (only saves one), animations are minimal"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Output would be severely broken: colors display as circles instead of proper palette, hex codes show as 'background-color: rgb(...)' instead of actual hex, RGB conversion fails, color info doesn't update properly, locked colors don't work as specified, spacebar generates new colors for locked ones too"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Built a single HTML file as requested but misunderstood core requirements: colors are tiny circles instead of a proper palette display, clicking should copy (not lock), locking is a separate action, missing smooth animations/transitions as specified, UI layout doesn't match typical palette generator"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere, functions will crash on edge cases, inconsistent data handling (mixing hex/rgb formats), global variables without proper initialization, event handlers don't validate inputs, localStorage operations have no try-catch, poor separation of concerns"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Clunky implementation with hardcoded initial colors, primitive color naming logic, inefficient DOM queries, no proper state management, mixing presentation and logic, repetitive code patterns, no consideration for user experience or edge cases"
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_12_habits": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "The HTML file has major JavaScript errors that would prevent execution. The data model is fundamentally broken - habits are stored as a simple object with boolean values, but the code tries to track daily completions across 30 days. The updateStats() function references habit.children[0].textContent multiple times, which would cause string concatenation bugs. The Python file is completely non-functional - it references JavaScript DOM methods like document.getElementById in Python code, which would immediately crash."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing most core features: No proper calendar/grid view showing which habits were completed on which days (just shows generic checkboxes), no real streak counter (the getStreak function logic is nonsensical), no completion percentage calculation (always returns 0 or 100), and the data model can't actually track habits across multiple days. The only working features are adding habits and basic localStorage."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The output would be severely broken. Users can't actually track which habits they completed on specific days - the calendar shows dates but isn't connected to specific habits. The streak calculation doesn't work at all. The UI would show concatenated strings like 'Exercise (Streak: 0, Completion: 0%) (Streak: 0, Completion: 0%)' due to the string manipulation bug in updateStats()."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to follow the spec but fundamentally misunderstood the requirements. Created a single HTML file as requested, but included an unnecessary and non-functional Python file. The calendar view exists but doesn't show habit completion status per day. The data model can't support the required functionality."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Very poor code quality. No error handling anywhere. The data model is fundamentally wrong - storing habits as {habitName: boolean} can't track daily completions. Functions like getStreak() have nonsensical logic. The Python file contains JavaScript code. Variable scoping issues (habits variable reused). No input validation."
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The implementation shows a fundamental misunderstanding of the problem. The data structure choice makes the required features impossible to implement. The code is convoluted and buggy, with no elegant solutions or clean abstractions."
+          },
+          "total_score": 25.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_13_password": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code has multiple critical runtime errors: generatePassword() is called with wrong number of arguments in updateToggle(), the function expects positional args but gets none. generatePassword() is called without returning value to update passwordInput. The password generation logic will fail when no character types are selected. Missing lowercase toggle despite being in spec."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing critical features: no lowercase toggle (spec requires it), strength meter doesn't work properly (no visual feedback for different strength levels), history doesn't persist generated passwords correctly (only adds on button click, not on generation), multiple password generation doesn't show individually, no proper strength calculation based on password length."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Password generation is flawed - always includes lowercase letters regardless of toggles, strength meter only shows 0% or 100%, multiple passwords shown in single input field with newlines instead of proper display, history only captures passwords when clicking generate button not when actually generating, copy button doesn't work for multiple passwords properly."
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Built single HTML file as requested with most features attempted, but missing lowercase toggle which was explicitly required. Modern design is very basic - just a white box with minimal styling. No visual distinction for password strength levels (weak/medium/strong)."
+          },
+          "code_quality": {
+            "score": 4,
+            "reason": "No error handling for clipboard API failures, no validation when no character types selected, hardcoded values (10 passwords, 10 history items), poor function organization with generatePassword being called incorrectly, no handling for edge cases like all toggles off."
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Very basic implementation with poor UX - strength meter doesn't show meaningful levels, multiple passwords crammed into single input, history management is confusing (only saves on button click), no visual feedback for copy action beyond alert, inefficient character array generation."
+          },
+          "total_score": 37.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_14_units": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) Units array lacks 'category' property but code filters by it, 2) Temperature conversion formulas incorrectly use 'value' parameter inside getConversionFactor which doesn't exist in that scope, 3) convert() function referenced in quick buttons is undefined, 4) Category switching logic is completely missing despite buttons existing"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most core features: 1) Category switching doesn't work - buttons exist but have no event handlers, 2) 'Type in one field, other updates instantly' - only one input field exists instead of two, 3) No actual conversion display/output field, 4) Quick conversion buttons call undefined function, 5) Formula display shows equation but not the actual formula used"
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "Output would be completely broken: 1) Conversions between different unit types (miles to km, kg to g) aren't implemented, 2) Temperature conversions are mathematically wrong (C to F returns just 9/5 + 32 without multiplying by input), 3) No output field to show converted values, 4) Many conversion factors missing (feet, inches, miles conversions)"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted single HTML file as requested but fundamentally misunderstood the spec: Built a single input converter instead of dual-field instant converter, missing responsive design, categories don't actually work"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code organization: 1) No error handling whatsoever, 2) Massive unmaintainable switch statements, 3) Hardcoded conversion logic instead of data structure, 4) Dead code (populateUnitLists filters by non-existent property), 5) Inconsistent patterns and repeated code"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "Extremely inelegant implementation: Massive nested switch statements for conversions, no data structure for unit relationships, temperature conversions broken due to scope issues, overall approach is brittle and unmaintainable"
+          },
+          "total_score": 18.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_15_markdown": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) The markdown rendering logic uses RegExp with plain strings like '# ## ###' which won't work as intended, 2) The bold/italic regex replacements are completely broken and would corrupt the HTML, 3) The export button has two event listeners where the second one incorrectly tries to save dark mode state, 4) No actual dark mode toggle implementation despite being required"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) No dark mode toggle button, 2) No save/load from localStorage functionality, 3) Markdown parsing is completely broken - headers, bold, italic, lists, links, code blocks, and blockquotes all have non-functional implementations, 4) The only working feature is the split-pane layout and export button (though export would produce broken HTML)"
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The markdown parser would produce completely incorrect output. For example: headers would become '<h1> <h1><h1> <h1><h1><h1>', bold text would have asterisks replaced with '<b>' tags without proper pairing, lists would replace all '-' with '<ul>', links parsing would crash on split, code blocks regex is malformed. The output would be unusable HTML."
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to create a single HTML file with split-pane layout as requested, but failed to implement most core requirements. Missing dark mode toggle button, save/load functionality, and all markdown features are broken. The export button exists but would export broken HTML."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Very poor implementation: 1) No error handling anywhere, 2) Markdown parser shows fundamental misunderstanding of how regex and string replacement work, 3) Duplicate event listener on export button with wrong functionality, 4) No input validation or edge case handling, 5) The markdown object structure makes no sense for the task"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The approach to markdown parsing is fundamentally flawed, showing a complete misunderstanding of the problem. Using RegExp with literal strings like '# ## ###' and replacing characters globally without context is not just inelegant, it's incorrect. No attempt at proper parsing logic or state management."
+          },
+          "total_score": 18.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_16_repostats": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple fatal errors: stats.py tries to access stats['largest'].get('size', 0) when stats['largest'] is None, causing AttributeError. File reading assumes all files are text (binary files will crash). No error handling for permissions or encoding issues. The HTML file has broken JavaScript trying to parse non-existent data attributes. stats.py doesn't generate the HTML file at all - it only creates a JSON file."
+          },
+          "features_complete": {
+            "score": 1,
+            "reason": "Almost entirely incomplete. The Python script only creates a JSON file, not the required HTML. No pie chart for file types, no bar chart for line counts, no proper visualization of largest files or directory depth. The HTML appears to be a static template with hardcoded circles, not actual data-driven charts. Missing the core requirement of generating HTML from Python."
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The output would be completely broken. stats.py creates only a JSON file, not the required stats.html. The provided HTML file has placeholder variables like {{largest_name}} that are never replaced. JavaScript tries to read data from body dataset that doesn't exist. Even if it worked, the 'charts' are just static circles, not actual data visualizations."
+          },
+          "direction_following": {
+            "score": 2,
+            "reason": "Failed to follow the core requirement: 'Single Python file that outputs a single HTML file'. Instead, provided separate Python and HTML files, with Python only generating JSON. The HTML file appears to be a manual template rather than generated output. Completely misunderstood the assignment."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "No error handling whatsoever - will crash on binary files, permission errors, or empty directories. Poor logic: incrementing depth for every directory instead of tracking actual depth. Inefficient line counting by reading entire files. The HTML has nonsensical JavaScript that sets data attributes after trying to read them. Variable naming is unclear (e.g., 'stats' dict structure)."
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The solution shows fundamental misunderstanding of the task. The approach of creating separate files and trying to use template variables without a templating system is deeply flawed. The 'visualizations' are just hardcoded SVG shapes. No clever solutions or clean design patterns - just broken, incomplete code."
+          },
+          "total_score": 14.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_17_legal": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: 1) Duplicate event listener registration causing memory leaks and multiple handler executions, 2) References undefined 'fullText' property on case objects, 3) Extract entities button gets multiple click handlers added each time detail view opens, 4) No null checks for DOM elements, 5) Would crash immediately when clicking a case due to missing fullText property"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) Only 2 mock cases instead of required 10-15, 2) No tabs implementation - just shows both summary and full text simultaneously, 3) No modal/split pane - detail view just appears below, 4) Summary shows only title instead of actual summary, 5) Notes don't associate with specific cases - they're global, 6) No snippet saving functionality as specified"
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Would produce broken output: 1) Entity extraction would fail due to undefined fullText, 2) Notes functionality is global not per-case, 3) Search works but only on 2 cases, 4) Visual layout doesn't match split-pane/modal requirement, 5) Dark mode colors are incorrect (blue background instead of deep blues/charcoals)"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Significant deviations from spec: 1) Wrong visual style - used bright blue (#2f4f7f) instead of deep blues/charcoals, 2) No split pane or modal implementation, 3) No tabs - shows both views simultaneously, 4) Notes aren't case-specific snippets but global notes, 5) Only 2 mock cases instead of 10-15"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code quality: 1) Duplicate event listener code, 2) No error handling anywhere, 3) Memory leaks from repeated addEventListener calls, 4) No validation of inputs, 5) Hardcoded styles instead of organized CSS classes, 6) No separation of concerns - everything mixed in global scope"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation: 1) Duplicate code blocks, 2) No abstraction or reusable functions, 3) Poor state management, 4) Inefficient DOM manipulation, 5) No consideration for performance or maintainability"
+          },
+          "total_score": 24.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_18_slides": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "The main.py code has critical issues: 1) It doesn't handle missing directories or files, 2) IndexError will occur if files have less than 2 lines when accessing lines[1], 3) The HTML generation is malformed - missing DOCTYPE, head, body tags, CSS styles, 4) The hardcoded 'slides' directory call at the bottom will crash if directory doesn't exist. The report.html file appears to be a static template that isn't actually generated by the Python code."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) Table of Contents has no actual links/anchors to navigate to slides, 2) CSS is extremely basic, not 'extremely premium' as specified, 3) No typography, shadows, or proper spacing implementation, 4) No page-break CSS for printing, 5) The Python script doesn't actually generate the shown HTML template - they're disconnected, 6) Summary section doesn't properly combine first few lines as requested."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The generated HTML would be broken and unusable: 1) Missing proper HTML structure (DOCTYPE, head, body), 2) No CSS included in the generated output, 3) The static report.html template isn't connected to the Python generator, 4) File names in TOC aren't cleaned up (shows 'slide1.txt' instead of 'Slide 1'), 5) Summary formatting is poor with redundant file name prefixes."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Partially follows directions but misses key requirements: 1) Uses Python 3 stdlib only (good), 2) Creates report.html (good), 3) But the Python script and HTML template are disconnected - the script doesn't generate the template shown, 4) CSS is not 'extremely premium' as specified, 5) Missing proper print CSS, 6) No proper card styling implementation."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality: 1) No error handling whatsoever - will crash on missing files/directories, 2) Hardcoded directory name, 3) No function parameters validation, 4) Poor HTML generation using string concatenation, 5) No handling of special characters that could break HTML, 6) IndexError risk when accessing lines[1], 7) No sorting of files for consistent ordering."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very basic implementation with no elegance: 1) Crude string concatenation for HTML generation, 2) No use of HTML escaping, 3) No template structure or organization, 4) The disconnect between the Python script and HTML template shows poor design, 5) No consideration for maintainability or extensibility."
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    },
+    "case_19_control_center": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Multiple critical runtime errors: 1) CSS in <style> tag is commented out ('/* CSS goes here */'), 2) Font Awesome icons referenced but not imported, 3) Sidebar toggle logic would break navigation (toggles on every link click), 4) localStorage logic references undefined 'tasks' array incorrectly, 5) HTML structure issues (li elements outside ul in task-list)"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) No glassmorphism implementation (just empty class), 2) Active Projects widget missing (only shows in Projects view, not as main widget), 3) Recent Activity timeline has no styling/proper implementation, 4) Quick Links grid incomplete (no icons, no functionality), 5) Task persistence broken, 6) Modal has no close button or proper styling, 7) No micro-animations despite spec requirement"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Would not produce expected output: 1) Page would be mostly unstyled due to commented CSS, 2) Widgets not properly arranged as cards, 3) No visual hierarchy or premium feel, 4) Sidebar navigation breaks on use, 5) Modal would appear but not function properly, 6) Tasks wouldn't persist correctly"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to follow spec but failed on key requirements: 1) Not a single HTML file (CSS commented suggests incomplete), 2) No premium/native desktop app feel, 3) Widgets not implemented as specified cards in main area, 4) View switching implemented incorrectly (hides all content), 5) Missing glassmorphism despite being first requirement"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code quality: 1) No error handling anywhere, 2) Invalid HTML structure (li outside ul), 3) Inefficient DOM queries in loops, 4) localStorage logic is broken, 5) Event delegation not used where appropriate, 6) Hardcoded values throughout, 7) No input validation, 8) Modal close only works by clicking outside"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "No elegance in implementation: 1) Repetitive code (forEach loops that could be simplified), 2) Poor architectural decisions (sidebar toggle breaks navigation), 3) No separation of concerns, 4) Brittle selectors, 5) No use of modern CSS/JS features that would simplify code"
+          },
+          "total_score": 22.5
+        }
+      },
+      "comparisons": []
+    },
+    "case_20_log_analytics": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple fatal runtime errors: 1) Parsing assumes exactly 3 parts when splitting by ' - ' but generated logs may not match this format, 2) datetime.fromisoformat() will fail on the generated timestamp format, 3) errors_per_hour logic counts ALL logs not just errors, 4) critical_errors uses random IDs instead of parsing actual messages, 5) No error handling for file operations"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No actual SVG graph implementation for errors per hour timeline, 2) No JavaScript for searchable table functionality, 3) No filter by level functionality (just static HTML), 4) 'Most common error messages' feature completely missing, 5) Generated logs all have same generic message instead of varied error messages"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Dashboard would be mostly broken: 1) SVG graph is empty, 2) Critical errors table shows random messages not from actual log, 3) errors_per_hour counts all logs not just errors, 4) No actual search or filter functionality, 5) Log parsing logic is fundamentally flawed"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempts to follow spec but misses key requirements: 1) Uses Python stdlib as required, 2) Creates HTTP server correctly, 3) But fails to implement interactive features (search, filter), 4) Missing 'Alert' in filter options (spec says Error, Alert not Error, Critical), 5) No actual data passed to frontend"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor implementation: 1) No error handling anywhere, 2) Hardcoded random values instead of parsing real data, 3) Mixing data processing with HTTP handler, 4) No separation of concerns, 5) get_static_html() method serves no purpose, 6) No JSON endpoint for frontend to fetch data"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant shortcuts throughout: 1) Random IDs for critical errors instead of parsing, 2) All generated logs have identical messages, 3) No proper data structure for passing to frontend, 4) HTML generation mixed with request handling, 5) No consideration for actual interactive dashboard requirements"
+          },
+          "total_score": 27.0
+        }
+      },
+      "comparisons": []
+    }
+  },
+  "case_results_details": {
+    "case_01_pomodoro": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Critical timer logic error: seconds++ before checking causes timer to skip from 1:00 to 0:00, never displaying 0:00. Timer transitions are broken - when minutes becomes -1, it sets to 5 but never resets seconds. The playSound function is attached to timer click instead of automatic triggering at 0:00. Would run but with severely broken functionality."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing critical features: No automatic sound when timer hits 0, no automatic transition between work/break sessions (isRunning set to false stops timer), session counting logic is backwards (increments break during work transition). Has basic timer display, buttons, and session labels but core pomodoro functionality is broken."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Timer display is incorrect due to increment-before-check logic. Sessions don't automatically transition. Break counter increments at wrong time. The timer would appear to malfunction to users, jumping from 1:00 to 0:00 and stopping instead of continuing to next session."
+          },
+          "direction_following": {
+            "score": 6,
+            "reason": "Built as single HTML file as requested, has tomato red theme, includes all UI elements. However, the core requirement of automatic work/break cycling is broken. Sound plays on manual click instead of automatically at timer end."
+          },
+          "code_quality": {
+            "score": 4,
+            "reason": "No error handling for audio playback. Timer logic is fundamentally flawed with increment-before-check pattern. State management is confusing with isRunning being set false during transitions. Button state management is inconsistent. Variable naming is adequate but logic flow is poor."
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Poor implementation of core timer logic. The increment-before-decrement pattern is counterintuitive and error-prone. State transitions are handled awkwardly. The solution works against standard timer patterns rather than following established countdown timer conventions."
+          },
+          "total_score": 38.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.9854300022125244,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 430,
+          "output_tokens": 873
+        }
+      },
+      "comparisons": []
+    },
+    "case_02_quiz": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code has critical bugs that prevent proper execution. The start screen is set to display:none initially and never shown. The checkAnswer function uses a broken ID extraction method (this.id.slice(5)) that will fail. The score display shows '0/10' but never updates during the quiz. Multiple runtime errors would occur."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing several key features: No visual highlighting of right/wrong answers after clicking (spec explicitly requested this), score doesn't update during quiz (only at end), animations are minimal and don't work as intended, no proper indication of which answer was selected vs correct answer. Has basic structure but missing critical interactive feedback."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "The quiz would be confusing to use. No visual feedback when answers are selected, score doesn't update until the end, the 'Correct!' message appears but user can't see which option they clicked or which was correct. The animation doesn't highlight right/wrong as requested. Questions are generic and not 'fun' as specified."
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Follows basic structure but misses key requirements. Created single HTML file as requested, has 10 questions with 4 options each, shows one at a time. However, doesn't highlight right/wrong answers visually, score tracking is broken during quiz, and animations don't meet spec. Questions aren't particularly 'fun' or about 'random topics' as requested."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality with multiple issues: No error handling, broken DOM manipulation logic, event listeners added incorrectly (recreating elements loses listeners), hardcoded IDs that break, no input validation, repetitive code that should be refactored into functions. The checkAnswer function's ID extraction is fundamentally broken."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation with repetitive code, poor state management, and convoluted logic. The approach of recreating DOM elements repeatedly is inefficient. No separation of concerns, mixing presentation and logic. The broken ID slicing approach shows poor understanding of event handling."
+          },
+          "total_score": 35.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.190751075744629,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 384,
+          "output_tokens": 1597
+        }
+      },
+      "comparisons": []
+    },
+    "case_03_calculator": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code will run but has critical security flaw using eval() which is dangerous. Basic syntax is correct but the calculator doesn't handle division by zero gracefully as required - it just returns Infinity. The use of eval() for calculation is a major execution concern."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing several key features: No keyboard support at all (spec said 'would be nice'), uses * and / instead of \u00d7 and \u00f7 as specified, no proper division by zero handling (just shows Infinity), calculator doesn't look like a real calculator (buttons not in proper grid layout), missing + button entirely in the HTML."
+          },
+          "output_quality": {
+            "score": 5,
+            "reason": "Basic calculations work but output quality is compromised by: eval() allowing invalid expressions, no input validation, division by zero shows 'Infinity' instead of graceful handling, no formatting of results (long decimals not handled), can enter multiple operators in a row."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Failed to follow several specifications: Wrong operator symbols (* instead of \u00d7, / instead of \u00f7), missing + button completely, doesn't look like a real calculator (linear button layout), no keyboard support despite being requested, calculator is too small and cramped."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Major security issue using eval() - this is a well-known bad practice. No input validation, no error handling beyond a basic try-catch that shows an alert, inline onclick handlers instead of proper event listeners, no separation of concerns, hardcoded styles and logic."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "This is a naive, insecure implementation. Using eval() for a calculator is the opposite of elegant - it's dangerous and lazy. No thought given to input validation, state management, or proper calculator logic. The layout is primitive and doesn't resemble a real calculator at all."
+          },
+          "total_score": 39.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.651676893234253,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 366,
+          "output_tokens": 806
+        }
+      },
+      "comparisons": []
+    },
+    "case_04_notes": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) editForm.noteId, editForm.noteTitle, editForm.noteContent don't exist (should be document.getElementById), 2) Math.random() used as ID will create floating point numbers that won't match in comparisons, 3) No initialization of note list on page load, 4) Missing format button functionality despite CSS for it"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No delete functionality at all (-2), 2) No view/display of note content, only titles shown (-2), 3) No formatting implementation despite CSS for bold/italic buttons (-1), 4) Search doesn't reset when cleared, 5) Can't return to create form after clicking edit"
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "App would barely function: notes can't be viewed (only titles in list), can't be deleted, edit form references non-existent form fields so editing would crash, no visual feedback for user actions, empty notes can be created"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted single HTML file as requested and minimal design, but failed to implement several core requirements (delete, view content, formatting). Structure is there but execution is incomplete"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere, will crash on null values. Duplicate code for rendering note list (should be extracted). Poor form field access pattern. No validation of inputs. No defensive programming. Inconsistent property access methods"
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Overly simplistic approach with significant architectural flaws. Using Math.random() for IDs is problematic. No separation of concerns. Repetitive code. Missing basic UX considerations like clearing forms after submission"
+          },
+          "total_score": 30.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.1226930618286133,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 365,
+          "output_tokens": 1987
+        }
+      },
+      "comparisons": []
+    },
+    "case_05_weather": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) Chart.js library is not included but code tries to use it (new Chart() will fail), 2) updateChart() is called immediately on load which will crash, 3) City info positioning logic uses offsetTop/offsetLeft on elements that may not be rendered yet, 4) The chart canvas element exists but without Chart.js it's useless"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) Background color does NOT change based on weather conditions as required, 2) Chart functionality is broken (no Chart.js included), 3) City detail display is poorly implemented - creates multiple overlapping divs instead of showing/hiding properly, 4) No proper weather icons - just random emojis that don't match conditions (\ud83d\uddfd for NY, \ud83c\udf33 for Sydney)"
+          },
+          "output_quality": {
+            "score": 4,
+            "reason": "Basic display works but: 1) Chart will never render due to missing library, 2) City details overlay poorly and stack up with multiple clicks, 3) Weather icons don't match conditions (city icons instead of weather icons), 4) No visual feedback for weather conditions via background colors"
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Partially follows spec: Has 5 cities with temp/condition/humidity, has click interaction, attempts chart and responsive design. But fails on: proper weather icons (uses city icons), background color changes, and working chart implementation"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor implementation: 1) No error handling at all, 2) Creates duplicate DOM elements on each click instead of toggling visibility, 3) Hardcoded positioning that breaks easily, 4) Uses external library (Chart.js) without including it, 5) Inconsistent data structure between HTML and JS"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant solution: Creates new DOM elements on every click leading to memory leaks, positioning logic is fragile, attempts to use Chart.js for simple bar chart that could be done with CSS/Canvas, poor separation of concerns with data mixed into HTML"
+          },
+          "total_score": 33.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.9663128852844238,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 388,
+          "output_tokens": 1464
+        }
+      },
+      "comparisons": []
+    },
+    "case_06_kanban": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: querySelector('.todo button') returns null, data structure mismatch (stores 'card' but loads 'title'), dropCard function incorrectly appends e.target instead of creating new card element, getPriorityColor returns color names instead of hex values, and drag/drop implementation is fundamentally broken."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing delete functionality entirely (-2), edit only changes title not priority (-1), priority system based on text content instead of user selection (-1), drag and drop is broken (-2), localStorage implementation is flawed (-1). Only basic card creation and partial edit work."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The board would barely function. Cards can be created but not properly dragged between columns. The priority system requires specific keywords in titles. localStorage data structure doesn't match loading logic. Visual feedback is poor with no clear priority indicators."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Built without frameworks as requested, has three columns, but priority implementation is wrong (should be user-selectable, not keyword-based), missing delete feature, and drag-drop doesn't work properly. The spec asked for clicking to edit OR delete, neither fully implemented."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling whatsoever, inconsistent data structures, hardcoded column references, poor separation of concerns, no input validation, memory leaks from event listeners on deleted elements, and confusing variable names (e.g., 'card' stores text content)."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation with redundant code (getPriority and getPriorityColor do the same thing), poor abstraction, mixing data and presentation logic, and a fundamentally flawed approach to drag and drop that shows lack of understanding of the API."
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.9121489524841309,
+          "turns": 1,
+          "files_created": 2,
+          "input_tokens": 371,
+          "output_tokens": 1477
+        }
+      },
+      "comparisons": []
+    },
+    "case_07_stopwatch": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: stopwatchTime is used before declaration in updateStopwatchTime(), timer-display element doesn't exist in HTML but is referenced in JavaScript, timer div element selector is incorrect (should be class selector), intervalId variable conflicts between global and local scope in timer functions, and time variable in startTimer() is const but attempts to decrement it."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: no toggle button to switch between modes (only clickable header), no digital clock display styling as specified, timer mode is completely broken and non-functional, no sound/alert implementation beyond basic alert(), milliseconds display is incorrect (shows 3 digits instead of 2), and the UI doesn't properly hide/show elements between modes."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Stopwatch might partially work but timer is completely broken. The display format is wrong for milliseconds, lap times would accumulate incorrectly, timer countdown logic is fundamentally flawed with const variable mutation attempt, and mode switching doesn't actually work properly to display the correct interface."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to build both stopwatch and timer but missed key requirements: no proper mode toggle (just clickable text), doesn't look like a digital clock display as specified, timer implementation is broken, and the single HTML file requirement is met but the implementation is incomplete."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code organization with mixed concerns, no error handling whatsoever, variable scoping issues throughout, inconsistent naming conventions, hardcoded magic numbers, no input validation, and the timer logic is fundamentally broken with const mutation attempts."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very poor implementation with numerous bugs, no separation of concerns, repetitive code, inefficient event handling, and a confusing UI that doesn't match the spec. The approach to mode switching is particularly inelegant with manual show/hide of every element."
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.112417221069336,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 374,
+          "output_tokens": 1589
+        }
+      },
+      "comparisons": []
+    },
+    "case_08_typing": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) startTime is never initialized before first use, causing NaN in WPM calculation 2) endTime is used before being set 3) DOM manipulation in input handler creates duplicate elements on every keystroke 4) substr() is deprecated 5) Timer logic references undefined startTime on first run"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No real-time highlighting of correct/incorrect characters as specified 2) WPM calculation is broken (divides by 0 initially) 3) No visual indication of which characters are correct/incorrect in the display text 4) Timer doesn't work properly on first load 5) Submit button behavior is unclear 6) Has duplicate text samples instead of 10 unique ones"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Output would be severely broken: 1) WPM shows NaN or Infinity due to division errors 2) Accuracy calculation only works for sequential typing 3) No visual feedback for correct/incorrect characters 4) Timer displays incorrectly 5) Stats accumulate duplicate DOM elements 6) Final stats appear in wrong location"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to follow spec but missed key requirements: 1) No character-by-character highlighting 2) Timer implementation is confused (counts up but mentions 30 seconds) 3) Only 5 unique text samples instead of 10 4) Submit button wasn't requested in spec 5) Missing proper visual feedback during typing"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality: 1) No error handling whatsoever 2) Global variables everywhere 3) DOM manipulation creates memory leaks 4) Uses deprecated substr() 5) Inconsistent timer logic 6) No input validation 7) Hardcoded magic numbers 8) Poor variable naming"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation: 1) Messy DOM manipulation that creates duplicate elements 2) Confusing timer logic 3) Poor state management 4) No separation of concerns 5) Hacky approach to starting the test 6) Overall architecture is poorly thought out"
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 3.1720612049102783,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 373,
+          "output_tokens": 1260
+        }
+      },
+      "comparisons": []
+    },
+    "case_09_expenses": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has critical runtime errors: Chart.js library is not included but Chart() constructor is called, causing immediate crash. The renderChart() function has a nested script tag inside innerHTML which won't execute. Missing form reset after submission. The chart rendering logic would fail even if Chart.js was included due to the malformed innerHTML approach."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing key features: No total spending display, no breakdown by category summary, filter UI is poor (uses prompts instead of proper UI), no visual indication of filtered vs unfiltered state, expense list display is very basic with no formatting or organization, no delete/edit functionality for expenses."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Even if it ran, the output would be poor: expense list has no formatting for currency, no sorting, basic unstyled divs. Filter uses browser prompts which is terrible UX. No validation on amount input (can enter negative). Date defaults to empty. No feedback when expense is added."
+          },
+          "direction_following": {
+            "score": 6,
+            "reason": "Follows basic structure of single HTML file and implements core features, but execution is poor. Uses localStorage as requested. Has the required categories. However, the 'nice, clean design' requirement is not met - styling is minimal and layout is basic."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere - localStorage operations, form validation, or chart rendering could all fail silently. Poor separation of concerns with HTML generation in JavaScript strings. The renderChart function is particularly bad with nested script tags. No input validation beyond HTML5 required attribute. Currency amounts stored as floats (precision issues)."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very inelegant implementation: uses prompts for filtering instead of proper UI, innerHTML for script injection (won't work), no modular structure, hardcoded colors array that doesn't match number of categories, repetitive code, poor UX patterns throughout."
+          },
+          "total_score": 35.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.056809902191162,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 361,
+          "output_tokens": 1991
+        }
+      },
+      "comparisons": []
+    },
+    "case_10_memory": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has critical bugs that prevent proper execution. Only creates 8 cards instead of 16 (spec requires 8 pairs = 16 cards). No emoji/symbols shown on cards - they remain blank. Missing duplicate creation logic for pairs. The game cannot function as a memory game without pairs to match."
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most core features: No 16 cards (only 8), no pairs created, no emojis/symbols on cards, no win detection, no final stats display, no proper card face display, animations are minimal (only basic transform). The fundamental game mechanic of matching pairs is broken."
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The game is fundamentally broken - you cannot play a memory game with 8 unique cards that have no visible content. Cards don't show any symbols when flipped. The matching logic compares dataset values but there are no duplicate values to match. Timer and move counter work but are meaningless without a playable game."
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to follow the spec but failed on core requirements. Created a grid structure and basic flip mechanics, but missed the fundamental requirement of 16 cards with 8 pairs. No emojis/symbols used. Animations are minimal, not 'fun' as requested."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling whatsoever. Logic is fundamentally flawed - creates unique cards instead of pairs. No shuffle function. Hardcoded grid size. No validation for game state. The checkMatch function will never find matches because all cards have unique values. Missing basic game logic."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Poor implementation that misunderstands the core concept of a memory game. The approach of creating 8 unique cards shows fundamental misunderstanding. No clever solutions, just broken logic. Code structure is basic but the implementation is too flawed to be considered adequate."
+          },
+          "total_score": 20.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.9439370632171631,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 375,
+          "output_tokens": 866
+        }
+      },
+      "comparisons": []
+    },
+    "case_11_palette": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: getRandomColor() generates invalid hex codes (missing padding), hexToRgb() expects hex but receives rgb() string format, palette.querySelector() is called on wrong object in loadPalette(), colors array is never populated but referenced, spacebar event doesn't check for locked colors, copy-to-clipboard functionality is completely missing despite being required"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: no copy-to-clipboard on click (major requirement), locked colors don't persist through generation, color name suggestions are primitive (only 7 basic names), saved palettes don't actually restore properly, no visual feedback for copying, no proper palette management (only saves one), animations are minimal"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Output would be severely broken: colors display as circles instead of proper palette, hex codes show as 'background-color: rgb(...)' instead of actual hex, RGB conversion fails, color info doesn't update properly, locked colors don't work as specified, spacebar generates new colors for locked ones too"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Built a single HTML file as requested but misunderstood core requirements: colors are tiny circles instead of a proper palette display, clicking should copy (not lock), locking is a separate action, missing smooth animations/transitions as specified, UI layout doesn't match typical palette generator"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "No error handling anywhere, functions will crash on edge cases, inconsistent data handling (mixing hex/rgb formats), global variables without proper initialization, event handlers don't validate inputs, localStorage operations have no try-catch, poor separation of concerns"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Clunky implementation with hardcoded initial colors, primitive color naming logic, inefficient DOM queries, no proper state management, mixing presentation and logic, repetitive code patterns, no consideration for user experience or edge cases"
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 2.8199622631073,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 358,
+          "output_tokens": 1387
+        }
+      },
+      "comparisons": []
+    },
+    "case_12_habits": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "The HTML file has major JavaScript errors that would prevent execution. The data model is fundamentally broken - habits are stored as a simple object with boolean values, but the code tries to track daily completions across 30 days. The updateStats() function references habit.children[0].textContent multiple times, which would cause string concatenation bugs. The Python file is completely non-functional - it references JavaScript DOM methods like document.getElementById in Python code, which would immediately crash."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing most core features: No proper calendar/grid view showing which habits were completed on which days (just shows generic checkboxes), no real streak counter (the getStreak function logic is nonsensical), no completion percentage calculation (always returns 0 or 100), and the data model can't actually track habits across multiple days. The only working features are adding habits and basic localStorage."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The output would be severely broken. Users can't actually track which habits they completed on specific days - the calendar shows dates but isn't connected to specific habits. The streak calculation doesn't work at all. The UI would show concatenated strings like 'Exercise (Streak: 0, Completion: 0%) (Streak: 0, Completion: 0%)' due to the string manipulation bug in updateStats()."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempted to follow the spec but fundamentally misunderstood the requirements. Created a single HTML file as requested, but included an unnecessary and non-functional Python file. The calendar view exists but doesn't show habit completion status per day. The data model can't support the required functionality."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Very poor code quality. No error handling anywhere. The data model is fundamentally wrong - storing habits as {habitName: boolean} can't track daily completions. Functions like getStreak() have nonsensical logic. The Python file contains JavaScript code. Variable scoping issues (habits variable reused). No input validation."
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The implementation shows a fundamental misunderstanding of the problem. The data structure choice makes the required features impossible to implement. The code is convoluted and buggy, with no elegant solutions or clean abstractions."
+          },
+          "total_score": 25.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.9017379283905029,
+          "turns": 1,
+          "files_created": 2,
+          "input_tokens": 350,
+          "output_tokens": 1608
+        }
+      },
+      "comparisons": []
+    },
+    "case_13_password": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Code has multiple critical runtime errors: generatePassword() is called with wrong number of arguments in updateToggle(), the function expects positional args but gets none. generatePassword() is called without returning value to update passwordInput. The password generation logic will fail when no character types are selected. Missing lowercase toggle despite being in spec."
+          },
+          "features_complete": {
+            "score": 4,
+            "reason": "Missing critical features: no lowercase toggle (spec requires it), strength meter doesn't work properly (no visual feedback for different strength levels), history doesn't persist generated passwords correctly (only adds on button click, not on generation), multiple password generation doesn't show individually, no proper strength calculation based on password length."
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Password generation is flawed - always includes lowercase letters regardless of toggles, strength meter only shows 0% or 100%, multiple passwords shown in single input field with newlines instead of proper display, history only captures passwords when clicking generate button not when actually generating, copy button doesn't work for multiple passwords properly."
+          },
+          "direction_following": {
+            "score": 5,
+            "reason": "Built single HTML file as requested with most features attempted, but missing lowercase toggle which was explicitly required. Modern design is very basic - just a white box with minimal styling. No visual distinction for password strength levels (weak/medium/strong)."
+          },
+          "code_quality": {
+            "score": 4,
+            "reason": "No error handling for clipboard API failures, no validation when no character types selected, hardcoded values (10 passwords, 10 history items), poor function organization with generatePassword being called incorrectly, no handling for edge cases like all toggles off."
+          },
+          "elegance": {
+            "score": 3,
+            "reason": "Very basic implementation with poor UX - strength meter doesn't show meaningful levels, multiple passwords crammed into single input, history management is confusing (only saves on button click), no visual feedback for copy action beyond alert, inefficient character array generation."
+          },
+          "total_score": 37.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.8612358570098877,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 345,
+          "output_tokens": 1524
+        }
+      },
+      "comparisons": []
+    },
+    "case_14_units": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) Units array lacks 'category' property but code filters by it, 2) Temperature conversion formulas incorrectly use 'value' parameter inside getConversionFactor which doesn't exist in that scope, 3) convert() function referenced in quick buttons is undefined, 4) Category switching logic is completely missing despite buttons existing"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most core features: 1) Category switching doesn't work - buttons exist but have no event handlers, 2) 'Type in one field, other updates instantly' - only one input field exists instead of two, 3) No actual conversion display/output field, 4) Quick conversion buttons call undefined function, 5) Formula display shows equation but not the actual formula used"
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "Output would be completely broken: 1) Conversions between different unit types (miles to km, kg to g) aren't implemented, 2) Temperature conversions are mathematically wrong (C to F returns just 9/5 + 32 without multiplying by input), 3) No output field to show converted values, 4) Many conversion factors missing (feet, inches, miles conversions)"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted single HTML file as requested but fundamentally misunderstood the spec: Built a single input converter instead of dual-field instant converter, missing responsive design, categories don't actually work"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code organization: 1) No error handling whatsoever, 2) Massive unmaintainable switch statements, 3) Hardcoded conversion logic instead of data structure, 4) Dead code (populateUnitLists filters by non-existent property), 5) Inconsistent patterns and repeated code"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "Extremely inelegant implementation: Massive nested switch statements for conversions, no data structure for unit relationships, temperature conversions broken due to scope issues, overall approach is brittle and unmaintainable"
+          },
+          "total_score": 18.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.819084644317627,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 396,
+          "output_tokens": 2812
+        }
+      },
+      "comparisons": []
+    },
+    "case_15_markdown": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple critical runtime errors: 1) The markdown rendering logic uses RegExp with plain strings like '# ## ###' which won't work as intended, 2) The bold/italic regex replacements are completely broken and would corrupt the HTML, 3) The export button has two event listeners where the second one incorrectly tries to save dark mode state, 4) No actual dark mode toggle implementation despite being required"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) No dark mode toggle button, 2) No save/load from localStorage functionality, 3) Markdown parsing is completely broken - headers, bold, italic, lists, links, code blocks, and blockquotes all have non-functional implementations, 4) The only working feature is the split-pane layout and export button (though export would produce broken HTML)"
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The markdown parser would produce completely incorrect output. For example: headers would become '<h1> <h1><h1> <h1><h1><h1>', bold text would have asterisks replaced with '<b>' tags without proper pairing, lists would replace all '-' with '<ul>', links parsing would crash on split, code blocks regex is malformed. The output would be unusable HTML."
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to create a single HTML file with split-pane layout as requested, but failed to implement most core requirements. Missing dark mode toggle button, save/load functionality, and all markdown features are broken. The export button exists but would export broken HTML."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Very poor implementation: 1) No error handling anywhere, 2) Markdown parser shows fundamental misunderstanding of how regex and string replacement work, 3) Duplicate event listener on export button with wrong functionality, 4) No input validation or edge case handling, 5) The markdown object structure makes no sense for the task"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The approach to markdown parsing is fundamentally flawed, showing a complete misunderstanding of the problem. Using RegExp with literal strings like '# ## ###' and replacing characters globally without context is not just inelegant, it's incorrect. No attempt at proper parsing logic or state management."
+          },
+          "total_score": 18.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 2.652592182159424,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 382,
+          "output_tokens": 997
+        }
+      },
+      "comparisons": []
+    },
+    "case_16_repostats": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple fatal errors: stats.py tries to access stats['largest'].get('size', 0) when stats['largest'] is None, causing AttributeError. File reading assumes all files are text (binary files will crash). No error handling for permissions or encoding issues. The HTML file has broken JavaScript trying to parse non-existent data attributes. stats.py doesn't generate the HTML file at all - it only creates a JSON file."
+          },
+          "features_complete": {
+            "score": 1,
+            "reason": "Almost entirely incomplete. The Python script only creates a JSON file, not the required HTML. No pie chart for file types, no bar chart for line counts, no proper visualization of largest files or directory depth. The HTML appears to be a static template with hardcoded circles, not actual data-driven charts. Missing the core requirement of generating HTML from Python."
+          },
+          "output_quality": {
+            "score": 1,
+            "reason": "The output would be completely broken. stats.py creates only a JSON file, not the required stats.html. The provided HTML file has placeholder variables like {{largest_name}} that are never replaced. JavaScript tries to read data from body dataset that doesn't exist. Even if it worked, the 'charts' are just static circles, not actual data visualizations."
+          },
+          "direction_following": {
+            "score": 2,
+            "reason": "Failed to follow the core requirement: 'Single Python file that outputs a single HTML file'. Instead, provided separate Python and HTML files, with Python only generating JSON. The HTML file appears to be a manual template rather than generated output. Completely misunderstood the assignment."
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "No error handling whatsoever - will crash on binary files, permission errors, or empty directories. Poor logic: incrementing depth for every directory instead of tracking actual depth. Inefficient line counting by reading entire files. The HTML has nonsensical JavaScript that sets data attributes after trying to read them. Variable naming is unclear (e.g., 'stats' dict structure)."
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "The solution shows fundamental misunderstanding of the task. The approach of creating separate files and trying to use template variables without a templating system is deeply flawed. The 'visualizations' are just hardcoded SVG shapes. No clever solutions or clean design patterns - just broken, incomplete code."
+          },
+          "total_score": 14.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.096508264541626,
+          "turns": 1,
+          "files_created": 3,
+          "input_tokens": 433,
+          "output_tokens": 1707
+        }
+      },
+      "comparisons": []
+    },
+    "case_17_legal": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Multiple critical runtime errors: 1) Duplicate event listener registration causing memory leaks and multiple handler executions, 2) References undefined 'fullText' property on case objects, 3) Extract entities button gets multiple click handlers added each time detail view opens, 4) No null checks for DOM elements, 5) Would crash immediately when clicking a case due to missing fullText property"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) Only 2 mock cases instead of required 10-15, 2) No tabs implementation - just shows both summary and full text simultaneously, 3) No modal/split pane - detail view just appears below, 4) Summary shows only title instead of actual summary, 5) Notes don't associate with specific cases - they're global, 6) No snippet saving functionality as specified"
+          },
+          "output_quality": {
+            "score": 3,
+            "reason": "Would produce broken output: 1) Entity extraction would fail due to undefined fullText, 2) Notes functionality is global not per-case, 3) Search works but only on 2 cases, 4) Visual layout doesn't match split-pane/modal requirement, 5) Dark mode colors are incorrect (blue background instead of deep blues/charcoals)"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Significant deviations from spec: 1) Wrong visual style - used bright blue (#2f4f7f) instead of deep blues/charcoals, 2) No split pane or modal implementation, 3) No tabs - shows both views simultaneously, 4) Notes aren't case-specific snippets but global notes, 5) Only 2 mock cases instead of 10-15"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code quality: 1) Duplicate event listener code, 2) No error handling anywhere, 3) Memory leaks from repeated addEventListener calls, 4) No validation of inputs, 5) Hardcoded styles instead of organized CSS classes, 6) No separation of concerns - everything mixed in global scope"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant implementation: 1) Duplicate code blocks, 2) No abstraction or reusable functions, 3) Poor state management, 4) Inefficient DOM manipulation, 5) No consideration for performance or maintainability"
+          },
+          "total_score": 24.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.0712189674377441,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 450,
+          "output_tokens": 1607
+        }
+      },
+      "comparisons": []
+    },
+    "case_18_slides": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "The main.py code has critical issues: 1) It doesn't handle missing directories or files, 2) IndexError will occur if files have less than 2 lines when accessing lines[1], 3) The HTML generation is malformed - missing DOCTYPE, head, body tags, CSS styles, 4) The hardcoded 'slides' directory call at the bottom will crash if directory doesn't exist. The report.html file appears to be a static template that isn't actually generated by the Python code."
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) Table of Contents has no actual links/anchors to navigate to slides, 2) CSS is extremely basic, not 'extremely premium' as specified, 3) No typography, shadows, or proper spacing implementation, 4) No page-break CSS for printing, 5) The Python script doesn't actually generate the shown HTML template - they're disconnected, 6) Summary section doesn't properly combine first few lines as requested."
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "The generated HTML would be broken and unusable: 1) Missing proper HTML structure (DOCTYPE, head, body), 2) No CSS included in the generated output, 3) The static report.html template isn't connected to the Python generator, 4) File names in TOC aren't cleaned up (shows 'slide1.txt' instead of 'Slide 1'), 5) Summary formatting is poor with redundant file name prefixes."
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Partially follows directions but misses key requirements: 1) Uses Python 3 stdlib only (good), 2) Creates report.html (good), 3) But the Python script and HTML template are disconnected - the script doesn't generate the template shown, 4) CSS is not 'extremely premium' as specified, 5) Missing proper print CSS, 6) No proper card styling implementation."
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor code quality: 1) No error handling whatsoever - will crash on missing files/directories, 2) Hardcoded directory name, 3) No function parameters validation, 4) Poor HTML generation using string concatenation, 5) No handling of special characters that could break HTML, 6) IndexError risk when accessing lines[1], 7) No sorting of files for consistent ordering."
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Very basic implementation with no elegance: 1) Crude string concatenation for HTML generation, 2) No use of HTML escaping, 3) No template structure or organization, 4) The disconnect between the Python script and HTML template shows poor design, 5) No consideration for maintainability or extensibility."
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 0.6310746669769287,
+          "turns": 1,
+          "files_created": 2,
+          "input_tokens": 459,
+          "output_tokens": 984
+        }
+      },
+      "comparisons": []
+    },
+    "case_19_control_center": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 3,
+            "reason": "Multiple critical runtime errors: 1) CSS in <style> tag is commented out ('/* CSS goes here */'), 2) Font Awesome icons referenced but not imported, 3) Sidebar toggle logic would break navigation (toggles on every link click), 4) localStorage logic references undefined 'tasks' array incorrectly, 5) HTML structure issues (li elements outside ul in task-list)"
+          },
+          "features_complete": {
+            "score": 2,
+            "reason": "Missing most required features: 1) No glassmorphism implementation (just empty class), 2) Active Projects widget missing (only shows in Projects view, not as main widget), 3) Recent Activity timeline has no styling/proper implementation, 4) Quick Links grid incomplete (no icons, no functionality), 5) Task persistence broken, 6) Modal has no close button or proper styling, 7) No micro-animations despite spec requirement"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Would not produce expected output: 1) Page would be mostly unstyled due to commented CSS, 2) Widgets not properly arranged as cards, 3) No visual hierarchy or premium feel, 4) Sidebar navigation breaks on use, 5) Modal would appear but not function properly, 6) Tasks wouldn't persist correctly"
+          },
+          "direction_following": {
+            "score": 3,
+            "reason": "Attempted to follow spec but failed on key requirements: 1) Not a single HTML file (CSS commented suggests incomplete), 2) No premium/native desktop app feel, 3) Widgets not implemented as specified cards in main area, 4) View switching implemented incorrectly (hides all content), 5) Missing glassmorphism despite being first requirement"
+          },
+          "code_quality": {
+            "score": 2,
+            "reason": "Poor code quality: 1) No error handling anywhere, 2) Invalid HTML structure (li outside ul), 3) Inefficient DOM queries in loops, 4) localStorage logic is broken, 5) Event delegation not used where appropriate, 6) Hardcoded values throughout, 7) No input validation, 8) Modal close only works by clicking outside"
+          },
+          "elegance": {
+            "score": 1,
+            "reason": "No elegance in implementation: 1) Repetitive code (forEach loops that could be simplified), 2) Poor architectural decisions (sidebar toggle breaks navigation), 3) No separation of concerns, 4) Brittle selectors, 5) No use of modern CSS/JS features that would simplify code"
+          },
+          "total_score": 22.5
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.280975103378296,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 456,
+          "output_tokens": 2120
+        }
+      },
+      "comparisons": []
+    },
+    "case_20_log_analytics": {
+      "absolute_scores": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "executes": {
+            "score": 2,
+            "reason": "Code has multiple fatal runtime errors: 1) Parsing assumes exactly 3 parts when splitting by ' - ' but generated logs may not match this format, 2) datetime.fromisoformat() will fail on the generated timestamp format, 3) errors_per_hour logic counts ALL logs not just errors, 4) critical_errors uses random IDs instead of parsing actual messages, 5) No error handling for file operations"
+          },
+          "features_complete": {
+            "score": 3,
+            "reason": "Missing critical features: 1) No actual SVG graph implementation for errors per hour timeline, 2) No JavaScript for searchable table functionality, 3) No filter by level functionality (just static HTML), 4) 'Most common error messages' feature completely missing, 5) Generated logs all have same generic message instead of varied error messages"
+          },
+          "output_quality": {
+            "score": 2,
+            "reason": "Dashboard would be mostly broken: 1) SVG graph is empty, 2) Critical errors table shows random messages not from actual log, 3) errors_per_hour counts all logs not just errors, 4) No actual search or filter functionality, 5) Log parsing logic is fundamentally flawed"
+          },
+          "direction_following": {
+            "score": 4,
+            "reason": "Attempts to follow spec but misses key requirements: 1) Uses Python stdlib as required, 2) Creates HTTP server correctly, 3) But fails to implement interactive features (search, filter), 4) Missing 'Alert' in filter options (spec says Error, Alert not Error, Critical), 5) No actual data passed to frontend"
+          },
+          "code_quality": {
+            "score": 3,
+            "reason": "Poor implementation: 1) No error handling anywhere, 2) Hardcoded random values instead of parsing real data, 3) Mixing data processing with HTTP handler, 4) No separation of concerns, 5) get_static_html() method serves no purpose, 6) No JSON endpoint for frontend to fetch data"
+          },
+          "elegance": {
+            "score": 2,
+            "reason": "Inelegant shortcuts throughout: 1) Random IDs for critical errors instead of parsing, 2) All generated logs have identical messages, 3) No proper data structure for passing to frontend, 4) HTML generation mixed with request handling, 5) No consideration for actual interactive dashboard requirements"
+          },
+          "total_score": 27.0
+        }
+      },
+      "winner": null,
+      "model_metrics": {
+        "meta-llama/llama-3.1-8b-instruct@Cerebras": {
+          "time_seconds": 1.2464041709899902,
+          "turns": 1,
+          "files_created": 1,
+          "input_tokens": 461,
+          "output_tokens": 1058
+        }
+      },
+      "comparisons": []
+    }
+  },
+  "leaderboard": {
+    "rankings": [
+      "meta-llama/llama-3.1-8b-instruct@Cerebras"
+    ],
+    "wins": {
+      "meta-llama/llama-3.1-8b-instruct@Cerebras": 0.0
+    },
+    "losses": {
+      "meta-llama/llama-3.1-8b-instruct@Cerebras": 0.0
+    }
+  },
+  "absolute_averages": {
+    "meta-llama/llama-3.1-8b-instruct@Cerebras": 27.7
+  }
+}

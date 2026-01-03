@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law: Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252b3d;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --accent-blue: #4a90e2;
+            --accent-hover: #5ba0f2;
+            --border-color: #2d3446;
+            --highlight-entity: #ff6b6b;
+            --highlight-bg: rgba(255, 107, 107, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            color: var(--accent-blue);
+        }
+
+        .search-container {
+            padding: 2rem;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .results-panel {
+            width: 40%;
+            background-color: var(--bg-secondary);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .results-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .case-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .case-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .case-item.active {
+            background-color: var(--bg-tertiary);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .case-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .case-preview {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+        }
+
+        .detail-header {
+            padding: 1rem 2rem;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-tabs {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .tab-button.active {
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-button {
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content-main {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .content-sidebar {
+            width: 300px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .note-item {
+            background-color: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .note-text {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .note-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .highlighted-entity {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-entity);
+            padding: 0.1rem 0.2rem;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .results-panel {
+                width: 100%;
+            }
+            
+            .detail-panel {
+                display: none;
+            }
+            
+            .detail-panel.active {
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 100;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>Vibe-Law</h1>
+        </header>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="Search case law..." id="searchInput">
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="results-panel">
+                <div class="results-header">
+                    <span id="resultsCount">15 cases found</span>
+                </div>
+                <div id="resultsList"></div>
+            </div>
+            
+            <div class="detail-panel" id="detailPanel">
+                <div class="empty-state">
+                    <h3>Select a case to view details</h3>
+                    <p>Click on any case from the list to see its details</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock legal cases data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson Manufacturing Co.",
+                court: "Supreme Court of California",
+                date: "2023-03-15",
+                preview: "The court held that manufacturers have a duty to warn consumers of non-obvious dangers associated with product use, even when the product is not defectively designed...",
+                summary: "This landmark case established new precedents for product liability law in California. The court ruled that manufacturers must provide adequate warnings about potential hazards that may not be immediately obvious to consumers, expanding the scope of duty of care obligations.",
+                fullText: `SUPREME COURT OF CALIFORNIA
+Smith, Plaintiff and Respondent, v. Johnson Manufacturing Co., Defendant and Appellant.
+No. S234567
+March 15, 2023
+
+OPINION BY: CHIEF JUSTICE MARTINEZ
+
+This case presents the question of whether a manufacturer has a duty to warn consumers of dangers associated with product use that are not immediately obvious. 
+
+BACKGROUND:
+On January 10, 2021, Plaintiff Robert Smith purchased a power drill manufactured by Johnson Manufacturing Co. The drill contained a safety mechanism that, while functional, required specific user knowledge to operate safely. No warning was provided about this mechanism.
+
+ANALYSIS:
+The trial court found that Johnson Manufacturing Co. breached its duty of care by failing to provide adequate warnings. We affirm.
+
+CONCLUSION:
+Manufacturers have an affirmative duty to warn consumers of non-obvious dangers. The judgment is affirmed.`
+            },
+            {
+                id: 2,
+                title: "Digital Rights Foundation v. TechCorp Inc.",
+                court: "Federal District Court, NY",
+                date: "2023-02-28",
+                preview: "The court granted preliminary injunction against data collection practices, finding likelihood of success on merits for privacy violation claims...",
+                summary: "A significant privacy rights victory where the court recognized digital privacy as a fundamental right, granting injunction against excessive data collection practices by major tech corporations.",
+                fullText: `UNITED STATES DISTRICT COURT
+SOUTHERN DISTRICT OF NEW YORK
+Digital Rights Foundation, Plaintiff, v. TechCorp Inc., Defendant.
+Civil Action No. 23-1234
+February 28, 2023
+
+MEMORANDUM AND ORDER
+
+Plaintiff Digital Rights Foundation moves for preliminary injunction against Defendant TechCorp Inc.'s data collection practices.
+
+The Court finds that Plaintiff has shown likelihood of success on the merits. Digital privacy is a fundamental right under both federal and state constitutions.
+
+IT IS ORDERED that Defendant shall cease all data collection activities pending final resolution of this matter.`
+            },
+            {
+                id: 3,
+                title: "Environmental Defense League v. PetroGas Ltd.",
+                court: "9th Circuit Court of Appeals",
+                date: "2023-01-20",
+                preview: "Appeals court reversed district court's dismissal, holding that environmental groups had standing to challenge offshore drilling permits...",
+                summary: "Environmental law precedent establishing broad standing requirements for environmental groups to challenge government permits affecting ecosystems.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE NINTH CIRCUIT
+Environmental Defense League, Plaintiff-Appellant, v. PetroGas Ltd., Defendant-Appellee.
+No. 22-55555
+January 20, 2023
+
+OPINION
+
+The district court dismissed Plaintiff's complaint for lack of standing. We reverse.
+
+Environmental injury constitutes injury in fact for standing purposes. The League's members use the affected coastal areas for recreation and scientific study.
+
+The district court's judgment is REVERSED and the case is REMANDED for further proceedings.`
+            },
+            {
+                id: 4,
+                title: "Municipal Workers Union v. City of Metropolis",
+                court: "State Labor Relations Board",
+                date: "2023-04-05",
+                preview: "Board found city violated collective bargaining agreement by unilaterally changing pension terms, ordering reinstatement of original benefits...",
+                summary: "Labor relations decision reinforcing the sanctity of collective bargaining agreements and limiting employer ability to modify pension benefits unilaterally.",
+                fullText: `STATE LABOR RELATIONS BOARD
+Municipal Workers Union, Local 123, Charging Party, v. City of Metropolis, Respondent.
+Case No. LRB-2023-45
+April 5, 2023
+
+DECISION AND ORDER
+
+The City unilaterally modified pension contribution rates without union negotiation. This constitutes a violation of the collective bargaining agreement.
+
+The evidence shows clear bad faith negotiation by the City. Public employees are entitled to the benefits they were promised.
+
+ORDERED: The City shall immediately reinstate original pension terms and make whole all affected employees.`
+            },
+            {
+                id: 5,
+                title: "Consumer Financial Protection Bureau v. MegaBank",
+                court: "DC Circuit Court",
+                date: "2023-03-30",
+                preview: "Court upheld CFPB's authority to regulate payday lending practices, rejecting constitutional challenge to agency structure...",
+                summary: "Administrative law decision confirming CFPB's regulatory authority and independence, setting precedent for federal agency structure challenges.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE DISTRICT OF COLUMBIA CIRCUIT
+Consumer Financial Protection Bureau, Petitioner, v. MegaBank, Respondent.
+No. 22-1234
+March 30, 2023
+
+JUDGMENT
+
+MegaBank challenges the CFPB's payday lending regulations as exceeding statutory authority. We disagree.
+
+Congress clearly intended broad regulatory power for consumer protection. The CFPB's structure is constitutional and its regulations are valid.
+
+The petition for review is DENIED.`
+            },
+            {
+                id: 6,
+                title: "Tech Innovators Inc. v. Patent Office",
+                court: "Federal Circuit",
+                date: "2023-02-15",
+                preview: "Federal Circuit reversed Patent Office denial, establishing new framework for software patent eligibility analysis...",
+                summary: "Patent law precedent creating clearer standards for software patent applications, balancing innovation protection with preventing overly broad patents.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE FEDERAL CIRCUIT
+Tech Innovators Inc., Appellant, v. United States Patent and Trademark Office, Appellee.
+No. 2022-1111
+February 15, 2023
+
+OPINION
+
+The Patent Office rejected Tech Innovators' software patent application as abstract. We reverse and remand.
+
+Software innovations that improve computer functionality are patent-eligible. The Office applied too rigid a test.
+
+We establish a new framework focusing on technical improvement rather than abstract concept exclusion.
+
+REVERSED and REMANDED.`
+            },
+            {
+                id: 7,
+                title: "American Civil Liberties Union v. Department of Homeland Security",
+                court: "Eastern District of Virginia",
+                date: "2023-01-10",
+                preview: "Court ordered release of surveillance program documents under FOIA, finding national security claims overbroad...",
+                summary: "Freedom of Information Act victory requiring government transparency about surveillance programs while balancing legitimate security concerns.",
+                fullText: `UNITED STATES DISTRICT COURT
+EASTERN DISTRICT OF VIRGINIA
+American Civil Liberties Union, Plaintiff, v. Department of Homeland Security, Defendant.
+Civil Action No. 22-9876
+January 10, 2023
+
+MEMORANDUM OPINION
+
+Plaintiff seeks documents related to domestic surveillance programs under FOIA. Defendant claims national security exemption.
+
+The Court finds Defendant's secrecy claims overbroad. Public accountability requires reasonable transparency about government surveillance.
+
+IT IS ORDERED that Defendant release the requested documents with appropriate redactions for legitimate security concerns.`
+            },
+            {
+                id: 8,
+                title: "National Healthcare Providers v. State Insurance Commission",
+                court: "State Supreme Court",
+                date: "2023-03-22",
+                preview: "State high court struck down insurance rate-setting methodology as arbitrary, requiring actuarial soundness in regulatory decisions...",
+                summary: "Insurance regulation decision mandating scientific basis for rate approvals, protecting both consumer interests and industry viability.",
+                fullText: `SUPREME COURT OF [STATE]
+National Healthcare Providers, Appellants, v. State Insurance Commission, Appellee.
+No. SC-2023-77
+March 22, 2023
+
+OPINION
+
+Healthcare providers challenge the Insurance Commission's rate-setting methodology. We find the methodology arbitrary and capricious.
+
+Regulatory decisions must be based on sound actuarial principles. The Commission failed to demonstrate rational basis for its rate calculations.
+
+The Commission's order is VACATED and the matter remanded for proper consideration.`
+            },
+            {
+                id: 9,
+                title: "Green Energy Coalition v. Public Utilities Commission",
+                court: "State Appellate Court",
+                date: "2023-04-12",
+                preview: "Appellate court reversed PUC approval of natural gas plant, finding inadequate consideration of renewable alternatives...",
+                summary: "Environmental review decision strengthening requirements for considering clean energy alternatives in utility infrastructure approvals.",
+                fullText: `COURT OF APPEALS OF [STATE]
+Green Energy Coalition, Petitioner, v. Public Utilities Commission, Respondent.
+No. A23-4567
+April 12, 2023
+
+OPINION
+
+The Coalition challenges the PUC's approval of a new natural gas power plant. We reverse.
+
+Environmental impact review requires meaningful consideration of renewable energy alternatives. The PUC's analysis was inadequate.
+
+The PUC's order granting the permit is REVERSED.`
+            },
+            {
+                id: 10,
+                title: "Commercial Landlords Association v. City Rent Board",
+                court: "Superior Court",
+                date: "2023-02-08",
+                preview: "Court upheld rent control ordinance against takings challenge, finding legitimate government interest in housing affordability...",
+                summary: "Property law decision balancing landlord rights with government authority to address housing crises through rent regulation.",
+                fullText: `SUPERIOR COURT OF [COUNTY]
+Commercial Landlords Association, Plaintiff, v. City Rent Board, Defendant.
+Case No. CV-2023-123
+February 8, 2023
+
+JUDGMENT
+
+Plaintiff challenges the city's rent control ordinance as an unconstitutional taking. We disagree.
+
+Housing affordability constitutes a legitimate public purpose. The ordinance reasonably balances property rights with public welfare needs.
+
+The complaint is DISMISSED with prejudice.`
+            },
+            {
+                id: 11,
+                title: "International Trade Association v. Department of Commerce",
+                court: "Court of International Trade",
+                date: "2023-03-05",
+                preview: "Court found Commerce Department's tariff calculations violated WTO obligations, ordering recalculation using proper methodology...",
+                summary: "International trade decision reinforcing US compliance with WTO rules and proper calculation methods for anti-dumping duties.",
+                fullText: `UNITED STATES COURT OF INTERNATIONAL TRADE
+International Trade Association, Plaintiff, v. Department of Commerce, Defendant.
+No. 23-234
+March 5, 2023
+
+OPINION
+
+The Association challenges anti-dumping duty calculations on imported steel. We sustain the challenge.
+
+The Department's methodology violates WTO Anti-Dumping Agreement provisions. US law requires compliance with international trade obligations.
+
+The Department's determination is REMANDED for recalculation consistent with this opinion.`
+            },
+            {
+                id: 12,
+                title: "Student Privacy Rights Foundation v. University System",
+                court: "Federal District Court, Texas",
+                date: "2023-01-25",
+                preview: "Court granted summary judgment for students, finding FERPA violations in university's data sharing with third-party vendors...",
+                summary: "Educational privacy decision expanding FERPA protections in the digital age, limiting universities' ability to share student data with technology providers.",
+                fullText: `UNITED STATES DISTRICT COURT
+NORTHERN DISTRICT OF TEXAS
+Student Privacy Rights Foundation, Plaintiff, v. University System, Defendant.
+Civil Action No. 4:22-CV-789
+January 25, 2023
+
+MEMORANDUM OPINION AND ORDER
+
+Students challenge the University's data sharing practices under FERPA. We grant summary judgment for Plaintiffs.
+
+Educational records include digital data shared with third-party vendors. The University violated privacy protections by sharing student information without consent.
+
+Plaintiffs' motion for summary judgment is GRANTED.`
+            },
+            {
+                id: 13,
+                title: "Regional Transportation Authority v. Federal Transit Administration",
+                court: "DC Circuit Court",
+                date: "2023-04-03",
+                preview: "Appeals court found FTA violated environmental review requirements by approving transit project without adequate impact assessment...",
+                summary: "Transportation law decision strengthening environmental review requirements for federal transit funding decisions.",
+                fullText: `UNITED STATES COURT OF APPEALS
+FOR THE DISTRICT OF COLUMBIA CIRCUIT
+Regional Transportation Authority, Petitioner, v. Federal Transit Administration, Respondent.
+No. 22-4321
+April 3, 2023
+
+JUDGMENT
+
+The Authority challenges FTA's approval of a new rail line. We grant the petition.
+
+NEPA requires comprehensive environmental impact assessment. The FTA's environmental review failed to adequately consider cumulative impacts.
+
+The FTA's approval is VACATED and remanded for proper environmental review.`
+            },
+            {
+                id: 14,
+                title: "Small Business Alliance v. Corporate Merger Commission",
+                court: "Federal District Court, Illinois",
+                date: "2023-02-20",
+                preview: "Court blocked mega-merger under antitrust laws, finding proposed acquisition would substantially lessen competition...",
+                summary: "Antitrust enforcement decision protecting market competition by blocking consolidation that would harm consumer choice and small business opportunities.",
+                fullText: `UNITED STATES DISTRICT COURT
+NORTHERN DISTRICT OF ILLINOIS
+Small Business Alliance, Plaintiff, v. Corporate Merger Commission, Defendant.
+Civil Action No. 23-CV-567
+February 20, 2023
+
+MEMORANDUM OPINION
+
+The Alliance challenges approval of a major industry merger. We preliminarily enjoin the transaction.
+
+The proposed acquisition would create market dominance violating Sherman Act principles. Competition would be substantially lessened in multiple markets.
+
+The preliminary injunction is GRANTED pending full trial on the merits.`
+            },
+            {
+                id: 15,
+                title: "Disability Rights Advocacy Center v. Municipal Transit Agency",
+                court: "Federal District Court, California",
+                date: "2023-03-18",
+                preview: "Court found transit agency violated ADA by failing to provide accessible transportation options, mandating comprehensive remediation plan...",
+                summary: "Disability rights victory ensuring equal access to public transportation through enforcement of ADA accommodation requirements.",
+                fullText: `UNITED STATES DISTRICT COURT
+CENTRAL DISTRICT OF CALIFORNIA
+Disability Rights Advocacy Center, Plaintiff, v. Municipal Transit Agency, Defendant.
+Case No. 2:23-cv-1234
+March 18, 2023
+
+ORDER GRANTING INJUNCTIVE RELIEF
+
+Plaintiffs demonstrate the Transit Agency systematically violates ADA accessibility requirements. The evidence shows widespread failures.
+
+Equal access to public transportation is a fundamental civil right. The Agency must implement comprehensive accessibility improvements.
+
+IT IS ORDERED that Defendant submit a remediation plan within 90 days and complete all improvements within 18 months.`
+            }
+        ];
+
+        let currentCase = null;
+        let currentTab = 'summary';
+        let notes = JSON.parse(localStorage.getItem('vibelaw-notes') || '[]');
+
+        function renderResults(results = mockCases) {
+            const resultsList = document.getElementById('resultsList');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            resultsCount.textContent = `${results.length} case${results.length !== 1 ? 's' : ''} found`;
+            
+            resultsList.innerHTML = results.map(case_ => `
+                <div class="case-item" data-case-id="${case_.id}">
+                    <div class="case-title">${case_.title}</div>
+                    <div class="case-meta">
+                        <span>${case_.court}</span>
+                        <span>${new Date(case_.date).toLocaleDateString()}</span>
+                    </div>
+                    <div class="case-preview">${case_.preview}</div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.case-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const caseId = parseInt(this.dataset.caseId);
+                    selectCase(caseId);
+                    
+                    // Update active state
+                    document.querySelectorAll('.case-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        function selectCase(caseId) {
+            currentCase = mockCases.find(c => c.id === caseId);
+            renderDetailPanel();
+        }
+
+        function renderDetailPanel() {
+            if (!currentCase) return;
+
+            const detailPanel = document.getElementById('detailPanel');
+            
+            detailPanel.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-tabs">
+                        <button class="tab-button ${currentTab === 'summary' ? 'active' : ''}" onclick="switchTab('summary')">Summary</button>
+                        <button class="tab-button ${currentTab === 'fulltext' ? 'active' : ''}" onclick="switchTab('fulltext')">Full Text</button>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="action-button" onclick="extractEntities()">Extract Entities</button>
+                        <button class="action-button" onclick="addNote()">Add Note</button>
+                    </div>
+                </div>
+                <div class="detail-content">
+                    <div class="content-main" id="contentMain">
+                        ${renderTabContent()}
+                    </div>
+                    <div class="content-sidebar">
+                        <div class="sidebar-title">Notes</div>
+                        <div id="notesList">
+                            ${renderNotes()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTabContent() {
+            if (!currentCase) return '';
+
+            if (currentTab === 'summary') {
+                return `
+                    <h2>${currentCase.title}</h2>
+                    <div style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        ${currentCase.court} • ${new Date(currentCase.date).toLocaleDateString()}
+                    </div>
+                    <div style="line-height: 1.6;">
+                        ${currentCase.summary}
+                    </div>
+                `;
+            } else {
+                return `
+                    <h2>${currentCase.title}</h2>
+                    <div style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        ${currentCase.court} • ${new Date(currentCase.date).toLocaleDateString()}
+                    </div>
+                    <div style="white-space: pre-wrap; line-height: 1.6; font-family: monospace; font-size: 0.875rem;" id="fullTextContent">
+                        ${currentCase.fullText}
+                    </div>
+                `;
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            renderDetailPanel();
+        }
+
+        function extractEntities() {
+            if (!currentCase) return;
+
+            const contentMain = document.getElementById('contentMain');
+            let text = currentTab === 'summary' ? currentCase.summary : currentCase.fullText;
+            
+            // Simple entity extraction simulation
+            const names = text.match(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g) || [];
+            const dates = text.match(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g) || [];
+            
+            // Highlight entities
+            names.forEach(name => {
+                text = text.replace(new RegExp(`\\b${name}\\b`, 'g'), `<span class="highlighted-entity" onclick="addNote('${name}')">${name}</span>`);
+            });
+            
+            dates.forEach(date => {
+                text = text.replace(new RegExp(`\\b${date}\\b`, 'g'), `<span class="highlighted-entity" onclick="addNote('${date}')">${date}</span>`);
+            });
+
+            if (currentTab === 'summary') {
+                contentMain.innerHTML = `
+                    <h2>${currentCase.title}</h2>
+                    <div style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        ${currentCase.court} • ${new Date(currentCase.date).toLocaleDateString()}
+                    </div>
+                    <div style="line-height: 1.6;">
+                        ${text}
+                    </div>
+                `;
+            } else {
+                contentMain.innerHTML = `
+                    <h2>${currentCase.title}</h2>
+                    <div style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                        ${currentCase.court} • ${new Date(currentCase.date).toLocaleDateString()}
+                    </div>
+                    <div style="white-space: pre-wrap; line-height: 1.6; font-family: monospace; font-size: 0.875rem;">
+                        ${text}
+                    </div>
+                `;
+            }
+        }
+
+        function addNote(text = null) {
+            if (!currentCase) return;
+
+            const noteText = text || prompt('Enter your note:');
+            if (!noteText) return;
+
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                text: noteText,
+                timestamp: new Date().toISOString()
+            };
+
+            notes.unshift(note);
+            localStorage.setItem('vibelaw-notes', JSON.stringify(notes));
+            renderDetailPanel();
+        }
+
+        function renderNotes() {
+            const caseNotes = notes.filter(n => n.caseId === currentCase?.id);
+            
+            if (caseNotes.length === 0) {
+                return '<div style="color: var(--text-secondary); font-size: 0.875rem;">No notes yet</div>';
+            }
+
+            return caseNotes.map(note => `
+                <div class="note-item">
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-meta">${new Date(note.timestamp).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            
+            if (!query) {
+                renderResults();
+                return;
+            }
+
+            const filtered = mockCases.filter(case_ => 
+                case_.title.toLowerCase().includes(query) ||
+                case_.court.toLowerCase().includes(query) ||
+                case_.preview.toLowerCase().includes(query) ||
+                case_.summary.toLowerCase().includes(query)
+            );
+
+            renderResults(filtered);
+        });
+
+        // Initialize the app
+        renderResults();
+    </script>
+</body>
+</html>

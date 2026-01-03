@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus | Project Control Center</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --sidebar-width: 260px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Sidebar */
+        aside {
+            width: var(--sidebar-width);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1rem;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05rem;
+            margin-bottom: 3rem;
+            padding-left: 1rem;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-dim);
+            text-decoration: none;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .view {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.07);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Project Cards */
+        .project-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .project-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 1.2rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .progress-container {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Activity Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--glass-border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.75rem;
+            top: 0.2rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid #1e293b;
+        }
+
+        .timeline-time {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        /* Tasks */
+        .todo-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            padding: 0.8rem;
+            border-radius: 10px;
+            margin-bottom: 0.6rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .todo-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .todo-item input {
+            margin-right: 12px;
+            accent-color: var(--accent);
+            width: 18px;
+            height: 18px;
+        }
+
+        .todo-item.done span {
+            text-decoration: line-through;
+            color: var(--text-dim);
+        }
+
+        /* Quick Links */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .link-icon {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .link-icon:hover {
+            background: var(--accent);
+            color: #0f172a;
+            transform: scale(1.05);
+        }
+
+        .link-icon i {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent);
+        }
+
+        /* Icons (Fallback if FontAwesome not loaded) */
+        .icon-placeholder {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            background: currentColor;
+            mask-size: contain;
+            mask-repeat: no-repeat;
+        }
+    </style>
+    <!-- Lucide Icons for high-end look -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">NEXUS.IO</div>
+        
+        <nav>
+            <a href="#" class="nav-item active" onclick="switchView('home', this)">
+                <i data-lucide="layout-dashboard"></i> Home
+            </a>
+            <a href="#" class="nav-item" onclick="switchView('projects', this)">
+                <i data-lucide="layers"></i> Projects
+            </a>
+            <a href="#" class="nav-item" onclick="switchView('settings', this)">
+                <i data-lucide="settings"></i> Settings
+            </a>
+        </nav>
+
+        <div style="margin-top: auto; padding: 1rem; background: var(--glass-bg); border-radius: 15px; font-size: 0.8rem;">
+            <div style="color: var(--accent); font-weight: bold; margin-bottom: 4px;">Pro Plan</div>
+            <div style="color: var(--text-dim);">85% storage used</div>
+            <div class="progress-container" style="height: 4px; margin-top: 8px;">
+                <div class="progress-bar" style="width: 85%"></div>
+            </div>
+        </div>
+    </aside>
+
+    <main>
+        <!-- Home View -->
+        <div id="home-view" class="view active">
+            <header>
+                <div>
+                    <h1>Welcome back, Alex</h1>
+                    <p style="color: var(--text-dim)">Here's what's happening today.</p>
+                </div>
+                <button class="btn-primary" onclick="openModal()">+ New Project</button>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Left Column -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="card">
+                        <div class="card-title">Active Projects <span style="font-size: 0.8rem; color: var(--accent)">View All</span></div>
+                        <div class="project-list" id="project-list">
+                            <!-- Project items injected here -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Quick Links</div>
+                        <div class="quick-links">
+                            <div class="link-icon"><i data-lucide="github"></i>GitHub</div>
+                            <div class="link-icon"><i data-lucide="figma"></i>Figma</div>
+                            <div class="link-icon"><i data-lucide="slack"></i>Slack</div>
+                            <div class="link-icon"><i data-lucide="trello"></i>Trello</div>
+                            <div class="link-icon"><i data-lucide="mail"></i>Mail</div>
+                            <div class="link-icon"><i data-lucide="calendar"></i>Events</div>
+                            <div class="link-icon"><i data-lucide="database"></i>Data</div>
+                            <div class="link-icon"><i data-lucide="terminal"></i>Console</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="card">
+                        <div class="card-title">Tasks</div>
+                        <div id="task-list">
+                            <!-- Task items injected here -->
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 8px;">
+                            <input type="text" id="new-task-input" placeholder="Add task..." style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); padding: 8px; border-radius: 8px; color: white;">
+                            <button onclick="addTask()" style="background: var(--accent); border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;"><i data-lucide="plus" style="width: 16px; color: #0f172a;"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Recent Activity</div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-time">10 mins ago</div>
+                                <div style="font-size: 0.9rem;">Pushed 4 commits to <b>origin/main</b></div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-time">2 hours ago</div>
+                                <div style="font-size: 0.9rem;">Meeting with Design Team</div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-time">Yesterday</div>
+                                <div style="font-size: 0.9rem;">Project <b>Nebula</b> marked as completed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects View -->
+        <div id="projects-view" class="view">
+            <header>
+                <h1>All Projects</h1>
+            </header>
+            <div class="card">
+                <p>Project management depth view coming soon...</p>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view">
+            <header>
+                <h1>Settings</h1>
+            </header>
+            <div class="card">
+                <div class="form-group">
+                    <label>Profile Name</label>
+                    <input type="text" value="Alex Rivera">
+                </div>
+                <div class="form-group">
+                    <label>Email Notification</label>
+                    <input type="checkbox" checked>
+                </div>
+                <button class="btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Project Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h2 style="margin-bottom: 1.5rem;">Create New Project</h2>
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" id="proj-name" placeholder="e.g. Project Titan">
+            </div>
+            <div class="form-group">
+                <label>Progress (%)</label>
+                <input type="number" id="proj-progress" placeholder="0" min="0" max="100">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 2rem;">
+                <button onclick="closeModal()" style="background: transparent; color: white; border: none; cursor: pointer;">Cancel</button>
+                <button class="btn-primary" onclick="createNewProject()">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // Data Management
+        let projects = [
+            { name: "Alpha Dashboard", progress: 75, color: "#38bdf8" },
+            { name: "Mobile App Redesign", progress: 40, color: "#818cf8" },
+            { name: "Cloud Sync Engine", progress: 90, color: "#fbbf24" },
+            { name: "Security Audit", progress: 15, color: "#f87171" }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('nexus_tasks')) || [
+            { text: "Update design system", done: true },
+            { text: "Review PR #422", done: false },
+            { text: "Client presentation", done: false }
+        ];
+
+        // View Switching
+        function switchView(viewId, element) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(viewId + '-view').classList.add('active');
+            element.classList.add('active');
+        }
+
+        // Render Projects
+        function renderProjects() {
+            const list = document.getElementById('project-list');
+            list.innerHTML = projects.map(p => `
+                <div class="project-card">
+                    <div style="font-weight: 600; font-size: 0.9rem;">${p.name}</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${p.progress}%; background: ${p.color}; box-shadow: 0 0 10px ${p.color}55;"></div>
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; margin-top: 5px; color: var(--text-dim)">${p.progress}%</div>
+                </div>
+            `).join('');
+        }
+
+        // Render Tasks
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = tasks.map((t, i) => `
+                <div class="todo-item ${t.done ? 'done' : ''}" onclick="toggleTask(${i})">
+                    <input type="checkbox" ${t.done ? 'checked' : ''}>
+                    <span>${t.text}</span>
+                </div>
+            `).join('');
+            localStorage.setItem('nexus_tasks', JSON.stringify(tasks));
+        }
+
+        function toggleTask(index) {
+            tasks[index].done = !tasks[index].done;
+            renderTasks();
+        }
+
+        function addTask() {
+            const input = document.getElementById('new-task-input');
+            if (input.value.trim()) {
+                tasks.push({ text: input.value, done: false });
+                input.value = '';
+                renderTasks();
+            }
+        }
+
+        // Modal Logic
+        function openModal() {
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        function createNewProject() {
+            const name = document.getElementById('proj-name').value;
+            const progress = document.getElementById('proj-progress').value;
+            
+            if (name) {
+                projects.unshift({
+                    name: name,
+                    progress: progress || 0,
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16)
+                });
+                renderProjects();
+                closeModal();
+                // Reset fields
+                document.getElementById('proj-name').value = '';
+                document.getElementById('proj-progress').value = '';
+            }
+        }
+
+        // Initial Render
+        renderProjects();
+        renderTasks();
+
+        // Handle Enter key for task input
+        document.getElementById('new-task-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+    </script>
+</body>
+</html>

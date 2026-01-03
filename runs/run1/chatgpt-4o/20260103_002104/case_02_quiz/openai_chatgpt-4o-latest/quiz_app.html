@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #6dd5ed, #2193b0);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: 2.5em;
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 1em;
+      color: #fff;
+      background: #007acc;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #005e99;
+    }
+
+    .option {
+      display: block;
+      margin: 10px 0;
+      padding: 15px;
+      background: #fff;
+      color: #000;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .option:hover {
+      background: #e0e0e0;
+    }
+
+    .option.correct {
+      background: #4CAF50 !important;
+      color: #fff;
+    }
+
+    .option.wrong {
+      background: #F44336 !important;
+      color: #fff;
+    }
+
+    #score {
+      font-size: 1.5em;
+      margin-top: 20px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="start-screen">
+    <h1>Welcome to the Quiz!</h1>
+    <button class="btn" onclick="startQuiz()">Begin Quiz</button>
+  </div>
+
+  <div class="container hidden" id="quiz-screen">
+    <div id="question-container">
+      <h2 id="question-text"></h2>
+      <div id="options-container"></div>
+    </div>
+    <div id="score">Score: 0</div>
+  </div>
+
+  <div class="container hidden" id="end-screen">
+    <h1>Quiz Complete!</h1>
+    <p id="final-score"></p>
+    <button class="btn" onclick="startQuiz()">Play Again</button>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        question: "What color is a polar bear's skin?",
+        options: ["White", "Black", "Pink", "Brown"],
+        answer: 1
+      },
+      {
+        question: "Which planet has the most moons?",
+        options: ["Earth", "Mars", "Saturn", "Jupiter"],
+        answer: 2
+      },
+      {
+        question: "What is the national animal of Scotland?",
+        options: ["Lion", "Unicorn", "Sheep", "Dragon"],
+        answer: 1
+      },
+      {
+        question: "Which fruit floats because it is 25% air?",
+        options: ["Apple", "Banana", "Watermelon", "Grape"],
+        answer: 0
+      },
+      {
+        question: "What is the only food that never spoils?",
+        options: ["Rice", "Honey", "Salt", "Vinegar"],
+        answer: 1
+      },
+      {
+        question: "Which bird can fly backwards?",
+        options: ["Eagle", "Penguin", "Hummingbird", "Ostrich"],
+        answer: 2
+      },
+      {
+        question: "How many hearts does an octopus have?",
+        options: ["1", "2", "3", "4"],
+        answer: 2
+      },
+      {
+        question: "Which element is represented by the symbol 'K'?",
+        options: ["Krypton", "Potassium", "Kalium", "Carbon"],
+        answer: 1
+      },
+      {
+        question: "What is the tallest mountain in the solar system?",
+        options: ["Mount Everest", "Olympus Mons", "Mauna Kea", "Vesuvius"],
+        answer: 1
+      },
+      {
+        question: "Which musical instrument has keys, pedals, and strings?",
+        options: ["Guitar", "Piano", "Violin", "Flute"],
+        answer: 1
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+
+    const startScreen = document.getElementById("start-screen");
+    const quizScreen = document.getElementById("quiz-screen");
+    const endScreen = document.getElementById("end-screen");
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options-container");
+    const scoreDisplay = document.getElementById("score");
+    const finalScore = document.getElementById("final-score");
+
+    function startQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      scoreDisplay.textContent = "Score: 0";
+      startScreen.classList.add("hidden");
+      endScreen.classList.add("hidden");
+      quizScreen.classList.remove("hidden");
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      questionText.textContent = q.question;
+      optionsContainer.innerHTML = "";
+
+      q.options.forEach((option, index) => {
+        const btn = document.createElement("div");
+        btn.classList.add("option");
+        btn.textContent = option;
+        btn.onclick = () => handleAnswer(index, btn);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(selected, button) {
+      const correct = questions[currentQuestion].answer;
+
+      const allOptions = optionsContainer.querySelectorAll(".option");
+      allOptions.forEach((btn, idx) => {
+        btn.classList.remove("correct", "wrong");
+        if (idx === correct) {
+          btn.classList.add("correct");
+        } else if (idx === selected) {
+          btn.classList.add("wrong");
+        }
+        btn.onclick = null; // Disable further clicks
+      });
+
+      if (selected === correct) {
+        score++;
+        scoreDisplay.textContent = "Score: " + score;
+      }
+
+      setTimeout(() => {
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          endQuiz();
+        }
+      }, 1200);
+    }
+
+    function endQuiz() {
+      quizScreen.classList.add("hidden");
+      endScreen.classList.remove("hidden");
+      finalScore.textContent = `Your final score is ${score} out of ${questions.length}`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .city-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            margin: 20px 0;
+        }
+
+        .temperature {
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .condition {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .humidity {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .bar {
+            width: 60px;
+            background: linear-gradient(to top, #ff6b6b, #feca57);
+            border-radius: 5px 5px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bar:hover {
+            transform: scaleY(1.05);
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 2rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: white;
+        }
+
+        .close-btn:hover {
+            opacity: 0.7;
+        }
+
+        .detail-icon {
+            font-size: 5rem;
+            margin: 20px 0;
+        }
+
+        .detail-temp {
+            font-size: 4rem;
+            font-weight: 300;
+            margin: 10px 0;
+        }
+
+        .detail-info {
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
+
+        /* Background themes based on weather */
+        .sunny-bg { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .cloudy-bg { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .rainy-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .weather-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+            .temperature { font-size: 2.5rem; }
+            .weather-icon { font-size: 3rem; }
+            .chart { height: 150px; }
+            .bar { width: 40px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 10px; }
+            .weather-grid { grid-template-columns: 1fr; }
+            .modal-content { padding: 20px; }
+            .detail-temp { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Weather Dashboard</h1>
+        
+        <div class="weather-grid" id="weatherGrid">
+            <!-- Weather cards will be inserted here -->
+        </div>
+
+        <div class="chart-container">
+            <h2 class="chart-title">Temperature Comparison</h2>
+            <div class="chart" id="temperatureChart">
+                <!-- Chart bars will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for detailed view -->
+    <div class="modal" id="weatherModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <div id="modalContent">
+                <!-- Modal content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock weather data for 5 cities
+        const weatherData = [
+            {
+                city: "New York",
+                temperature: 22,
+                condition: "sunny",
+                humidity: 65,
+                windSpeed: 12,
+                pressure: 1013,
+                visibility: 10,
+                uvIndex: 6
+            },
+            {
+                city: "London",
+                temperature: 15,
+                condition: "cloudy",
+                humidity: 78,
+                windSpeed: 8,
+                pressure: 1015,
+                visibility: 8,
+                uvIndex: 3
+            },
+            {
+                city: "Tokyo",
+                temperature: 28,
+                condition: "sunny",
+                humidity: 70,
+                windSpeed: 15,
+                pressure: 1012,
+                visibility: 12,
+                uvIndex: 8
+            },
+            {
+                city: "Sydney",
+                temperature: 18,
+                condition: "rainy",
+                humidity: 85,
+                windSpeed: 20,
+                pressure: 1008,
+                visibility: 5,
+                uvIndex: 2
+            },
+            {
+                city: "Paris",
+                temperature: 20,
+                condition: "cloudy",
+                humidity: 72,
+                windSpeed: 10,
+                pressure: 1014,
+                visibility: 9,
+                uvIndex: 4
+            }
+        ];
+
+        // Weather icons mapping
+        const weatherIcons = {
+            sunny: "☀️",
+            cloudy: "☁️",
+            rainy: "🌧️"
+        };
+
+        // Get dominant weather condition for background
+        function getDominantWeather() {
+            const conditions = weatherData.map(w => w.condition);
+            const counts = {};
+            conditions.forEach(c => counts[c] = (counts[c] || 0) + 1);
+            
+            const dominant = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+            return dominant;
+        }
+
+        // Update background based on dominant weather
+        function updateBackground() {
+            const dominantWeather = getDominantWeather();
+            document.body.className = `${dominantWeather}-bg`;
+        }
+
+        // Create weather card HTML
+        function createWeatherCard(data) {
+            return `
+                <div class="weather-card" onclick="showDetails('${data.city}')">
+                    <div class="city-name">${data.city}</div>
+                    <div class="weather-icon">${weatherIcons[data.condition]}</div>
+                    <div class="temperature">${data.temperature}°C</div>
+                    <div class="condition">${data.condition.charAt(0).toUpperCase() + data.condition.slice(1)}</div>
+                    <div class="humidity">💧 ${data.humidity}% Humidity</div>
+                </div>
+            `;
+        }
+
+        // Create chart bars
+        function createChartBars() {
+            const maxTemp = Math.max(...weatherData.map(w => w.temperature));
+            const chartContainer = document.getElementById('temperatureChart');
+            
+            weatherData.forEach(data => {
+                const barHeight = (data.temperature / maxTemp) * 180;
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${barHeight}px`;
+                bar.style.background = `linear-gradient(to top, ${getTemperatureColor(data.temperature)})`;
+                
+                bar.innerHTML = `
+                    <div class="bar-value">${data.temperature}°C</div>
+                    <div class="bar-label">${data.city}</div>
+                `;
+                
+                bar.onclick = () => showDetails(data.city);
+                chartContainer.appendChild(bar);
+            });
+        }
+
+        // Get color based on temperature
+        function getTemperatureColor(temp) {
+            if (temp <= 15) return ['#4facfe', '#00f2fe'];
+            if (temp <= 25) return ['#43e97b', '#38f9d7'];
+            return ['#fa709a', '#fee140'];
+        }
+
+        // Show detailed weather info in modal
+        function showDetails(cityName) {
+            const data = weatherData.find(w => w.city === cityName);
+            const modal = document.getElementById('weatherModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.innerHTML = `
+                <div class="city-name">${data.city}</div>
+                <div class="detail-icon">${weatherIcons[data.condition]}</div>
+                <div class="detail-temp">${data.temperature}°C</div>
+                <div class="detail-info">
+                    <div>🌤️ ${data.condition.charAt(0).toUpperCase() + data.condition.slice(1)}</div>
+                    <div>💧 ${data.humidity}% Humidity</div>
+                    <div>💨 ${data.windSpeed} km/h Wind</div>
+                    <div>🌡️ ${data.pressure} hPa Pressure</div>
+                    <div>👁️ ${data.visibility} km Visibility</div>
+                    <div>☀️ UV Index: ${data.uvIndex}</div>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('weatherModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('weatherModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize the dashboard
+        function init() {
+            const weatherGrid = document.getElementById('weatherGrid');
+            weatherData.forEach(data => {
+                weatherGrid.innerHTML += createWeatherCard(data);
+            });
+            
+            createChartBars();
+            updateBackground();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

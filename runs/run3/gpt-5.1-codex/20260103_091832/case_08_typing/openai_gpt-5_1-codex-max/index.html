@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Typing Speed Test</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --accent: #38bdf8;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --correct: #4ade80;
+        --incorrect: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: radial-gradient(circle at 20% 20%, #1f2937, #0f172a 45%);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 12px;
+    }
+    .card {
+        background: var(--panel);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 20px 45px rgba(0,0,0,0.35);
+        border-radius: 16px;
+        max-width: 900px;
+        width: 100%;
+        padding: 28px;
+    }
+    h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: 0.5px;
+    }
+    .subtitle {
+        margin: 0 0 20px;
+        color: var(--muted);
+    }
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .metric {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 12px 14px;
+    }
+    .metric .label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+    }
+    .metric .value {
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+    #text-display {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 18px;
+        min-height: 140px;
+        line-height: 1.6;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+        margin-bottom: 16px;
+        user-select: none;
+    }
+    #text-display .char {
+        color: var(--muted);
+        transition: color 0.1s ease, background 0.1s ease, border-bottom 0.1s ease;
+    }
+    .char.correct { color: var(--correct); }
+    .char.incorrect { color: var(--incorrect); background: rgba(248,113,113,0.08); }
+    .char.current { border-bottom: 2px solid var(--accent); }
+    textarea {
+        width: 100%;
+        height: 120px;
+        resize: none;
+        background: #0b1224;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 18px;
+        color: var(--text);
+        outline: none;
+        transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+    textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+    }
+    .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+    }
+    button {
+        background: linear-gradient(135deg, #22d3ee, #3b82f6);
+        border: none;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.2s ease;
+        box-shadow: 0 12px 25px rgba(59,130,246,0.35);
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    #final-stats {
+        margin-top: 10px;
+        padding: 12px;
+        background: rgba(56,189,248,0.05);
+        border: 1px dashed rgba(56,189,248,0.4);
+        border-radius: 10px;
+        display: none;
+    }
+    @media (max-width: 720px) {
+        .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>Typing Speed Test</h1>
+    <p class="subtitle">Start typing to begin the 30-second timer. Track your WPM, accuracy, and progress live.</p>
+
+    <div class="metrics">
+        <div class="metric"><div class="label">Timer</div><div class="value" id="timer">30.0s</div></div>
+        <div class="metric"><div class="label">WPM</div><div class="value" id="wpm">0</div></div>
+        <div class="metric"><div class="label">Accuracy</div><div class="value" id="accuracy">100%</div></div>
+        <div class="metric"><div class="label">Progress</div><div class="value" id="progress">0%</div></div>
+    </div>
+
+    <div id="text-display"></div>
+    <textarea id="typing-input" placeholder="Start typing here..." aria-label="Typing input"></textarea>
+
+    <div class="controls">
+        <button id="restart">Try another text</button>
+        <div id="final-stats"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const samples = [
+        "The quick brown fox jumps over the lazy dog near the river bank at dawn.",
+        "Typing is a skill that improves with practice, patience, and good posture.",
+        "A calm mind can focus on each letter, letting the words flow effortlessly.",
+        "Technology changes fast, but clear communication will always matter most.",
+        "Summer evenings glow with fireflies while crickets sing in the tall grass.",
+        "Books are mirrors: you only see in them what you already have inside you.",
+        "Great ideas often start as small notes scribbled on scraps of paper.",
+        "The mountain trail twisted through pines and stones toward a quiet summit.",
+        "Coffee steamed gently as rain tapped the window in a soothing rhythm.",
+        "Curiosity drives learning; every question is a doorway to new understanding."
+    ];
+
+    const textDisplay = document.getElementById("text-display");
+    const typingInput = document.getElementById("typing-input");
+    const timerEl = document.getElementById("timer");
+    const wpmEl = document.getElementById("wpm");
+    const accEl = document.getElementById("accuracy");
+    const progressEl = document.getElementById("progress");
+    const finalStats = document.getElementById("final-stats");
+    const restartBtn = document.getElementById("restart");
+
+    const TEST_DURATION = 30; // seconds
+    let currentText = "";
+    let timerInterval = null;
+    let started = false;
+    let finished = false;
+    let startTime = null;
+    let elapsed = 0;
+
+    function pickText() {
+        return samples[Math.floor(Math.random() * samples.length)];
+    }
+
+    function renderText(text) {
+        textDisplay.innerHTML = "";
+        for (const char of text) {
+            const span = document.createElement("span");
+            span.className = "char";
+            span.textContent = char;
+            textDisplay.appendChild(span);
+        }
+    }
+
+    function resetTest() {
+        currentText = pickText();
+        renderText(currentText);
+        typingInput.value = "";
+        started = false;
+        finished = false;
+        startTime = null;
+        elapsed = 0;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        updateTimerDisplay(TEST_DURATION);
+        updateMetrics(0, 0, 0);
+        highlightProgress("");
+        finalStats.style.display = "none";
+        finalStats.textContent = "";
+        typingInput.disabled = false;
+        typingInput.focus();
+    }
+
+    function updateTimerDisplay(remaining) {
+        timerEl.textContent = remaining.toFixed(1) + "s";
+    }
+
+    function startTimer() {
+        started = true;
+        startTime = performance.now();
+        timerInterval = setInterval(() => {
+            const now = performance.now();
+            elapsed = (now - startTime) / 1000;
+            const remaining = Math.max(0, TEST_DURATION - elapsed);
+            updateTimerDisplay(remaining);
+            if (remaining <= 0) finishTest("Time's up");
+        }, 100);
+    }
+
+    function highlightProgress(typed) {
+        const spans = textDisplay.querySelectorAll(".char");
+        const len = spans.length;
+        let correctCount = 0;
+        for (let i = 0; i < len; i++) {
+            const span = spans[i];
+            const typedChar = typed[i];
+            span.classList.remove("correct", "incorrect", "current");
+            if (typedChar == null) continue;
+            if (typedChar === currentText[i]) {
+                span.classList.add("correct");
+                correctCount++;
+            } else {
+                span.classList.add("incorrect");
+            }
+        }
+        const currentIndex = typed.length;
+        if (currentIndex < len && len > 0) {
+            spans[currentIndex].classList.add("current");
+        }
+        const progress = Math.min(100, Math.round((typed.length / len) * 100));
+        progressEl.textContent = progress + "%";
+        return correctCount;
+    }
+
+    function updateMetrics(correctChars, totalTyped, elapsedSeconds) {
+        const acc = totalTyped === 0 ? 100 : (correctChars / totalTyped * 100);
+        const effectiveTime = elapsedSeconds > 0 ? elapsedSeconds : 1;
+        const wpm = (correctChars / 5) / (effectiveTime / 60);
+        wpmEl.textContent = Math.round(wpm);
+        accEl.textContent = acc.toFixed(1) + "%";
+    }
+
+    function finishTest(message) {
+        if (finished) return;
+        finished = true;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        typingInput.disabled = true;
+        const typed = typingInput.value;
+        const correctChars = highlightProgress(typed);
+        const totalTyped = typed.length;
+        const effectiveElapsed = Math.min(elapsed || ((performance.now() - startTime) / 1000), TEST_DURATION);
+        updateMetrics(correctChars, totalTyped, effectiveElapsed);
+        const acc = totalTyped === 0 ? 0 : (correctChars / totalTyped * 100);
+        const wpm = (correctChars / 5) / (effectiveElapsed / 60);
+        finalStats.style.display = "block";
+        finalStats.innerHTML = `
+            <strong>${message || "Finished!"}</strong><br>
+            WPM: ${wpm.toFixed(1)} | Accuracy: ${acc.toFixed(1)}%<br>
+            Time: ${effectiveElapsed.toFixed(1)}s | Typed: ${totalTyped} chars | Correct: ${correctChars}
+        `;
+    }
+
+    typingInput.addEventListener("input", () => {
+        if (finished) return;
+        const typed = typingInput.value;
+        if (!started && typed.length > 0) startTimer();
+        const correctChars = highlightProgress(typed);
+        const totalTyped = typed.length;
+        const currentElapsed = started ? Math.min((performance.now() - startTime) / 1000, TEST_DURATION) : 0;
+        updateMetrics(correctChars, totalTyped, currentElapsed);
+        if (typed.length >= currentText.length) {
+            finishTest("Text completed");
+        }
+    });
+
+    typingInput.addEventListener("keydown", (e) => {
+        if (finished && e.key === "Enter") {
+            e.preventDefault();
+            resetTest();
+        }
+    });
+
+    restartBtn.addEventListener("click", resetTest);
+
+    // initial load
+    resetTest();
+})();
+</script>
+</body>
+</html>

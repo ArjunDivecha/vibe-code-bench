@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { margin: 0; color: var(--primary); }
+
+        .grid { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 20px; }
+        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Form Styling */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: 500; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; }
+        button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; padding: 12px; }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        /* Stats & Chart */
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .stat-box { padding: 15px; border-radius: 8px; background: #f1f5f9; text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .chart-container { display: flex; justify-content: center; margin-top: 20px; }
+
+        /* Filters */
+        .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .filters > * { flex: 1; min-width: 150px; }
+
+        /* Table Styling */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        .btn-delete { color: var(--danger); background: none; padding: 5px; font-size: 0.8rem; }
+        .btn-delete:hover { text-decoration: underline; }
+
+        /* Categories Colors */
+        .cat-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .cat-Food { background: #fee2e2; color: #991b1b; }
+        .cat-Transport { background: #fef3c7; color: #92400e; }
+        .cat-Entertainment { background: #dcfce7; color: #166534; }
+        .cat-Bills { background: #dbeafe; color: #1e40af; }
+        .cat-Shopping { background: #f3e8ff; color: #6b21a8; }
+        .cat-Other { background: #f1f5f9; color: #475569; }
+
+        /* Pie Chart SVG */
+        .pie-chart { transform: rotate(-90deg); border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ExpenseTracker</h1>
+        <p>Manage your finances with ease</p>
+    </header>
+
+    <div class="grid">
+        <!-- Main Content: Filters and List -->
+        <div class="main-col">
+            <div class="card">
+                <div class="card-title">Filters</div>
+                <div class="filters">
+                    <div>
+                        <label>Category</label>
+                        <select id="filterCategory" onchange="renderExpenses()">
+                            <option value="All">All Categories</option>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>From Date</label>
+                        <input type="date" id="filterStart" onchange="renderExpenses()">
+                    </div>
+                    <div>
+                        <label>To Date</label>
+                        <input type="date" id="filterEnd" onchange="renderExpenses()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Recent Expenses</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseList">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Add and Stats -->
+        <div class="side-col">
+            <div class="card">
+                <div class="card-title">Add Expense</div>
+                <form id="expenseForm">
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input type="number" step="0.01" id="amount" required placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="category" required>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="description" required placeholder="What did you buy?">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Add Expense</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Summary</div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div style="font-size: 0.8rem; color: var(--text-muted)">Total Spent</div>
+                        <div class="stat-val" id="totalSpent">$0.00</div>
+                    </div>
+                </div>
+                <div class="chart-container" id="chartContainer">
+                    <!-- SVG Chart injected here -->
+                </div>
+                <div id="categoryLegend" style="margin-top: 15px; font-size: 0.85rem;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State Management
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+    
+    const categoryColors = {
+        'Food': '#ef4444',
+        'Transport': '#f59e0b',
+        'Entertainment': '#10b981',
+        'Bills': '#3b82f6',
+        'Shopping': '#8b5cf6',
+        'Other': '#64748b'
+    };
+
+    // DOM Elements
+    const expenseForm = document.getElementById('expenseForm');
+    const expenseList = document.getElementById('expenseList');
+    const totalSpentEl = document.getElementById('totalSpent');
+    const chartContainer = document.getElementById('chartContainer');
+    const categoryLegend = document.getElementById('categoryLegend');
+
+    // Initialize date input to today
+    document.getElementById('date').valueAsDate = new Date();
+
+    // Add Expense
+    expenseForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newExpense = {
+            id: Date.now(),
+            amount: parseFloat(document.getElementById('amount').value),
+            category: document.getElementById('category').value,
+            description: document.getElementById('description').value,
+            date: document.getElementById('date').value
+        };
+
+        expenses.push(newExpense);
+        saveAndRender();
+        expenseForm.reset();
+        document.getElementById('date').valueAsDate = new Date();
+    });
+
+    function deleteExpense(id) {
+        expenses = expenses.filter(e => e.id !== id);
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        renderExpenses();
+    }
+
+    function renderExpenses() {
+        const filterCat = document.getElementById('filterCategory').value;
+        const filterStart = document.getElementById('filterStart').value;
+        const filterEnd = document.getElementById('filterEnd').value;
+
+        // Filter Logic
+        let filtered = expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (filterCat !== 'All') {
+            filtered = filtered.filter(e => e.category === filterCat);
+        }
+        if (filterStart) {
+            filtered = filtered.filter(e => e.date >= filterStart);
+        }
+        if (filterEnd) {
+            filtered = filtered.filter(e => e.date <= filterEnd);
+        }
+
+        // Render Table
+        expenseList.innerHTML = filtered.map(exp => `
+            <tr>
+                <td>${exp.date}</td>
+                <td>${exp.description}</td>
+                <td><span class="cat-tag cat-${exp.category}">${exp.category}</span></td>
+                <td><strong>$${exp.amount.toFixed(2)}</strong></td>
+                <td><button class="btn-delete" onclick="deleteExpense(${exp.id})">Remove</button></td>
+            </tr>
+        `).join('');
+
+        if (filtered.length === 0) {
+            expenseList.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No expenses found</td></tr>';
+        }
+
+        updateSummary(filtered);
+    }
+
+    function updateSummary(data) {
+        const total = data.reduce((sum, exp) => sum + exp.amount, 0);
+        totalSpentEl.innerText = `$${total.toFixed(2)}`;
+
+        // Breakdown logic
+        const breakdown = {};
+        data.forEach(exp => {
+            breakdown[exp.category] = (breakdown[exp.category] || 0) + exp.amount;
+        });
+
+        renderChart(breakdown, total);
+    }
+
+    function renderChart(breakdown, total) {
+        if (total === 0) {
+            chartContainer.innerHTML = '<p style="color: var(--text-muted)">No data for chart</p>';
+            categoryLegend.innerHTML = '';
+            return;
+        }
+
+        let cumulativePercent = 0;
+        const radius = 50;
+        const center = 50;
+        let paths = [];
+        let legendHtml = '';
+
+        Object.entries(breakdown).forEach(([cat, val]) => {
+            const percent = val / total;
+            const startX = center + radius * Math.cos(2 * Math.PI * cumulativePercent);
+            const startY = center + radius * Math.sin(2 * Math.PI * cumulativePercent);
+            
+            cumulativePercent += percent;
+            
+            const endX = center + radius * Math.cos(2 * Math.PI * cumulativePercent);
+            const endY = center + radius * Math.sin(2 * Math.PI * cumulativePercent);
+            
+            const largeArcFlag = percent > 0.5 ? 1 : 0;
+            
+            const pathData = [
+                `M ${center} ${center}`,
+                `L ${startX} ${startY}`,
+                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`,
+                'Z'
+            ].join(' ');
+
+            paths.push(`<path d="${pathData}" fill="${categoryColors[cat]}"></path>`);
+            
+            legendHtml += `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span><small style="color:${categoryColors[cat]}">●</small> ${cat}</span>
+                    <span>$${val.toFixed(2)} (${(percent * 100).toFixed(1)}%)</span>
+                </div>
+            `;
+        });
+
+        chartContainer.innerHTML = `
+            <svg width="150" height="150" viewBox="0 0 100 100" class="pie-chart">
+                ${paths.join('')}
+            </svg>
+        `;
+        categoryLegend.innerHTML = legendHtml;
+    }
+
+    // Initial Load
+    renderExpenses();
+</script>
+
+</body>
+</html>

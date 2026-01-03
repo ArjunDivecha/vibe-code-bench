@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trivia Burst - Quiz App</title>
+<style>
+:root{
+  --bg:#0f1624;
+  --card:#1e2a3f;
+  --accent:#7c5dff;
+  --accent2:#00d4ff;
+  --text:#eaf0ff;
+  --muted:#9fb0ce;
+  --success:#3dd598;
+  --error:#ff6b6b;
+}
+*{box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 20% 20%, #1d2b48 0, #0f1624 45%), radial-gradient(circle at 80% 0%, #16213d 0, #0f1624 40%), #0f1624;
+  color:var(--text);
+  overflow:hidden;
+}
+h1,h2,h3,p{margin:0;}
+.container{
+  width: min(900px, 95vw);
+  background:rgba(30,42,63,0.9);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  padding:26px;
+  position:relative;
+  overflow:hidden;
+}
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+.logo{
+  font-weight:700;
+  letter-spacing:1px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.pulse-dot{
+  width:12px;height:12px;
+  background:var(--accent2);
+  border-radius:50%;
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(0.9);opacity:0.6;}
+  50%{transform:scale(1.2);opacity:1;}
+  100%{transform:scale(0.9);opacity:0.6;}
+}
+.tag{
+  padding:6px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.06);
+  color:var(--muted);
+  font-size:12px;
+  border:1px solid rgba(255,255,255,0.05);
+}
+.screen{
+  min-height:360px;
+  display:none;
+}
+.screen.active{
+  display:block;
+  animation:fadeSlide 0.6s ease;
+}
+@keyframes fadeSlide{
+  0%{opacity:0;transform:translateY(10px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+button{
+  border:none;
+  cursor:pointer;
+  background:linear-gradient(135deg, var(--accent), var(--accent2));
+  color:white;
+  padding:14px 22px;
+  border-radius:12px;
+  font-weight:700;
+  font-size:16px;
+  transition:transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s ease;
+  box-shadow:0 10px 25px rgba(0,0,0,0.25);
+}
+button:hover{transform:translateY(-2px);filter:brightness(1.05);}
+button:active{transform:translateY(0);}
+#start-screen .title{
+  font-size:32px;
+  margin-bottom:12px;
+}
+#start-screen .blurb{
+  color:var(--muted);
+  line-height:1.6;
+}
+.fancy{
+  background:linear-gradient(120deg, var(--accent), var(--accent2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.question-card{
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.25);
+  position:relative;
+}
+.progress{
+  height:8px;
+  background:rgba(255,255,255,0.07);
+  border-radius:999px;
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, var(--accent), var(--accent2));
+  transition:width 0.4s ease;
+}
+.q-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:var(--muted);
+  margin-bottom:8px;
+  font-size:14px;
+}
+.q-text{
+  font-size:22px;
+  line-height:1.4;
+  margin-bottom:16px;
+}
+.options{
+  display:grid;
+  gap:12px;
+}
+.option{
+  width:100%;
+  text-align:left;
+  padding:14px 16px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  color:var(--text);
+  font-size:15px;
+  position:relative;
+  overflow:hidden;
+}
+.option span{
+  position:relative;
+  z-index:1;
+}
+.option::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg, rgba(124,93,255,0.15), rgba(0,212,255,0.15));
+  opacity:0;
+  transition:opacity 0.2s ease;
+}
+.option:hover::after{opacity:1;}
+.option.disabled{pointer-events:none;opacity:0.75;}
+.option.correct{border-color:var(--success); background:rgba(61,213,152,0.12);}
+.option.incorrect{border-color:var(--error); background:rgba(255,107,107,0.12);}
+.option.correct::after{background:linear-gradient(120deg, rgba(61,213,152,0.18), rgba(0,212,255,0.2));opacity:1;}
+.option.incorrect::after{background:linear-gradient(120deg, rgba(255,107,107,0.2), rgba(124,93,255,0.18));opacity:1;}
+.footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:16px;
+  color:var(--muted);
+}
+.score-pill{
+  background:rgba(255,255,255,0.06);
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.05);
+}
+.hidden{display:none;}
+.result{
+  text-align:center;
+  padding:30px 10px;
+}
+.result h2{
+  font-size:30px;
+  margin-bottom:10px;
+}
+.result .big-score{
+  font-size:48px;
+  margin:12px 0 18px;
+  font-weight:800;
+}
+.confetti{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.confetti span{
+  position:absolute;
+  width:10px;height:16px;
+  background:var(--accent);
+  top:-20px;
+  border-radius:4px;
+  opacity:0.9;
+  animation:confetti 2.4s ease-out infinite;
+}
+@keyframes confetti{
+  0%{transform:translateY(0) rotate(0deg);}
+  100%{transform:translateY(520px) rotate(360deg);}
+}
+.glow{
+  position:absolute;
+  width:200px;height:200px;
+  border-radius:50%;
+  filter:blur(80px);
+  opacity:0.45;
+  background:radial-gradient(circle, rgba(124,93,255,0.55), rgba(124,93,255,0));
+  z-index:-1;
+}
+.glow.one{top:-30px;left:-20px;}
+.glow.two{bottom:-60px;right:-30px;}
+.slide{
+  animation:slide 0.5s ease;
+}
+@keyframes slide{
+  0%{transform:translateX(12px);opacity:0;}
+  100%{transform:translateX(0);opacity:1;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="glow one"></div>
+  <div class="glow two"></div>
+  <header>
+    <div class="logo"><div class="pulse-dot"></div> Trivia Burst</div>
+    <div class="tag">10 questions • Multiple choice</div>
+  </header>
+
+  <div id="start-screen" class="screen active">
+    <div class="title">Ready for a <span class="fancy">lightning-fast</span> quiz?</div>
+    <p class="blurb">Ten quirky trivia questions across science, movies, food, and the wonderfully weird. Test your instincts, rack up points, and see how high you can score!</p>
+    <div style="margin-top:20px;">
+      <button id="start-btn">Begin Quiz</button>
+    </div>
+  </div>
+
+  <div id="quiz-screen" class="screen">
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="question-card slide">
+      <div class="q-header">
+        <div id="q-counter">Question 1 / 10</div>
+        <div class="score-pill">Score: <span id="score-display">0</span></div>
+      </div>
+      <div class="q-text" id="question-text">Question text</div>
+      <div class="options" id="options"></div>
+      <div class="footer">
+        <div id="feedback" class="muted"></div>
+        <button id="next-btn" class="hidden">Next ➜</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-screen" class="screen">
+    <div class="result">
+      <div class="confetti" id="confetti"></div>
+      <h2>Quiz complete!</h2>
+      <div class="big-score" id="final-score">8 / 10</div>
+      <p id="score-msg" style="color:var(--muted);margin-bottom:18px;"></p>
+      <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { q: "Which planet has a day longer than its year?", options:["Mercury","Venus","Saturn","Neptune"], answer:1 },
+  { q: "In a deck of playing cards, which king doesn't have a mustache?", options:["King of Hearts","King of Clubs","King of Diamonds","King of Spades"], answer:0 },
+  { q: "What animal's fingerprints are so similar to humans that they can taint crime scenes?", options:["Koala","Chimpanzee","Panda","Raccoon"], answer:0 },
+  { q: "Which movie was the first to show the iconic scrolling text 'A long time ago in a galaxy far, far away...'", options:["Star Wars: A New Hope","Star Trek: The Motion Picture","2001: A Space Odyssey","Flash Gordon"], answer:0 },
+  { q: "What is the only food that never spoils?", options:["Rice","Honey","Olive oil","Salted butter"], answer:1 },
+  { q: "Which instrument has keys, pedals, and strings?", options:["Harp","Piano","Accordion","Xylophone"], answer:1 },
+  { q: "Which sea creature has three hearts?", options:["Octopus","Shark","Sea turtle","Jellyfish"], answer:0 },
+  { q: "What is the national animal of Scotland?", options:["Highland cow","Golden eagle","Unicorn","Red deer"], answer:2 },
+  { q: "Which element's chemical symbol is W?", options:["Silver","Tungsten","Tin","Lead"], answer:1 },
+  { q: "In cooking, what does 'al dente' literally mean?", options:["To the bite","To the tooth","To the tongue","To the point"], answer:1 }
+];
+
+const startScreen = document.getElementById('start-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultScreen = document.getElementById('result-screen');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const nextBtn = document.getElementById('next-btn');
+const qText = document.getElementById('question-text');
+const optionsContainer = document.getElementById('options');
+const qCounter = document.getElementById('q-counter');
+const scoreDisplay = document.getElementById('score-display');
+const finalScore = document.getElementById('final-score');
+const scoreMsg = document.getElementById('score-msg');
+const feedback = document.getElementById('feedback');
+const progressBar = document.getElementById('progress-bar');
+const confettiArea = document.getElementById('confetti');
+
+let current = 0;
+let score = 0;
+let locked = false;
+
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+}
+
+let quizOrder = [];
+
+function setupConfetti(){
+  confettiArea.innerHTML = '';
+  const colors = ['#7c5dff','#00d4ff','#3dd598','#ff6b6b','#ffc857'];
+  for(let i=0;i<70;i++){
+    const piece = document.createElement('span');
+    piece.style.left = Math.random()*100+'%';
+    piece.style.animationDelay = (Math.random()*1.5)+'s';
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.transform = `rotate(${Math.random()*360}deg)`;
+    confettiArea.appendChild(piece);
+  }
+}
+
+function showScreen(screen){
+  [startScreen, quizScreen, resultScreen].forEach(s=>s.classList.remove('active'));
+  screen.classList.add('active');
+}
+
+function startQuiz(){
+  score = 0;
+  current = 0;
+  locked = false;
+  scoreDisplay.textContent = score;
+  quizOrder = questions.map((q,idx)=>idx);
+  shuffle(quizOrder);
+  showScreen(quizScreen);
+  renderQuestion();
+}
+
+function renderQuestion(){
+  feedback.textContent='';
+  nextBtn.classList.add('hidden');
+  locked = false;
+  const qIdx = quizOrder[current];
+  const data = questions[qIdx];
+  qText.textContent = data.q;
+  qCounter.textContent = `Question ${current+1} / ${questions.length}`;
+  progressBar.style.width = ((current)/questions.length*100)+'%';
+  optionsContainer.innerHTML = '';
+  data.options.forEach((opt, idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = `<span>${String.fromCharCode(65+idx)}. ${opt}</span>`;
+    btn.addEventListener('click', ()=> handleAnswer(idx));
+    optionsContainer.appendChild(btn);
+  });
+}
+
+function handleAnswer(choice){
+  if(locked) return;
+  locked = true;
+  const qIdx = quizOrder[current];
+  const data = questions[qIdx];
+  const correct = data.answer;
+  const optionButtons = Array.from(document.querySelectorAll('.option'));
+  optionButtons.forEach((btn,idx)=>{
+    btn.classList.add('disabled');
+    if(idx===correct) btn.classList.add('correct');
+    if(idx===choice && choice!==correct) btn.classList.add('incorrect');
+  });
+  if(choice === correct){
+    score++;
+    feedback.textContent = randomPositive();
+  }else{
+    feedback.textContent = randomNegative(data.options[correct]);
+  }
+  scoreDisplay.textContent = score;
+  nextBtn.textContent = (current === questions.length-1) ? "See Results" : "Next ➜";
+  nextBtn.classList.remove('hidden');
+}
+
+function nextQuestion(){
+  if(current < questions.length-1){
+    current++;
+    renderQuestion();
+  }else{
+    endQuiz();
+  }
+}
+
+function endQuiz(){
+  finalScore.textContent = `${score} / ${questions.length}`;
+  const ratio = score/questions.length;
+  let msg="";
+  if(ratio===1) msg="Perfection! You absolutely crushed it. 🏆";
+  else if(ratio>=0.8) msg="Fantastic job! You're a trivia ace.";
+  else if(ratio>=0.5) msg="Nice! Solid score—keep going!";
+  else msg="Every legend starts somewhere. Have another go!";
+  scoreMsg.textContent = msg;
+  progressBar.style.width = '100%';
+  setupConfetti();
+  showScreen(resultScreen);
+}
+
+function randomPositive(){
+  const msgs = ["Boom! Nailed it.", "Correct! You're on fire.", "Nice pick!", "That's right! Keep it up.", "Sharp mind!"];
+  return msgs[Math.floor(Math.random()*msgs.length)];
+}
+function randomNegative(correct){
+  const msgs = [
+    `Not quite. It was "${correct}".`,
+    `Close! The answer is "${correct}".`,
+    `Oops—it's "${correct}".`,
+    `Almost! Correct is "${correct}".`
+  ];
+  return msgs[Math.floor(Math.random()*msgs.length)];
+}
+
+startBtn.addEventListener('click', startQuiz);
+restartBtn.addEventListener('click', ()=>{
+  showScreen(startScreen);
+});
+nextBtn.addEventListener('click', nextQuestion);
+</script>
+</body>
+</html>

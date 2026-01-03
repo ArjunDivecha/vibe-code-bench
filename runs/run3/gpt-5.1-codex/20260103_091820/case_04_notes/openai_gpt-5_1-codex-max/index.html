@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minimal Notes</title>
+<style>
+:root {
+    --bg: #f7f8fb;
+    --card: #ffffff;
+    --primary: #3b82f6;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+}
+header h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+}
+.actions {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+}
+button, .icon-btn {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+button:hover, .icon-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(59,130,246,0.2); }
+button:active, .icon-btn:active { transform: translateY(0); box-shadow: var(--shadow); }
+.icon-btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 8px; }
+#search {
+    width: 260px;
+    max-width: 60vw;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    outline: none;
+    font-size: 14px;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+#search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 18px;
+    padding: 18px 20px 28px;
+}
+.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.note-list {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+.note-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.note-item:last-child { border-bottom: none; }
+.note-item:hover { background: #f3f6ff; }
+.note-item.active { background: rgba(59,130,246,0.12); }
+.note-title {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+}
+.note-snippet {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.editor { display: flex; flex-direction: column; height: 100%; }
+.editor-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+#title {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    font-weight: 700;
+    outline: none;
+}
+.toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+}
+.toolbar button {
+    background: #fff;
+    color: var(--text);
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    box-shadow: none;
+}
+.toolbar button.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+}
+#content {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    outline: none;
+    background: #fff;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-y: auto;
+}
+#content:empty:before {
+    content: "Start typing your note...";
+    color: var(--muted);
+}
+.footer-actions {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.empty-state {
+    padding: 18px;
+    color: var(--muted);
+    font-size: 14px;
+}
+.meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+@media (max-width: 960px) {
+    main { grid-template-columns: 1fr; }
+    .note-list { max-height: none; }
+    header { flex-wrap: wrap; }
+    #search { flex: 1; order: 2; }
+    .actions { width: 100%; justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+<header>
+    <h1>Notes</h1>
+    <input id="search" type="search" placeholder="Search notes..." aria-label="Search notes">
+    <div class="actions">
+        <button id="newNoteBtn">+ New note</button>
+        <button id="deleteBtn" title="Delete current note" style="background:#ef4444;">Delete</button>
+    </div>
+</header>
+
+<main>
+    <section class="panel" aria-label="Notes list">
+        <div class="panel-header">All notes</div>
+        <div id="noteList" class="note-list"></div>
+    </section>
+
+    <section class="panel editor" aria-label="Editor">
+        <div class="editor-header">
+            <input id="title" type="text" placeholder="Title">
+        </div>
+        <div class="toolbar">
+            <button data-cmd="bold"><strong>B</strong></button>
+            <button data-cmd="italic"><em>I</em></button>
+            <button data-cmd="underline"><u>U</u></button>
+            <button data-cmd="insertUnorderedList">• List</button>
+            <button data-cmd="insertOrderedList">1. List</button>
+        </div>
+        <div id="content" contenteditable="true"></div>
+        <div class="footer-actions">
+            <div id="meta" class="meta" style="margin-right:auto;"></div>
+            <button id="saveBtn">Save</button>
+        </div>
+    </section>
+</main>
+
+<script>
+(() => {
+    const titleInput = document.getElementById('title');
+    const contentDiv = document.getElementById('content');
+    const noteListDiv = document.getElementById('noteList');
+    const searchInput = document.getElementById('search');
+    const saveBtn = document.getElementById('saveBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const newNoteBtn = document.getElementById('newNoteBtn');
+    const toolbarButtons = document.querySelectorAll('.toolbar button');
+    const meta = document.getElementById('meta');
+
+    let notes = loadNotes();
+    let activeId = null;
+
+    function uuid() {
+        return 'xxxxxx'.replace(/x/g, () => (Math.random() * 36 | 0).toString(36));
+    }
+    function saveNotes() {
+        localStorage.setItem('notes-app-data', JSON.stringify(notes));
+    }
+    function loadNotes() {
+        try {
+            const raw = localStorage.getItem('notes-app-data');
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.warn('Failed to load notes', e);
+            return [];
+        }
+    }
+    function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html || '';
+        return tmp.textContent || tmp.innerText || '';
+    }
+    function truncate(str, n) {
+        return str.length > n ? str.slice(0, n - 1) + '…' : str;
+    }
+    function renderList(filter="") {
+        const term = filter.trim().toLowerCase();
+        noteListDiv.innerHTML = '';
+        const filtered = notes
+            .filter(n => n.title.toLowerCase().includes(term) || stripHtml(n.content).toLowerCase().includes(term))
+            .sort((a,b) => b.updated - a.updated);
+
+        if (!filtered.length) {
+            noteListDiv.innerHTML = '<div class="empty-state">No notes yet. Create one to get started.</div>';
+            return;
+        }
+
+        filtered.forEach(note => {
+            const item = document.createElement('div');
+            item.className = 'note-item' + (note.id === activeId ? ' active' : '');
+            item.dataset.id = note.id;
+
+            const title = document.createElement('p');
+            title.className = 'note-title';
+            title.textContent = note.title || 'Untitled';
+
+            const snippet = document.createElement('p');
+            snippet.className = 'note-snippet';
+            snippet.textContent = truncate(stripHtml(note.content), 80);
+
+            item.appendChild(title);
+            item.appendChild(snippet);
+            item.onclick = () => openNote(note.id);
+            noteListDiv.appendChild(item);
+        });
+    }
+    function updateMeta(note) {
+        if (!note) { meta.textContent = ''; return; }
+        const updated = new Date(note.updated || note.created || Date.now());
+        meta.textContent = `Last updated ${updated.toLocaleString()}`;
+    }
+    function openNote(id) {
+        const note = notes.find(n => n.id === id);
+        if (!note) return;
+        activeId = id;
+        titleInput.value = note.title;
+        contentDiv.innerHTML = note.content;
+        updateMeta(note);
+        updateActiveListItem();
+    }
+    function updateActiveListItem() {
+        document.querySelectorAll('.note-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.id === activeId);
+        });
+    }
+    function newNote() {
+        activeId = null;
+        titleInput.value = '';
+        contentDiv.innerHTML = '';
+        updateMeta(null);
+        updateActiveListItem();
+        contentDiv.focus();
+    }
+    function saveCurrent(showAlert=false) {
+        const title = titleInput.value.trim();
+        const content = contentDiv.innerHTML.trim();
+        const hasContent = title || stripHtml(content).trim();
+
+        if (!hasContent) {
+            if (activeId) {
+                const note = notes.find(n => n.id === activeId);
+                if (note) { note.title = 'Untitled'; note.content = ''; note.updated = Date.now(); saveNotes(); renderList(searchInput.value); }
+            }
+            return showAlert ? alert('Cannot save an empty note.') : undefined;
+        }
+
+        const timestamp = Date.now();
+        if (activeId) {
+            const note = notes.find(n => n.id === activeId);
+            if (note) {
+                note.title = title || 'Untitled';
+                note.content = content;
+                note.updated = timestamp;
+            }
+        } else {
+            const id = uuid();
+            notes.push({ id, title: title || 'Untitled', content, created: timestamp, updated: timestamp });
+            activeId = id;
+        }
+        saveNotes();
+        renderList(searchInput.value);
+        updateActiveListItem();
+        updateMeta(notes.find(n => n.id === activeId));
+    }
+    function deleteCurrent() {
+        if (!activeId) {
+            alert('No note selected to delete.');
+            return;
+        }
+        const idx = notes.findIndex(n => n.id === activeId);
+        if (idx === -1) return;
+        if (!confirm('Delete this note?')) return;
+
+        notes.splice(idx, 1);
+        activeId = null;
+        saveNotes();
+        newNote();
+        renderList(searchInput.value);
+    }
+    function bindToolbar() {
+        toolbarButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.execCommand(btn.dataset.cmd, false, null);
+                contentDiv.focus();
+                updateToolbarState();
+            });
+        });
+        contentDiv.addEventListener('keyup', updateToolbarState);
+        contentDiv.addEventListener('mouseup', updateToolbarState);
+    }
+    function updateToolbarState() {
+        toolbarButtons.forEach(btn => {
+            const cmd = btn.dataset.cmd;
+            const state = document.queryCommandState(cmd);
+            btn.classList.toggle('active', !!state);
+        });
+    }
+
+    saveBtn.addEventListener('click', () => saveCurrent(true));
+    deleteBtn.addEventListener('click', deleteCurrent);
+    newNoteBtn.addEventListener('click', newNote);
+    searchInput.addEventListener('input', e => renderList(e.target.value));
+
+    let typingTimer;
+    [titleInput, contentDiv].forEach(el => {
+        el.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => saveCurrent(false), 600);
+        });
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            saveCurrent(true);
+        }
+    });
+
+    bindToolbar();
+    renderList();
+
+    if (notes.length) {
+        const latest = notes.reduce((a, b) => a.updated > b.updated ? a : b);
+        openNote(latest.id);
+    } else {
+        newNote();
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law: Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a1428 0%, #0d1f2d 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(180deg, #1a2a3a 0%, #0f1e2e 100%);
+            border-bottom: 2px solid #2a5a8a;
+            padding: 20px 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #4a9eff;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #1a3a4a;
+            border: 1px solid #2a6a9a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            background: #1a4a5a;
+            box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+        }
+
+        .search-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #2a7aaa 0%, #1a5a8a 100%);
+            border: 1px solid #4a9eff;
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-button:hover {
+            background: linear-gradient(135deg, #3a8aba 0%, #2a6a9a 100%);
+            box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 130px);
+            gap: 0;
+            overflow: hidden;
+        }
+
+        .results-panel {
+            flex: 0 0 35%;
+            background: #0a1428;
+            border-right: 1px solid #2a5a8a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 15px 20px;
+            background: #0f1e2e;
+            border-bottom: 1px solid #2a5a8a;
+            font-size: 13px;
+            color: #7a9aaa;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .case-item {
+            padding: 15px;
+            background: #0f1e2e;
+            border: 1px solid #1a4a6a;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid #2a5a8a;
+        }
+
+        .case-item:hover {
+            background: #1a2e3e;
+            border-color: #2a7aaa;
+            border-left-color: #4a9eff;
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
+        }
+
+        .case-item.active {
+            background: #1a3a4a;
+            border-color: #4a9eff;
+            border-left-color: #4a9eff;
+            box-shadow: inset 0 0 8px rgba(74, 158, 255, 0.1);
+        }
+
+        .case-title {
+            font-weight: 700;
+            color: #4a9eff;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #7a9aaa;
+            margin-bottom: 8px;
+        }
+
+        .case-court {
+            color: #6a8aaa;
+        }
+
+        .case-date {
+            color: #5a7aaa;
+        }
+
+        .case-snippet {
+            font-size: 12px;
+            color: #9abaaa;
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        .detail-panel {
+            flex: 1;
+            background: #0d1f2d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #5a7aaa;
+            font-size: 16px;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .detail-header {
+            padding: 20px 25px;
+            background: linear-gradient(180deg, #1a3a4a 0%, #0f1e2e 100%);
+            border-bottom: 1px solid #2a5a8a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4a9eff;
+            margin-bottom: 8px;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #7a9aaa;
+        }
+
+        .detail-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #2a5a8a;
+            background: #0f1e2e;
+            padding: 0 25px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #7a9aaa;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab:hover {
+            color: #4a9eff;
+        }
+
+        .tab.active {
+            color: #4a9eff;
+            border-bottom-color: #4a9eff;
+        }
+
+        .tab-content {
+            flex: 1;
+            display: none;
+            overflow-y: auto;
+            padding: 25px;
+            background: #0d1f2d;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-text {
+            color: #c0c0c0;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .summary-label {
+            color: #4a9eff;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .full-text {
+            color: #b0b0b0;
+            line-height: 1.9;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .entity {
+            background: rgba(74, 158, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border-left: 2px solid #4a9eff;
+            cursor: help;
+        }
+
+        .entity.person {
+            background: rgba(100, 200, 255, 0.15);
+            border-left-color: #64c8ff;
+        }
+
+        .entity.date {
+            background: rgba(255, 150, 100, 0.15);
+            border-left-color: #ff9664;
+        }
+
+        .entity.organization {
+            background: rgba(150, 200, 100, 0.15);
+            border-left-color: #96c864;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            padding: 15px 25px;
+            border-top: 1px solid #2a5a8a;
+            background: #0f1e2e;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #2a7aaa 0%, #1a5a8a 100%);
+            border: 1px solid #2a6a9a;
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #3a8aba 0%, #2a6a9a 100%);
+            border-color: #4a9eff;
+            box-shadow: 0 0 8px rgba(74, 158, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2a7aaa 0%, #1a5a8a 100%);
+            border-color: #4a9eff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3a8aba 0%, #2a6a9a 100%);
+            box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+        }
+
+        .notes-sidebar {
+            width: 280px;
+            background: #0a1428;
+            border-left: 1px solid #2a5a8a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .notes-header {
+            padding: 15px;
+            background: #0f1e2e;
+            border-bottom: 1px solid #2a5a8a;
+            font-size: 13px;
+            color: #7a9aaa;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .note-item {
+            padding: 12px;
+            background: #0f1e2e;
+            border: 1px solid #1a4a6a;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #b0b0b0;
+            line-height: 1.5;
+            position: relative;
+            border-left: 3px solid #2a7aaa;
+        }
+
+        .note-item:hover .note-delete {
+            opacity: 1;
+        }
+
+        .note-delete {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #8a4a4a;
+            border: none;
+            color: #e0e0e0;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .note-delete:hover {
+            background: #aa5a5a;
+        }
+
+        .note-text {
+            padding-right: 25px;
+            word-wrap: break-word;
+        }
+
+        .note-case {
+            font-size: 10px;
+            color: #5a8aaa;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        .notes-input-area {
+            padding: 10px;
+            border-top: 1px solid #2a5a8a;
+            background: #0f1e2e;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            height: 60px;
+            padding: 8px;
+            background: #1a2a3a;
+            border: 1px solid #1a4a6a;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 11px;
+            font-family: inherit;
+            resize: none;
+            margin-bottom: 8px;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #4a9eff;
+            background: #1a3a4a;
+            box-shadow: 0 0 6px rgba(74, 158, 255, 0.2);
+        }
+
+        .notes-add-btn {
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(135deg, #2a7aaa 0%, #1a5a8a 100%);
+            border: 1px solid #2a6a9a;
+            border-radius: 4px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notes-add-btn:hover {
+            background: linear-gradient(135deg, #3a8aba 0%, #2a6a9a 100%);
+            border-color: #4a9eff;
+        }
+
+        .notes-empty {
+            padding: 20px;
+            text-align: center;
+            color: #5a7aaa;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .scrollbar-custom {
+            scrollbar-width: thin;
+            scrollbar-color: #2a5a8a #0a1428;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: #0a1428;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: #2a5a8a;
+            border-radius: 4px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: #3a7aaa;
+        }
+
+        .results-list {
+            scrollbar-width: thin;
+            scrollbar-color: #2a5a8a #0a1428;
+        }
+
+        .results-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .results-list::-webkit-scrollbar-track {
+            background: #0a1428;
+        }
+
+        .results-list::-webkit-scrollbar-thumb {
+            background: #2a5a8a;
+            border-radius: 4px;
+        }
+
+        .results-list::-webkit-scrollbar-thumb:hover {
+            background: #3a7aaa;
+        }
+
+        .tab-content {
+            scrollbar-width: thin;
+            scrollbar-color: #2a5a8a #0d1f2d;
+        }
+
+        .tab-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: #0d1f2d;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: #2a5a8a;
+            border-radius: 4px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: #3a7aaa;
+        }
+
+        .notes-list {
+            scrollbar-width: thin;
+            scrollbar-color: #2a5a8a #0a1428;
+        }
+
+        .notes-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notes-list::-webkit-scrollbar-track {
+            background: #0a1428;
+        }
+
+        .notes-list::-webkit-scrollbar-thumb {
+            background: #2a5a8a;
+            border-radius: 3px;
+        }
+
+        .notes-list::-webkit-scrollbar-thumb:hover {
+            background: #3a7aaa;
+        }
+
+        .entity-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .entity-tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: #1a3a4a;
+            color: #4a9eff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 6px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -50px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 11px;
+            border: 1px solid #2a6a9a;
+            white-space: nowrap;
+        }
+
+        .entity-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .no-results {
+            padding: 40px 20px;
+            text-align: center;
+            color: #5a7aaa;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚖️ Vibe-Law</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search case law by title, court, or keywords...">
+            <button class="search-button" onclick="performSearch()">Search</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="results-panel">
+            <div class="results-header">Search Results</div>
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <div class="detail-panel">
+            <div id="detailEmpty" class="detail-empty">
+                Select a case to view details
+            </div>
+            <div id="detailContent" style="display: none; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="detail-header">
+                    <div class="detail-title" id="detailTitle"></div>
+                    <div class="detail-meta">
+                        <span><strong>Court:</strong> <span id="detailCourt"></span></span>
+                        <span><strong>Date:</strong> <span id="detailDate"></span></span>
+                        <span><strong>Citation:</strong> <span id="detailCitation"></span></span>
+                    </div>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('summary')">Summary</button>
+                    <button class="tab" onclick="switchTab('fulltext')">Full Text</button>
+                </div>
+                <div style="flex: 1; display: flex; overflow: hidden;">
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                        <div id="summaryTab" class="tab-content active">
+                            <div id="summaryContent"></div>
+                        </div>
+                        <div id="fulltextTab" class="tab-content">
+                            <div id="fulltextContent" class="full-text"></div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="extractEntities()">Extract Entities</button>
+                            <button class="btn" onclick="clearHighlights()">Clear Highlights</button>
+                        </div>
+                    </div>
+                    <div class="notes-sidebar">
+                        <div class="notes-header">Notes & Snippets</div>
+                        <div class="notes-list" id="notesList"></div>
+                        <div class="notes-input-area">
+                            <textarea id="noteInput" class="notes-textarea" placeholder="Add a note or snippet..."></textarea>
+                            <button class="notes-add-btn" onclick="addNote()">Add Note</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Case Data
+        const mockCases = [
+            {
+                id: 1,
+                title: "Miranda v. Arizona",
+                court: "U.S. Supreme Court",
+                date: "June 13, 1966",
+                citation: "384 U.S. 436",
+                snippet: "Established the requirement that police inform suspects of their rights before interrogation.",
+                summary: "The Supreme Court held that law enforcement officers must inform suspects of their constitutional rights before questioning. The defendant, Ernesto Miranda, had confessed to crimes without being informed of his right to counsel or his right to remain silent.",
+                fullText: "Ernesto Miranda was arrested and confessed to kidnapping and rape after police interrogation, but he was not informed of his right to counsel or his right to remain silent. The Supreme Court ruled that his confession was inadmissible because he had not been advised of his Fifth Amendment right against self-incrimination and his Sixth Amendment right to counsel. Chief Justice Earl Warren wrote that law enforcement officers must inform suspects of their constitutional rights before questioning. This landmark decision established the requirement for what are now known as 'Miranda Rights.' The Court emphasized the importance of protecting individual rights during police custody and the need for clear warnings before any custodial interrogation. The decision fundamentally changed law enforcement procedures across the United States.",
+                fullTextRaw: "MIRANDA v. ARIZONA\n\nErnesto Miranda was arrested and confessed to kidnapping and rape after police interrogation, but he was not informed of his right to counsel or his right to remain silent. The Supreme Court ruled that his confession was inadmissible because he had not been advised of his Fifth Amendment right against self-incrimination and his Sixth Amendment right to counsel.\n\nChief Justice Earl Warren wrote that law enforcement officers must inform suspects of their constitutional rights before questioning. This landmark decision established the requirement for what are now known as 'Miranda Rights.' The Court emphasized the importance of protecting individual rights during police custody and the need for clear warnings before any custodial interrogation.\n\nThe decision fundamentally changed law enforcement procedures across the United States.",
+                entities: [
+                    { text: "Ernesto Miranda", type: "person" },
+                    { text: "June 13, 1966", type: "date" },
+                    { text: "Supreme Court", type: "organization" },
+                    { text: "Earl Warren", type: "person" },
+                    { text: "Fifth Amendment", type: "organization" },
+                    { text: "Sixth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Brown v. Board of Education",
+                court: "U.S. Supreme Court",
+                date: "May 17, 1954",
+                citation: "347 U.S. 483",
+                snippet: "Declared that 'separate but equal' is unconstitutional in public education.",
+                summary: "The Supreme Court unanimously ruled that segregation in public schools is unconstitutional, overturning the 'separate but equal' doctrine established in Plessy v. Ferguson.",
+                fullText: "The case involved Oliver Brown and other parents challenging the segregation of Topeka's public schools. The Supreme Court, under Chief Justice Earl Warren, unanimously held that 'separate educational facilities are inherently unequal' and violate the Equal Protection Clause of the Fourteenth Amendment. The decision overturned the 'separate but equal' doctrine that had been established in Plessy v. Ferguson in 1896. Justice Warren noted that segregation has a detrimental effect on African American students and denied them equal educational opportunities. The Court concluded that 'in the field of public education, the doctrine of separate but equal has no place.' This landmark decision paved the way for school desegregation efforts throughout the United States.",
+                fullTextRaw: "BROWN v. BOARD OF EDUCATION\n\nThe case involved Oliver Brown and other parents challenging the segregation of Topeka's public schools. The Supreme Court, under Chief Justice Earl Warren, unanimously held that 'separate educational facilities are inherently unequal' and violate the Equal Protection Clause of the Fourteenth Amendment.\n\nThe decision overturned the 'separate but equal' doctrine that had been established in Plessy v. Ferguson in 1896. Justice Warren noted that segregation has a detrimental effect on African American students and denied them equal educational opportunities.\n\nThe Court concluded that 'in the field of public education, the doctrine of separate but equal has no place.' This landmark decision paved the way for school desegregation efforts throughout the United States.",
+                entities: [
+                    { text: "Oliver Brown", type: "person" },
+                    { text: "May 17, 1954", type: "date" },
+                    { text: "Topeka", type: "organization" },
+                    { text: "Earl Warren", type: "person" },
+                    { text: "Fourteenth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Roe v. Wade",
+                court: "U.S. Supreme Court",
+                date: "January 22, 1973",
+                citation: "410 U.S. 113",
+                snippet: "Established a constitutional right to abortion under the Due Process Clause.",
+                summary: "The Supreme Court ruled that a woman has a constitutional right to abortion prior to viability, subject to state regulation at different stages of pregnancy.",
+                fullText: "Jane Roe challenged a Texas law that prohibited abortion except when necessary to preserve the life of the mother. The Supreme Court, in a 7-2 decision, held that the Due Process Clause of the Fourteenth Amendment protects a woman's right to abortion. Justice Harry Blackmun established a trimester framework: during the first trimester, the state cannot restrict abortion; during the second trimester, the state can regulate abortion to protect maternal health; and during the third trimester, the state can prohibit abortion except when necessary to preserve the life or health of the mother. The Court found that the state's interest in potential life becomes compelling at viability. This decision struck down many state laws restricting abortion and became one of the most controversial Supreme Court decisions in American history.",
+                fullTextRaw: "ROE v. WADE\n\nJane Roe challenged a Texas law that prohibited abortion except when necessary to preserve the life of the mother. The Supreme Court, in a 7-2 decision, held that the Due Process Clause of the Fourteenth Amendment protects a woman's right to abortion.\n\nJustice Harry Blackmun established a trimester framework: during the first trimester, the state cannot restrict abortion; during the second trimester, the state can regulate abortion to protect maternal health; and during the third trimester, the state can prohibit abortion except when necessary to preserve the life or health of the mother.\n\nThe Court found that the state's interest in potential life becomes compelling at viability. This decision struck down many state laws restricting abortion.",
+                entities: [
+                    { text: "Jane Roe", type: "person" },
+                    { text: "January 22, 1973", type: "date" },
+                    { text: "Texas", type: "organization" },
+                    { text: "Harry Blackmun", type: "person" },
+                    { text: "Fourteenth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 4,
+                title: "Marbury v. Madison",
+                court: "U.S. Supreme Court",
+                date: "February 24, 1803",
+                citation: "5 U.S. 137",
+                snippet: "Established the principle of judicial review.",
+                summary: "The Supreme Court ruled that it has the power to review acts of Congress and determine their constitutionality.",
+                fullText: "William Marbury sought a writ of mandamus to compel Secretary of State James Madison to deliver his commission as a justice of the peace. Chief Justice John Marshall held that while Marbury had a right to his commission, the Supreme Court did not have the authority to issue the writ under the Judiciary Act of 1789 as written. Marshall ruled that the provision of the Judiciary Act granting the Supreme Court original jurisdiction to issue writs of mandamus was unconstitutional because it exceeded the constitutional limits on the Court's original jurisdiction. This landmark decision established the principle of judicial review, giving the Supreme Court the power to strike down laws it deemed unconstitutional. Marshall wrote that 'It is emphatically the province and duty of the judicial department to say what the law is.'",
+                fullTextRaw: "MARBURY v. MADISON\n\nWilliam Marbury sought a writ of mandamus to compel Secretary of State James Madison to deliver his commission as a justice of the peace. Chief Justice John Marshall held that while Marbury had a right to his commission, the Supreme Court did not have the authority to issue the writ under the Judiciary Act of 1789 as written.\n\nMarshall ruled that the provision of the Judiciary Act granting the Supreme Court original jurisdiction to issue writs of mandamus was unconstitutional. This landmark decision established the principle of judicial review.\n\nMarshall wrote that 'It is emphatically the province and duty of the judicial department to say what the law is.'",
+                entities: [
+                    { text: "William Marbury", type: "person" },
+                    { text: "February 24, 1803", type: "date" },
+                    { text: "James Madison", type: "person" },
+                    { text: "John Marshall", type: "person" },
+                    { text: "Supreme Court", type: "organization" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Gideon v. Wainwright",
+                court: "U.S. Supreme Court",
+                date: "March 18, 1963",
+                citation: "372 U.S. 335",
+                snippet: "Established the right to counsel for criminal defendants.",
+                summary: "The Supreme Court held that the Sixth Amendment guarantees the right to counsel for defendants who cannot afford an attorney.",
+                fullText: "Clarence Earl Gideon was charged with breaking and entering in Florida. He requested a court-appointed attorney but was denied because Florida law only provided counsel for those charged with capital offenses. Gideon defended himself and was convicted. The Supreme Court reversed his conviction and held that the Sixth Amendment guarantees the right to counsel for all criminal defendants, not just those charged with capital crimes. Justice Hugo Black wrote that the right to counsel is fundamental to a fair trial. The Court reasoned that a defendant without counsel faces an unequal contest with the prosecution. This decision established that states must provide attorneys to indigent defendants and fundamentally changed the criminal justice system.",
+                fullTextRaw: "GIDEON v. WAINWRIGHT\n\nClarence Earl Gideon was charged with breaking and entering in Florida. He requested a court-appointed attorney but was denied because Florida law only provided counsel for those charged with capital offenses.\n\nThe Supreme Court reversed his conviction and held that the Sixth Amendment guarantees the right to counsel for all criminal defendants. Justice Hugo Black wrote that the right to counsel is fundamental to a fair trial.\n\nThe Court reasoned that a defendant without counsel faces an unequal contest with the prosecution. This decision established that states must provide attorneys to indigent defendants.",
+                entities: [
+                    { text: "Clarence Earl Gideon", type: "person" },
+                    { text: "March 18, 1963", type: "date" },
+                    { text: "Florida", type: "organization" },
+                    { text: "Hugo Black", type: "person" },
+                    { text: "Sixth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Obergefell v. Hodges",
+                court: "U.S. Supreme Court",
+                date: "June 26, 2015",
+                citation: "576 U.S. 644",
+                snippet: "Legalized same-sex marriage nationwide.",
+                summary: "The Supreme Court ruled that the fundamental right to marry is guaranteed to same-sex couples under the Fourteenth Amendment.",
+                fullText: "James Obergefell and other same-sex couples challenged state bans on same-sex marriage. The Supreme Court, in a 5-4 decision, held that the Fourteenth Amendment guarantees a fundamental right to marry on the same terms as opposite-sex couples. Justice Anthony Kennedy wrote that denying same-sex couples the right to marry treats them as unequal members of society. The Court recognized that marriage is one of the most fundamental liberties and that excluding same-sex couples from this institution violates their constitutional rights. The decision struck down all remaining state bans on same-sex marriage and required all states to recognize same-sex marriages performed in other states. This landmark ruling was celebrated by LGBTQ+ rights advocates as a major victory for equality.",
+                fullTextRaw: "OBERGEFELL v. HODGES\n\nJames Obergefell and other same-sex couples challenged state bans on same-sex marriage. The Supreme Court, in a 5-4 decision, held that the Fourteenth Amendment guarantees a fundamental right to marry on the same terms as opposite-sex couples.\n\nJustice Anthony Kennedy wrote that denying same-sex couples the right to marry treats them as unequal members of society. The Court recognized that marriage is one of the most fundamental liberties.\n\nThe decision struck down all remaining state bans on same-sex marriage and required all states to recognize same-sex marriages performed in other states.",
+                entities: [
+                    { text: "James Obergefell", type: "person" },
+                    { text: "June 26, 2015", type: "date" },
+                    { text: "Anthony Kennedy", type: "person" },
+                    { text: "Fourteenth Amendment", type: "organization" },
+                    { text: "Supreme Court", type: "organization" }
+                ]
+            },
+            {
+                id: 7,
+                title: "McCulloch v. Maryland",
+                court: "U.S. Supreme Court",
+                date: "March 6, 1819",
+                citation: "17 U.S. 316",
+                snippet: "Established the implied powers of Congress.",
+                summary: "The Supreme Court ruled that Congress has implied powers beyond those explicitly stated in the Constitution.",
+                fullText: "Maryland imposed a tax on the Second Bank of the United States, which James McCulloch, a bank cashier, refused to pay. Chief Justice John Marshall held that Congress has implied powers derived from the Necessary and Proper Clause. Marshall wrote that 'Let the end be legitimate, let it be within the scope of the constitution, and all means which are appropriate, which are plainly adapted to that end, which are not prohibited, but consist with the letter and spirit of the constitution, are constitutional.' The Court struck down Maryland's tax, holding that states cannot tax federal institutions. This decision established that Congress has broad powers to enact legislation necessary and proper to carry out its enumerated powers, significantly expanding federal authority.",
+                fullTextRaw: "McCULLOCH v. MARYLAND\n\nMaryland imposed a tax on the Second Bank of the United States, which James McCulloch, a bank cashier, refused to pay. Chief Justice John Marshall held that Congress has implied powers derived from the Necessary and Proper Clause.\n\nMarshall wrote that 'Let the end be legitimate, let it be within the scope of the constitution, and all means which are appropriate, which are plainly adapted to that end, which are not prohibited, but consist with the letter and spirit of the constitution, are constitutional.'\n\nThe Court struck down Maryland's tax, holding that states cannot tax federal institutions.",
+                entities: [
+                    { text: "James McCulloch", type: "person" },
+                    { text: "March 6, 1819", type: "date" },
+                    { text: "Maryland", type: "organization" },
+                    { text: "John Marshall", type: "person" },
+                    { text: "Congress", type: "organization" }
+                ]
+            },
+            {
+                id: 8,
+                title: "Plessy v. Ferguson",
+                court: "U.S. Supreme Court",
+                date: "May 18, 1896",
+                citation: "163 U.S. 537",
+                snippet: "Established the 'separate but equal' doctrine.",
+                summary: "The Supreme Court upheld racial segregation laws, establishing the 'separate but equal' doctrine that would persist for 58 years.",
+                fullText: "Homer Plessy, a man of mixed race, was arrested for sitting in a whites-only railroad car in Louisiana. The Supreme Court upheld Louisiana's segregation law, ruling that 'separate but equal' accommodations do not violate the Fourteenth Amendment. Justice Henry Billings Brown wrote that the law was a reasonable exercise of state police power. Justice John Marshall Harlan dissented, arguing that the Constitution is color-blind and that the decision would encourage discrimination. The Plessy decision became the legal foundation for Jim Crow laws and racial segregation throughout the South. It remained the law of the land until Brown v. Board of Education in 1954. This decision is widely regarded as one of the most harmful Supreme Court rulings in American history.",
+                fullTextRaw: "PLESSY v. FERGUSON\n\nHomer Plessy, a man of mixed race, was arrested for sitting in a whites-only railroad car in Louisiana. The Supreme Court upheld Louisiana's segregation law, ruling that 'separate but equal' accommodations do not violate the Fourteenth Amendment.\n\nJustice Henry Billings Brown wrote that the law was a reasonable exercise of state police power. Justice John Marshall Harlan dissented, arguing that the Constitution is color-blind.\n\nThe Plessy decision became the legal foundation for Jim Crow laws and racial segregation throughout the South. It remained the law of the land until Brown v. Board of Education in 1954.",
+                entities: [
+                    { text: "Homer Plessy", type: "person" },
+                    { text: "May 18, 1896", type: "date" },
+                    { text: "Louisiana", type: "organization" },
+                    { text: "Henry Billings Brown", type: "person" },
+                    { text: "John Marshall Harlan", type: "person" }
+                ]
+            },
+            {
+                id: 9,
+                title: "New York Times Co. v. Sullivan",
+                court: "U.S. Supreme Court",
+                date: "March 9, 1964",
+                citation: "376 U.S. 254",
+                snippet: "Established protections for press freedom and speech.",
+                summary: "The Supreme Court held that public officials must prove actual malice to win defamation cases, protecting freedom of the press.",
+                fullText: "The New York Times published an advertisement criticizing the police response to civil rights protests in Montgomery, Alabama. L.B. Sullivan, a police commissioner, sued for defamation. The Supreme Court reversed the judgment for Sullivan, holding that public officials must prove that false statements were made with actual malice (knowledge of falsity or reckless disregard for truth) to recover damages. Justice William Brennan wrote that the First Amendment requires 'breathing room' for debate on public issues. The decision established that honest commentary on public officials' conduct is protected speech even if it contains minor factual errors. This landmark ruling significantly strengthened press freedom and public discourse protections.",
+                fullTextRaw: "NEW YORK TIMES CO. v. SULLIVAN\n\nThe New York Times published an advertisement criticizing the police response to civil rights protests in Montgomery, Alabama. L.B. Sullivan, a police commissioner, sued for defamation.\n\nThe Supreme Court reversed the judgment for Sullivan, holding that public officials must prove that false statements were made with actual malice to recover damages. Justice William Brennan wrote that the First Amendment requires 'breathing room' for debate on public issues.\n\nThe decision established that honest commentary on public officials' conduct is protected speech. This landmark ruling significantly strengthened press freedom.",
+                entities: [
+                    { text: "March 9, 1964", type: "date" },
+                    { text: "New York Times", type: "organization" },
+                    { text: "Montgomery, Alabama", type: "organization" },
+                    { text: "L.B. Sullivan", type: "person" },
+                    { text: "William Brennan", type: "person" }
+                ]
+            },
+            {
+                id: 10,
+                title: "Mapp v. Ohio",
+                court: "U.S. Supreme Court",
+                date: "June 19, 1961",
+                citation: "367 U.S. 643",
+                snippet: "Applied the exclusionary rule to state proceedings.",
+                summary: "The Supreme Court held that evidence obtained in violation of the Fourth Amendment is inadmissible in state courts.",
+                fullText: "Police entered Dollree Mapp's home without a warrant and found obscene materials. She was convicted under an Ohio obscenity law. The Supreme Court reversed her conviction, holding that the exclusionary rule applies to state proceedings as well as federal proceedings. Justice Tom Clark wrote that the Fourth Amendment protection against unreasonable searches and seizures would be meaningless if evidence obtained in violation of it could be used in court. The decision required states to exclude illegally obtained evidence from trials. This landmark ruling extended the exclusionary rule to all states and significantly impacted law enforcement practices. The decision established that constitutional protections apply uniformly across federal and state systems.",
+                fullTextRaw: "MAPP v. OHIO\n\nPolice entered Dollree Mapp's home without a warrant and found obscene materials. She was convicted under an Ohio obscenity law.\n\nThe Supreme Court reversed her conviction, holding that the exclusionary rule applies to state proceedings as well as federal proceedings. Justice Tom Clark wrote that the Fourth Amendment protection against unreasonable searches and seizures would be meaningless if evidence obtained in violation of it could be used in court.\n\nThe decision required states to exclude illegally obtained evidence from trials. This landmark ruling extended the exclusionary rule to all states.",
+                entities: [
+                    { text: "Dollree Mapp", type: "person" },
+                    { text: "June 19, 1961", type: "date" },
+                    { text: "Ohio", type: "organization" },
+                    { text: "Tom Clark", type: "person" },
+                    { text: "Fourth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 11,
+                title: "Gibbons v. Ogden",
+                court: "U.S. Supreme Court",
+                date: "March 2, 1824",
+                citation: "22 U.S. 1",
+                snippet: "Established federal commerce power over interstate commerce.",
+                summary: "The Supreme Court ruled that Congress has broad power to regulate interstate commerce.",
+                fullText: "Aaron Ogden held a monopoly granted by New York to operate steamboats in New York waters. Thomas Gibbons operated a competing steamboat service licensed by the federal government. Chief Justice John Marshall held that Congress has exclusive power to regulate interstate commerce under the Commerce Clause. Marshall defined commerce broadly to include all commercial activity, not just buying and selling. The Court struck down New York's monopoly as an unconstitutional interference with federal commerce power. This decision established that the federal government has broad authority to regulate interstate commerce and that state laws cannot impede it. The ruling significantly expanded federal power and has been cited in countless cases involving the scope of federal authority.",
+                fullTextRaw: "GIBBONS v. OGDEN\n\nAaron Ogden held a monopoly granted by New York to operate steamboats. Thomas Gibbons operated a competing steamboat service licensed by the federal government.\n\nChief Justice John Marshall held that Congress has exclusive power to regulate interstate commerce under the Commerce Clause. Marshall defined commerce broadly to include all commercial activity.\n\nThe Court struck down New York's monopoly as an unconstitutional interference with federal commerce power. This decision established that the federal government has broad authority to regulate interstate commerce.",
+                entities: [
+                    { text: "Aaron Ogden", type: "person" },
+                    { text: "March 2, 1824", type: "date" },
+                    { text: "Thomas Gibbons", type: "person" },
+                    { text: "New York", type: "organization" },
+                    { text: "John Marshall", type: "person" }
+                ]
+            },
+            {
+                id: 12,
+                title: "Furman v. Georgia",
+                court: "U.S. Supreme Court",
+                date: "June 29, 1972",
+                citation: "408 U.S. 238",
+                snippet: "Temporarily halted capital punishment in the United States.",
+                summary: "The Supreme Court ruled that existing capital punishment statutes constituted cruel and unusual punishment under the Eighth Amendment.",
+                fullText: "William Henry Furman was convicted of murder and sentenced to death under Georgia law. The Supreme Court, in a 5-4 decision, ruled that the death penalty as then administered constituted cruel and unusual punishment in violation of the Eighth and Fourteenth Amendments. The Court found that capital punishment statutes allowed for arbitrary and capricious application, with no consistent standards for imposing the death sentence. The decision effectively invalidated all then-existing death penalty statutes. Justice William O. Douglas wrote that the death penalty was being administered in a discriminatory manner. The ruling led to a temporary halt in executions while states rewrote their capital punishment laws. Although some states subsequently enacted new death penalty statutes that were upheld, Furman remains a landmark case in capital punishment jurisprudence.",
+                fullTextRaw: "FURMAN v. GEORGIA\n\nWilliam Henry Furman was convicted of murder and sentenced to death under Georgia law. The Supreme Court, in a 5-4 decision, ruled that the death penalty as then administered constituted cruel and unusual punishment.\n\nThe Court found that capital punishment statutes allowed for arbitrary and capricious application. The decision effectively invalidated all then-existing death penalty statutes.\n\nThe ruling led to a temporary halt in executions while states rewrote their capital punishment laws. Although some states subsequently enacted new death penalty statutes that were upheld, Furman remains a landmark case.",
+                entities: [
+                    { text: "William Henry Furman", type: "person" },
+                    { text: "June 29, 1972", type: "date" },
+                    { text: "Georgia", type: "organization" },
+                    { text: "William O. Douglas", type: "person" },
+                    { text: "Eighth Amendment", type: "organization" }
+                ]
+            },
+            {
+                id: 13,
+                title: "Korematsu v. United States",
+                court: "U.S. Supreme Court",
+                date: "December 18, 1944",
+                citation: "323 U.S. 214",
+                snippet: "Upheld internment of Japanese Americans during WWII.",
+                summary: "The Supreme Court upheld the constitutionality of Japanese American internment during World War II.",
+                fullText: "Fred Korematsu violated a military order requiring Japanese Americans to report for internment during World War II. The Supreme Court, in a 6-3 decision, upheld the internment order as a valid exercise of military authority. Justice Hugo Black wrote that the order was justified by military necessity. The Court applied the highest level of scrutiny but still upheld the government's action. Justice Robert Jackson dissented, arguing that the Court should not validate military orders that discriminate based on race. This decision is now widely regarded as one of the worst Supreme Court rulings in American history. In 1988, Congress formally apologized for the internment and provided reparations to survivors. The case is frequently cited as an example of how even the Supreme Court can make grave constitutional errors.",
+                fullTextRaw: "KOREMATSU v. UNITED STATES\n\nFred Korematsu violated a military order requiring Japanese Americans to report for internment during World War II. The Supreme Court, in a 6-3 decision, upheld the internment order as a valid exercise of military authority.\n\nJustice Hugo Black wrote that the order was justified by military necessity. Justice Robert Jackson dissented, arguing that the Court should not validate military orders that discriminate based on race.\n\nThis decision is now widely regarded as one of the worst Supreme Court rulings in American history. In 1988, Congress formally apologized for the internment and provided reparations to survivors.",
+                entities: [
+                    { text: "Fred Korematsu", type: "person" },
+                    { text: "December 18, 1944", type: "date" },
+                    { text: "World War II", type: "organization" },
+                    { text: "Hugo Black", type: "person" },
+                    { text: "Robert Jackson", type: "person" }
+                ]
+            },
+            {
+                id: 14,
+                title: "Lemon v. Kurtzman",
+                court: "U.S. Supreme Court",
+                date: "June 28, 1971",
+                citation: "403 U.S. 602",
+                snippet: "Established the Lemon test for Establishment Clause cases.",
+                summary: "The Supreme Court established a three-part test for determining whether government action violates the Establishment Clause.",
+                fullText: "Pennsylvania and Rhode Island enacted programs providing salary supplements to teachers in religious schools. The Supreme Court struck down both programs, establishing what became known as the Lemon test. Chief Justice Warren Burger wrote that to pass constitutional scrutiny, a law must: (1) have a secular legislative purpose, (2) have a principal effect that neither advances nor inhibits religion, and (3) not foster excessive government entanglement with religion. The Court found that the salary supplement programs failed the entanglement prong because they required significant government monitoring of religious schools. The Lemon test became the standard framework for evaluating Establishment Clause claims for decades. Although the test has been criticized and modified in recent years, it remains influential in First Amendment jurisprudence.",
+                fullTextRaw: "LEMON v. KURTZMAN\n\nPennsylvania and Rhode Island enacted programs providing salary supplements to teachers in religious schools. The Supreme Court struck down both programs, establishing what became known as the Lemon test.\n\nChief Justice Warren Burger wrote that to pass constitutional scrutiny, a law must: (1) have a secular legislative purpose, (2) have a principal effect that neither advances nor inhibits religion, and (3) not foster excessive government entanglement with religion.\n\nThe Court found that the salary supplement programs failed the entanglement prong. The Lemon test became the standard framework for evaluating Establishment Clause claims.",
+                entities: [
+                    { text: "June 28, 1971", type: "date" },
+                    { text: "Pennsylvania", type: "organization" },
+                    { text: "Rhode Island", type: "organization" },
+                    { text: "Warren Burger", type: "person" },
+                    { text: "Establishment Clause", type: "organization" }
+                ]
+            }
+        ];
+
+        let currentCase = null;
+        let allCases = [...mockCases];
+        let entitiesExtracted = false;
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!query.trim()) {
+                allCases = [...mockCases];
+            } else {
+                allCases = mockCases.filter(caseItem => 
+                    caseItem.title.toLowerCase().includes(query) ||
+                    caseItem.court.toLowerCase().includes(query) ||
+                    caseItem.snippet.toLowerCase().includes(query) ||
+                    caseItem.fullText.toLowerCase().includes(query)
+                );
+            }
+            
+            renderResults();
+        }
+
+        function renderResults() {
+            const resultsList = document.getElementById('resultsList');
+            
+            if (allCases.length === 0) {
+                resultsList.innerHTML = '<div class="no-results">No cases found. Try a different search.</div>';
+                return;
+            }
+            
+            resultsList.innerHTML = allCases.map(caseItem => `
+                <div class="case-item ${currentCase && currentCase.id === caseItem.id ? 'active' : ''}" onclick="selectCase(${caseItem.id})">
+                    <div class="case-title">${caseItem.title}</div>
+                    <div class="case-meta">
+                        <span class="case-court">${caseItem.court}</span>
+                        <span class="case-date">${caseItem.date}</span>
+                    </div>
+                    <div class="case-snippet">"${caseItem.snippet}"</div>
+                </div>
+            `).join('');
+        }
+
+        function selectCase(caseId) {
+            currentCase = mockCases.find(c => c.id === caseId);
+            entitiesExtracted = false;
+            renderResults();
+            renderDetailView();
+            loadNotes();
+            document.getElementById('noteInput').value = '';
+        }
+
+        function renderDetailView() {
+            const detailEmpty = document.getElementById('detailEmpty');
+            const detailContent = document.getElementById('detailContent');
+            
+            if (!currentCase) {
+                detailEmpty.style.display = 'flex';
+                detailContent.style.display = 'none';
+                return;
+            }
+            
+            detailEmpty.style.display = 'none';
+            detailContent.style.display = 'flex';
+            
+            document.getElementById('detailTitle').textContent = currentCase.title;
+            document.getElementById('detailCourt').textContent = currentCase.court;
+            document.getElementById('detailDate').textContent = currentCase.date;
+            document.getElementById('detailCitation').textContent = currentCase.citation;
+            
+            renderSummary();
+            renderFullText();
+        }
+
+        function renderSummary() {
+            const summaryContent = document.getElementById('summaryContent');
+            summaryContent.innerHTML = `
+                <div class="summary-section">
+                    <div class="summary-label">Case Overview</div>
+                    <div class="summary-text">${currentCase.summary}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Citation</div>
+                    <div class="summary-text">${currentCase.citation}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Court</div>
+                    <div class="summary-text">${currentCase.court}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Date Decided</div>
+                    <div class="summary-text">${currentCase.date}</div>
+                </div>
+            `;
+        }
+
+        function renderFullText() {
+            const fulltextContent = document.getElementById('fulltextContent');
+            fulltextContent.textContent = currentCase.fullTextRaw;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            
+            if (tabName === 'summary') {
+                document.getElementById('summaryTab').classList.add('active');
+            } else {
+                document.getElementById('fulltextTab').classList.add('active');
+            }
+        }
+
+        function extractEntities() {
+            if (!currentCase) return;
+            
+            const fulltextContent = document.getElementById('fulltextContent');
+            let text = currentCase.fullTextRaw;
+            
+            currentCase.entities.forEach(entity => {
+                const regex = new RegExp(`\\b${entity.text}\\b`, 'g');
+                text = text.replace(regex, `<span class="entity entity-${entity.type}">${entity.text}</span>`);
+            });
+            
+            fulltextContent.innerHTML = text;
+            entitiesExtracted = true;
+        }
+
+        function clearHighlights() {
+            if (!currentCase) return;
+            renderFullText();
+            entitiesExtracted = false;
+        }
+
+        function addNote() {
+            const noteInput = document.getElementById('noteInput');
+            const noteText = noteInput.value.trim();
+            
+            if (!noteText || !currentCase) return;
+            
+            const notes = getNotes();
+            const newNote = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                caseName: currentCase.title,
+                text: noteText,
+                timestamp: new Date().toLocaleString()
+            };
+            
+            notes.push(newNote);
+            localStorage.setItem('vibelawNotes', JSON.stringify(notes));
+            
+            noteInput.value = '';
+            loadNotes();
+        }
+
+        function deleteNote(noteId) {
+            const notes = getNotes();
+            const filtered = notes.filter(n => n.id !== noteId);
+            localStorage.setItem('vibelawNotes', JSON.stringify(filtered));
+            loadNotes();
+        }
+
+        function getNotes() {
+            const stored = localStorage.getItem('vibelawNotes');
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function loadNotes() {
+            const notesList = document.getElementById('notesList');
+            const notes = getNotes();
+            
+            const currentCaseNotes = currentCase ? notes.filter(n => n.caseId === currentCase.id) : [];
+            
+            if (currentCaseNotes.length === 0) {
+                notesList.innerHTML = '<div class="notes-empty">No notes yet. Add one to get started.</div>';
+                return;
+            }
+            
+            notesList.innerHTML = currentCaseNotes.map(note => `
+                <div class="note-item">
+                    <button class="note-delete" onclick="deleteNote(${note.id})">×</button>
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-case">${note.caseName}</div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderResults();
+            loadNotes();
+            
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+        });
+    </script>
+</body>
+</html>

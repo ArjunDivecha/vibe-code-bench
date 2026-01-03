@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #ff6347 0%, #ff4500 50%, #dc143c 100%);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .tomato-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #ff6347;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .session-info {
+            background: linear-gradient(135deg, #ff6347, #ff4500);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(255, 99, 71, 0.4);
+        }
+
+        .session-info.break {
+            background: linear-gradient(135deg, #32cd32, #228b22);
+            box-shadow: 0 4px 15px rgba(50, 205, 50, 0.4);
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #333;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer-display.work {
+            color: #ff6347;
+        }
+
+        .timer-display.break {
+            color: #32cd32;
+        }
+
+        .progress-ring {
+            margin: 20px auto;
+            position: relative;
+            width: 250px;
+            height: 250px;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring circle {
+            fill: none;
+            stroke-width: 12;
+        }
+
+        .progress-ring .bg {
+            stroke: #e0e0e0;
+        }
+
+        .progress-ring .progress {
+            stroke: #ff6347;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .progress-ring .progress.break {
+            stroke: #32cd32;
+        }
+
+        .timer-in-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3.5rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #333;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #ff6347, #ff4500);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 99, 71, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 99, 71, 0.5);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #ffa500, #ff8c00);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
+        }
+
+        .btn-pause:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 165, 0, 0.5);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.5);
+        }
+
+        .stats {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0e0e0;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .stats span {
+            font-weight: 700;
+            color: #ff6347;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .timer-display.running {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tomato-icon">🍅</div>
+        <h1>Pomodoro Timer</h1>
+        
+        <div class="session-info" id="sessionInfo">Work Session 1</div>
+        
+        <div class="progress-ring">
+            <svg width="250" height="250">
+                <circle class="bg" cx="125" cy="125" r="108"></circle>
+                <circle class="progress" id="progressCircle" cx="125" cy="125" r="108" 
+                    stroke-dasharray="678.58" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="timer-in-ring" id="timerDisplay">25:00</div>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn-start" id="startBtn" onclick="startTimer()">Start</button>
+            <button class="btn-pause hidden" id="pauseBtn" onclick="pauseTimer()">Pause</button>
+            <button class="btn-reset" id="resetBtn" onclick="resetTimer()">Reset</button>
+        </div>
+        
+        <div class="stats">
+            Completed: <span id="completedSessions">0</span> work sessions
+        </div>
+    </div>
+
+    <script>
+        // Timer settings
+        const WORK_DURATION = 25 * 60; // 25 minutes in seconds
+        const BREAK_DURATION = 5 * 60; // 5 minutes in seconds
+        const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 108; // 678.58
+
+        // State
+        let timeRemaining = WORK_DURATION;
+        let totalTime = WORK_DURATION;
+        let isRunning = false;
+        let isWorkSession = true;
+        let workSessionCount = 1;
+        let breakSessionCount = 0;
+        let completedSessions = 0;
+        let intervalId = null;
+
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionInfo = document.getElementById('sessionInfo');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressCircle = document.getElementById('progressCircle');
+        const completedSessionsDisplay = document.getElementById('completedSessions');
+
+        // Audio context for beep
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep() {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+            
+            // Play a second beep
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                
+                osc2.frequency.value = 1000;
+                osc2.type = 'sine';
+                
+                gain2.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                osc2.start(audioContext.currentTime);
+                osc2.stop(audioContext.currentTime + 0.5);
+            }, 300);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeRemaining);
+            
+            // Update progress ring
+            const progress = (totalTime - timeRemaining) / totalTime;
+            const offset = CIRCLE_CIRCUMFERENCE * (1 - progress);
+            progressCircle.style.strokeDashoffset = offset;
+            
+            // Update colors based on session type
+            if (isWorkSession) {
+                progressCircle.classList.remove('break');
+                sessionInfo.classList.remove('break');
+                timerDisplay.classList.remove('break');
+                timerDisplay.classList.add('work');
+            } else {
+                progressCircle.classList.add('break');
+                sessionInfo.classList.add('break');
+                timerDisplay.classList.remove('work');
+                timerDisplay.classList.add('break');
+            }
+            
+            // Update session info
+            if (isWorkSession) {
+                sessionInfo.textContent = `Work Session ${workSessionCount}`;
+            } else {
+                sessionInfo.textContent = `Break ${breakSessionCount}`;
+            }
+            
+            // Update document title
+            document.title = `${formatTime(timeRemaining)} - ${isWorkSession ? 'Work' : 'Break'} | Pomodoro`;
+        }
+
+        function startTimer() {
+            initAudio(); // Initialize audio on user interaction
+            
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden');
+                timerDisplay.classList.add('running');
+                
+                intervalId = setInterval(() => {
+                    timeRemaining--;
+                    updateDisplay();
+                    
+                    if (timeRemaining <= 0) {
+                        playBeep();
+                        switchSession();
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(intervalId);
+                pauseBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+                startBtn.textContent = 'Resume';
+                timerDisplay.classList.remove('running');
+            }
+        }
+
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(intervalId);
+            
+            isWorkSession = true;
+            workSessionCount = 1;
+            breakSessionCount = 0;
+            timeRemaining = WORK_DURATION;
+            totalTime = WORK_DURATION;
+            
+            pauseBtn.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.textContent = 'Start';
+            timerDisplay.classList.remove('running');
+            
+            updateDisplay();
+            document.title = 'Pomodoro Timer';
+        }
+
+        function switchSession() {
+            if (isWorkSession) {
+                // Switching from work to break
+                completedSessions++;
+                completedSessionsDisplay.textContent = completedSessions;
+                breakSessionCount++;
+                isWorkSession = false;
+                timeRemaining = BREAK_DURATION;
+                totalTime = BREAK_DURATION;
+            } else {
+                // Switching from break to work
+                workSessionCount++;
+                isWorkSession = true;
+                timeRemaining = WORK_DURATION;
+                totalTime = WORK_DURATION;
+            }
+            
+            updateDisplay();
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>

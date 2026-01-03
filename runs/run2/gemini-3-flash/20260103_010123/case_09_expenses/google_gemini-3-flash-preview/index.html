@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 { margin-top: 0; font-size: 1.25rem; color: var(--secondary); }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filters > * { flex: 1; min-width: 120px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .category-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .delete-btn {
+            color: var(--danger);
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: auto;
+            padding: 5px;
+        }
+
+        #chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding-top: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .bar {
+            width: 30px;
+            background: var(--primary);
+            position: relative;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+        }
+
+        .bar:hover::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 10px;
+            background: #333;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>💸 Expense Tracker</h1>
+    </header>
+
+    <div class="grid">
+        <!-- Sidebar: Form & Stats -->
+        <div class="sidebar">
+            <div class="card">
+                <h2>Add Expense</h2>
+                <form id="expense-form">
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input type="number" id="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="category" required>
+                            <option value="Food">Food</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="description" placeholder="Lunch, Rent, etc." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <button type="submit">Add Expense</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Summary</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div style="font-size: 0.8rem;">Total</div>
+                        <div class="stat-val" id="total-amount">$0.00</div>
+                    </div>
+                    <div class="stat-box">
+                        <div style="font-size: 0.8rem;">Items</div>
+                        <div class="stat-val" id="total-count">0</div>
+                    </div>
+                </div>
+                <h2>Category Split</h2>
+                <div id="chart-container">
+                    <!-- Simple CSS Bar Chart -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main: List & Filters -->
+        <div class="main-content">
+            <div class="card">
+                <h2>History</h2>
+                <div class="filters">
+                    <select id="filter-category">
+                        <option value="All">All Categories</option>
+                        <option value="Food">Food</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="date" id="filter-from" placeholder="From">
+                    <input type="date" id="filter-to" placeholder="To">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="expense-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense-list">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State management
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+    const categoryColors = {
+        'Food': '#f87171',
+        'Transport': '#60a5fa',
+        'Entertainment': '#fbbf24',
+        'Bills': '#a78bfa',
+        'Shopping': '#34d399',
+        'Other': '#94a3b8'
+    };
+
+    // DOM Elements
+    const form = document.getElementById('expense-form');
+    const list = document.getElementById('expense-list');
+    const totalAmountEl = document.getElementById('total-amount');
+    const totalCountEl = document.getElementById('total-count');
+    const chartContainer = document.getElementById('chart-container');
+
+    // Filter Elements
+    const filterCat = document.getElementById('filter-category');
+    const filterFrom = document.getElementById('filter-from');
+    const filterTo = document.getElementById('filter-to');
+
+    // Initialize date input to today
+    document.getElementById('date').valueAsDate = new Date();
+
+    function save() {
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        render();
+    }
+
+    function addExpense(e) {
+        e.preventDefault();
+        const newExpense = {
+            id: Date.now(),
+            amount: parseFloat(document.getElementById('amount').value),
+            category: document.getElementById('category').value,
+            description: document.getElementById('description').value,
+            date: document.getElementById('date').value
+        };
+
+        expenses.push(newExpense);
+        form.reset();
+        document.getElementById('date').valueAsDate = new Date();
+        save();
+    }
+
+    function deleteExpense(id) {
+        expenses = expenses.filter(exp => exp.id !== id);
+        save();
+    }
+
+    function render() {
+        const catFilter = filterCat.value;
+        const fromDate = filterFrom.value;
+        const toDate = filterTo.value;
+
+        // Filter logic
+        const filtered = expenses.filter(exp => {
+            const matchCat = catFilter === 'All' || exp.category === catFilter;
+            const matchFrom = !fromDate || exp.date >= fromDate;
+            const matchTo = !toDate || exp.date <= toDate;
+            return matchCat && matchFrom && matchTo;
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Update Table
+        list.innerHTML = '';
+        let total = 0;
+        
+        filtered.forEach(exp => {
+            total += exp.amount;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${exp.date}</td>
+                <td><span class="category-tag" style="background: ${categoryColors[exp.category]}22; color: ${categoryColors[exp.category]}">${exp.category}</span></td>
+                <td>${exp.description}</td>
+                <td><strong>$${exp.amount.toFixed(2)}</strong></td>
+                <td><button class="delete-btn" onclick="deleteExpense(${exp.id})">✕</button></td>
+            `;
+            list.appendChild(row);
+        });
+
+        // Update Stats
+        totalAmountEl.innerText = `$${total.toFixed(2)}`;
+        totalCountEl.innerText = filtered.length;
+
+        // Update Chart (Simple Bar Chart representing categories)
+        renderChart(filtered);
+    }
+
+    function renderChart(data) {
+        chartContainer.innerHTML = '';
+        const totals = {};
+        Object.keys(categoryColors).forEach(c => totals[c] = 0);
+        
+        data.forEach(exp => {
+            totals[exp.category] += exp.amount;
+        });
+
+        const max = Math.max(...Object.values(totals), 10);
+
+        Object.keys(totals).forEach(cat => {
+            const height = (totals[cat] / max) * 100;
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = `${Math.max(height, 5)}%`;
+            bar.style.backgroundColor = categoryColors[cat];
+            bar.setAttribute('data-label', `${cat}: $${totals[cat].toFixed(0)}`);
+            chartContainer.appendChild(bar);
+        });
+    }
+
+    // Event Listeners
+    form.addEventListener('submit', addExpense);
+    filterCat.addEventListener('change', render);
+    filterFrom.addEventListener('change', render);
+    filterTo.addEventListener('change', render);
+
+    // Initial load
+    render();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vibe-Law | Legal Case Search Workspace</title>
+  <style>
+    :root {
+      --primary: #0b1c3d;
+      --secondary: #152a4a;
+      --accent: #1e3b66;
+      --text: #e0e6ed;
+      --muted: #8b9ab1;
+      --highlight: #3a6fc0;
+      --danger: #c54e5c;
+      --success: #2e8b6e;
+      --border: #2a3f60;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--primary);
+      color: var(--text);
+      line-height: 1.6;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--secondary);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .search-container {
+      flex: 1;
+      margin-left: 2rem;
+      position: relative;
+    }
+
+    #search-bar {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      background-color: var(--accent);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    #search-bar:focus {
+      border-color: var(--highlight);
+      box-shadow: 0 0 0 2px rgba(58, 111, 192, 0.3);
+    }
+
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .results-pane {
+      width: 35%;
+      background-color: var(--secondary);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .results-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .results-list {
+      list-style: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .result-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .result-item:hover {
+      background-color: var(--accent);
+    }
+
+    .result-title {
+      font-weight: 600;
+      color: #a0d0ff;
+      margin-bottom: 0.25rem;
+      font-size: 1.05rem;
+    }
+
+    .result-meta {
+      display: flex;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-snippet {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .detail-pane {
+      flex: 1;
+      display: flex;
+      background-color: var(--primary);
+      overflow: hidden;
+    }
+
+    .detail-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--secondary);
+    }
+
+    .detail-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #a0d0ff;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .tab-nav {
+      display: flex;
+      background-color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 0.75rem 1.25rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: #a0d0ff;
+      background-color: var(--secondary);
+      border-bottom: 2px solid var(--highlight);
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      background-color: var(--primary);
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      background-color: var(--highlight);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #2a55a0;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--highlight);
+      color: var(--highlight);
+    }
+
+    .btn-outline:hover {
+      background-color: rgba(30, 63, 102, 0.2);
+    }
+
+    .notes-pane {
+      width: 280px;
+      background-color: var(--secondary);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notes-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .notes-container {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .note-item {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.95rem;
+    }
+
+    .note-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .highlight {
+      background-color: rgba(255, 220, 0, 0.25);
+      border-bottom: 1px dotted #ffd700;
+      padding: 0 2px;
+    }
+
+    .no-case-selected {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      font-size: 1.1rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .no-case-selected svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1rem;
+      fill: var(--muted);
+    }
+
+    pre {
+      white-space: pre-wrap;
+      font-family: 'Consolas', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .action-bar {
+      padding: 1rem;
+      background-color: var(--secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 1200px) {
+      .notes-pane {
+        width: 220px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+
+      .results-pane {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .detail-pane {
+        height: 60%;
+        flex-direction: column;
+      }
+
+      .notes-pane {
+        width: 100%;
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vibe-Law</h1>
+    <div class="search-container">
+      <input type="text" id="search-bar" placeholder="Search case law by keyword, party name, or citation..." />
+    </div>
+  </header>
+
+  <main>
+    <aside class="results-pane">
+      <div class="results-header">Search Results</div>
+      <ul class="results-list" id="results-list"></ul>
+    </aside>
+
+    <section class="detail-pane">
+      <div class="detail-content" id="detail-content">
+        <div class="no-case-selected" id="no-selection">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="currentColor"/>
+            <path d="M8,12V14H16V12H8M8,16V18H13V16H8Z" fill="currentColor"/>
+          </svg>
+          <div>Select a case to view details</div>
+        </div>
+        <div id="case-detail" style="display: none; flex: 1; flex-direction: column; display: flex;">
+          <div class="detail-header">
+            <div class="detail-title" id="case-title"></div>
+            <div class="detail-subtitle" id="case-meta"></div>
+          </div>
+
+          <div class="tab-nav">
+            <div class="tab active" data-tab="summary">Summary</div>
+            <div class="tab" data-tab="full-text">Full Text</div>
+          </div>
+
+          <div class="tab-content active" id="summary">
+            <p id="summary-text"></p>
+          </div>
+
+          <div class="tab-content" id="full-text">
+            <pre id="full-text-content"></pre>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn" id="extract-entities">Extract Entities</button>
+            <button class="btn btn-outline" id="clear-highlights">Clear Highlights</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="notes-pane">
+        <div class="notes-header">Notes & Snippets</div>
+        <div class="notes-container" id="notes-container">
+          <p style="color: var(--muted); font-size: 0.9rem;">Save highlighted text snippets to appear here.</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    // Mock legal case database
+    const mockCases = [
+      {
+        id: 1,
+        title: "Doe v. Smith",
+        court: "Supreme Court of California",
+        date: "2023-05-14",
+        citation: "2023 Cal. LEXIS 4201",
+        summary: "Plaintiff John Doe filed suit against defendant Jane Smith for breach of contract and fraudulent misrepresentation in connection with a real estate transaction. The court held that misrepresentations made during negotiations constituted actionable fraud under California Civil Code § 1710.",
+        fullText: `SUPREME COURT OF CALIFORNIA\nNo. S278451\n\nDOE, Plaintiff and Appellant,\nv.\nSMITH, Defendant and Respondent.\n\nArgued and Submitted April 12, 2023 — Filed May 14, 2023\n\nJustice Jenkins delivered the opinion of the Court.\n\nThis case presents the question of whether pre-contractual statements regarding the structural integrity of residential property qualify as actionable misrepresentations under California's fraud statute (Cal. Civ. Code, § 1710). We conclude that they do when such statements are material, false, and made with knowledge of their falsity or reckless disregard for the truth.\n\nPlaintiff John Doe entered into a purchase agreement with defendant Jane Smith for the acquisition of a single-family residence located at 4520 Oakwood Drive, Los Angeles, CA. During negotiations, Smith represented that the foundation had been recently reinforced and that seismic retrofitting was completed in 2021. These representations were repeated in a property disclosure form signed by Smith.\n\nAfter closing, Doe discovered that no such work had been performed. Engineering reports confirmed significant structural deficiencies, including foundation cracks and inadequate lateral support. Doe filed this action alleging breach of contract, fraudulent misrepresentation, and violation of the Unfair Competition Law (Bus. & Prof. Code, § 17200).\n\nThe trial court sustained Smith's demurrer to the fraud claim without leave to amend, finding the statements to be non-actionable puffery. The Court of Appeal affirmed. We reverse.\n\nUnder Cal. Civ. Code § 1710, fraud occurs when \"one party to a contract makes to the other a false representation of a material fact, knowing the same to be false...\" The statute applies to pre-contractual statements when they induce assent to the agreement.\n\nSmith's statements about seismic retrofitting were factual assertions susceptible to verification, not mere expressions of opinion. The representation that engineering work had been \"completed\" in 2021 was objectively false. Given the importance of structural integrity in real estate transactions, the misrepresentation was clearly material.\n\nFurthermore, Doe alleged that Smith had received a structural engineer's report in 2020 identifying foundation issues and had failed to undertake recommended repairs. This supports an inference that Smith knew her representations were false.\n\nAccordingly, we hold that Doe has stated a valid claim for fraudulent misrepresentation. The judgment of the Court of Appeal is reversed and the matter remanded for further proceedings consistent with this opinion.\n\nCERTIFIED FOR PUBLICATION.`
+      },
+      {
+        id: 2,
+        title: "Johnson v. TechGlobal Inc.",
+        court: "United States Court of Appeals, Ninth Circuit",
+        date: "2023-03-22",
+        citation: "987 F.3d 901",
+        summary: "Whistleblower retaliation case under Dodd-Frank Act. Court held that internal reporting qualifies for anti-retaliation protections. Employee who reported accounting irregularities to compliance office was protected despite not reporting to SEC.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE NINTH CIRCUIT\n\nMICHAEL JOHNSON, Plaintiff-Appellee,\nv.\nTECHGLOBAL INC., Defendant-Appellant.\n\nNo. 22-15438\nD.C. No. 3:20-cv-04567-JST\n\nArgued and Submitted February 14, 2023\nFiled March 22, 2023\n\nBefore: MARSHA S. BERZON, JACQUELINE H. NGUYEN, and M. MARGARET McKEOWN, Circuit Judges.\n\nOpinion by Judge McKeown\n\nThis appeal requires us to decide whether an employee who reports potential securities law violations internally to corporate compliance officers qualifies as a \"whistleblower\" under the anti-retaliation provision of the Dodd-Frank Wall Street Reform and Consumer Protection Act, 15 U.S.C. § 78u-6(h).\n\nPlaintiff Michael Johnson, a senior accountant at TechGlobal Inc., discovered what he believed to be material accounting irregularities during a routine audit. On June 12, 2019, he reported his findings in writing to the company's Internal Compliance Department and followed up with a presentation to the Chief Financial Officer on June 18, 2019. Johnson was terminated on July 3, 2019, purportedly due to \"restructuring.\"\n\nJohnson filed suit in federal district court alleging retaliation in violation of 15 U.S.C. § 78u-6(h), which protects individuals from discharge, demotion, suspension, threats, harassment, or discrimination because of lawful acts done by the employee... in connection with the reporting of any violation of the securities laws.\n\nThe district court denied TechGlobal's motion to dismiss, holding that internal reporting satisfies the statutory requirement. We affirm.\n\nThe term \"whistleblower\" is defined in 15 U.S.C. § 78u-6(a)(6) as \"any individual who provides... information relating to a violation of the securities laws to the Commission.\" However, the anti-retaliation provision in subsection (h) does not incorporate this definition. Instead, it protects individuals who provide information about securities violations \"in connection with\" an investigation or proceeding.\n\nWe conclude that Congress intended broad protection for employees who report internally, as such reporting serves the same remedial purpose as reporting to the SEC. Internal reporting often enables companies to self-correct before violations become systemic.\n\nOur holding is consistent with the Supreme Court's decision in Digital Realty Trust, Inc. v. Somers, 138 S. Ct. 767 (2018), which held that the anti-retaliation provision protects only those who report to the SEC. However, that case addressed who qualifies for monetary awards, not who is protected from retaliation. The two provisions serve different purposes.\n\nHere, Johnson provided detailed documentation of potential GAAP violations to corporate officers with oversight responsibility. This constitutes protected activity under § 78u-6(h). The judgment of the district court is AFFIRMED.`
+      },
+      {
+        id: 3,
+        title: "State v. Ramirez",
+        court: "Texas Court of Criminal Appeals",
+        date: "2023-04-05",
+        citation: "612 S.W.3d 550",
+        summary: "Fourth Amendment challenge to warrantless GPS tracking. Court held that installation of GPS device on defendant's vehicle without warrant violated reasonable expectation of privacy under Texas Constitution.",
+        fullText: `COURT OF CRIMINAL APPEALS\nOF TEXAS\n\nTHE STATE OF TEXAS,\nAppellant\nv.\nCARLOS RAMIREZ,\nAppellee\n\nNo. PD-0123-22\n\nApril 5, 2023\n\nKEASLER, J., delivered the opinion of the Court.\n\nWe granted review to determine whether the warrantless installation of a GPS tracking device on a suspect's automobile violates Article I, Section 9 of the Texas Constitution.\n\nIn the early morning hours of January 14, 2021, officers from the Houston Police Department's Narcotics Division attached a GPS tracker to the bumper of Carlos Ramirez's Ford F-150 without obtaining a warrant. The device transmitted location data for 17 days, revealing frequent visits to known drug distribution locations. Based on this surveillance, officers obtained a search warrant for Ramirez's residence, where they discovered 3.2 kilograms of methamphetamine.\n\nRamirez moved to suppress the evidence, arguing the initial GPS installation constituted an unlawful search. The trial court agreed and granted the motion. The Court of Appeals affirmed, holding that the physical attachment of the device to private property constituted a trespassory search requiring a warrant.\n\nWe affirm. While the United States Supreme Court has held that long-term GPS monitoring may implicate Fourth Amendment protections (United States v. Jones, 565 U.S. 400 (2012)), we need not rely solely on federal precedent. Article I, Section 9 of the Texas Constitution independently protects citizens from unreasonable searches and seizures.\n\nThe State does not dispute that officers physically intruded on Ramirez's vehicle—a personal effect entitled to privacy protection—to install the GPS device. This physical trespass, combined with the prolonged electronic surveillance, constitutes a search under our state constitution.\n\nThe State argues that exigent circumstances justified the warrantless installation, claiming Ramirez was suspected of large-scale drug trafficking. However, officers had been investigating Ramirez for over six months and could have obtained a warrant. No evidence suggests imminent destruction of evidence or threat to public safety.\n\nAccordingly, the evidence obtained as a result of the illegal search must be suppressed. The judgment of the court of appeals is affirmed.\n\nPRICE, J., filed a dissenting opinion, joined by COCHRAN and WOMACK, JJ., arguing that the majority's decision unduly restricts law enforcement's ability to combat organized crime.`
+      },
+      {
+        id: 4,
+        title: "Green Environmental Group v. EPA",
+        court: "United States Court of Appeals, D.C. Circuit",
+        date: "2023-02-10",
+        citation: "35 F.4th 112",
+        summary: "Environmental group challenged EPA's refusal to regulate perfluorinated compounds under Clean Water Act. Court held agency's inaction constituted arbitrary and capricious violation of statutory duty.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE DISTRICT OF COLUMBIA CIRCUIT\n\nGREEN ENVIRONMENTAL GROUP, Petitioner\nv.\nENVIRONMENTAL PROTECTION AGENCY, Respondent\n\nNo. 22-1087\n\nArgued January 12, 2023\nDecided February 10, 2023\n\nBefore: SRINIVASAN, Chief Judge, and TATEL and MILLETT, Circuit Judges.\n\nOpinion for the Court filed by Chief Judge SRINIVASAN.\n\nGreen Environmental Group petitions for review of the Environmental Protection Agency's (EPA) final determination declining to regulate perfluorooctanoic acid (PFOA) and related perfluorinated compounds (PFCs) under the Clean Water Act (CWA), 33 U.S.C. § 1251 et seq.\n\nPFCs, often called \"forever chemicals,\" are synthetic compounds used in non-stick cookware, water-repellent fabrics, and firefighting foams. They do not degrade naturally and have been linked to cancer, thyroid disease, and developmental problems. Studies show PFC contamination in drinking water affecting over 100 million Americans.\n\nUnder CWA § 307(a), EPA must publish a list of toxic pollutants and regulate discharges of those pollutants. The statute requires regulation of any toxic pollutant that “may reasonably be anticipated to enter the navigable waters” and that presents “a significant risk to human health or the environment.”\n\nPetitioner submitted a formal petition in 2019 urging EPA to list PFCs as toxic pollutants. After a four-year review, EPA issued a final denial in 2022, concluding that existing regulatory mechanisms were sufficient and that listing under § 307(a) was “not warranted at this time.”\n\nWe hold that EPA's decision is arbitrary and capricious under the Administrative Procedure Act. The agency acknowledged that PFCs are persistent, bioaccumulative, and toxic. It admitted these chemicals are present in water supplies at levels exceeding health advisory limits. Yet it failed to explain why this did not satisfy the statutory threshold of “significant risk.”\n\nEPA pointed to voluntary industry phase-outs and state-level regulations as adequate substitutes for federal controls. But the record shows continued PFC production and discharge. Moreover, CWA § 307(a) imposes a mandatory duty; agencies cannot ignore statutory obligations based on policy preferences.\n\nWe vacate EPA's denial and remand with instructions to list PFCs as toxic pollutants and initiate regulation within 180 days.\n\nSo ordered.`
+      },
+      {
+        id: 5,
+        title: "Chen v. Universal Healthcare Systems",
+        court: "New York Court of Appeals",
+        date: "2023-01-18",
+        citation: "2023 NY Slip Op 00345",
+        summary: "Medical malpractice case involving failure to diagnose cancer. Court adopted modified comparative negligence standard, allowing recovery if plaintiff's contributory negligence was not greater than defendant's.",
+        fullText: `COURT OF APPEALS\nSTATE OF NEW YORK\n\nLISA CHEN, Appellant,\nv.\nUNIVERSAL HEALTHCARE SYSTEMS, et al., Respondents.\n\nNo. 23\n\nArgued January 10, 2023 — Decided January 18, 2023\n\nSTEIN, J.\n\nIn this medical malpractice action, we consider whether New York should abandon the common-law doctrine of contributory negligence in favor of a comparative negligence standard in cases where a patient's failure to comply with medical advice contributes to harm.\n\nPlaintiff Lisa Chen visited defendant clinic in March 2019 complaining of persistent abdominal pain. Defendant physician ordered blood tests but did not schedule imaging studies. Chen failed to return for a follow-up appointment in April 2019, despite two reminder calls. In July 2019, Chen was diagnosed with stage III ovarian cancer at a different hospital.\n\nChen sued, alleging the physician should have ordered a pelvic ultrasound during the initial visit. Defendants asserted Chen's failure to attend the follow-up appointment constituted contributory negligence that barred recovery.\n\nAt trial, the jury found the physician negligent in failing to order appropriate diagnostic tests and awarded $2.1 million in damages. However, the trial court applied contributory negligence and entered judgment for defendants, finding Chen's absence from the follow-up visit was a proximate cause of her injury.\n\nThe Appellate Division affirmed. We reverse.\n\nThe harsh all-or-nothing effect of contributory negligence is particularly ill-suited to the medical context, where both physician and patient share responsibility for health outcomes. Modern medical practice recognizes patient autonomy and shared decision-making.\n\nWe hold that in medical malpractice cases, when a plaintiff's conduct falls below the standard of a reasonable patient and contributes to the harm, the plaintiff's recovery shall be reduced in proportion to their degree of fault. This approach promotes fairness and aligns with New York's adoption of comparative negligence in other tort contexts (see Li v. Yellow Cab Co., 39 N.Y.2d 358 (1976)).\n\nAccordingly, we remand for a new trial on the issue of apportionment of fault.\n\nChief Judge DiFIORE dissents in an opinion joined by Judge FAHEY, arguing that the legislative branch, not this Court, should modify long-standing negligence doctrine.`
+      },
+      {
+        id: 6,
+        title: "Miller v. National Bank of Commerce",
+        court: "United States District Court, Southern District of Illinois",
+        date: "2023-06-01",
+        citation: "2023 U.S. Dist. LEXIS 98765",
+        summary: "Consumer protection class action regarding overdraft fees. Court certified class of 120,000 account holders and found bank's fee disclosure practices misleading under Truth in Savings Act.",
+        fullText: `UNITED STATES DISTRICT COURT\nSOUTHERN DISTRICT OF ILLINOIS\n\nJAMES MILLER, individually and on behalf of all others similarly situated,\nPlaintiff,\nv.\nNATIONAL BANK OF COMMERCE,\nDefendant.\n\nCase No. 3:21-cv-00456-MJR\n\nMEMORANDUM AND ORDER\n\nBefore the Court are cross-motions for summary judgment in this putative class action brought under the Truth in Savings Act (TISA), 12 U.S.C. § 4301 et seq. Plaintiff James Miller challenges Defendant National Bank of Commerce's practices regarding disclosure of overdraft fees and alleges the bank systematically debits transactions in high-to-low order to maximize fee revenue.\n\nPlaintiff opened a checking account with Defendant in 2018. The account agreement disclosed a $35 overdraft fee per transaction but did not specify the order in which transactions would be processed. Plaintiff was charged $280 in overdraft fees over a three-day period in August 2020 when seven transactions totaling $312 caused overdrafts.\n\nDefendant's standard practice is to process transactions from highest to lowest amount, increasing the likelihood of multiple overdrafts. For example, a $100 overdraft followed by nine $10 purchases would trigger ten $35 fees ($350), whereas processing low-to-high would trigger only one fee ($35).\n\nPlaintiff moved for class certification of all checking account holders in the past three years. Defendant opposed, arguing individual issues predominate.\n\nUnder Rule 23, a class may be certified if: (1) numerosity, (2) commonality, (3) typicality, and (4) adequacy of representation are satisfied, and (5) the requirements of Rule 23(b) are met.\n\nThe proposed class comprises approximately 120,000 individuals—satisfying numerosity. Common questions of law and fact predominate, particularly whether Defendant's disclosure failed to clearly state the transaction ordering policy and whether this practice constitutes an unfair method of competition under TISA.\n\nDefendant argues that account agreements were individually negotiated. However, all accounts used standardized forms with identical fee disclosures. No evidence shows any customer negotiated different terms.\n\nAccordingly, Plaintiff's motion for class certification is GRANTED. Defendant's motion for summary judgment is DENIED. This matter is set for pretrial conference on July 15, 2023.\n\nIT IS SO ORDERED.`
+      },
+      {
+        id: 7,
+        title: "Brown v. Metropolitan School District",
+        court: "Indiana Supreme Court",
+        date: "2023-03-15",
+        citation: "187 N.E.3d 501",
+        summary: "First Amendment challenge to teacher's social media posts. Court held that public school teacher could not be disciplined for political commentary made off-duty on personal account.",
+        fullText: `SUPREME COURT OF INDIANA\n\nSARAH BROWN,\nAppellant (Plaintiff),\nv.\nMETROPOLITAN SCHOOL DISTRICT,\nAppellee (Defendant).\n\nNo. 21S-CT-456\n\nMarch 15, 2023\n\nRUSH, C.J.\n\nWe address whether a public school teacher's off-duty social media posts criticizing school board policies are protected speech under the First Amendment.\n\nAppellant Sarah Brown, a tenth-grade history teacher, maintained a personal Twitter account with approximately 1,200 followers, mostly friends and family. On November 3, 2022, the school board voted to restrict access to certain books in the school library. That evening, Brown posted: \"Our school board just banned books about racism and LGBTQ+ issues. This isn't education—it's erasure. Shameful. #LetUsRead\"\n\nThe post received minimal attention—seven likes and two retweets. No students followed Brown's account, and she never discussed the post in class.\n\nAfter a parent complained, the school district initiated disciplinary proceedings. Brown was suspended for five days for violating the district's social media policy, which prohibits employees from posting content that \"undermines public confidence in the schools.\"\n\nBrown filed suit, alleging violation of her First Amendment rights. The trial court granted summary judgment for the district. The Court of Appeals affirmed. We reverse.\n\nUnder Pickering v. Board of Education, 391 U.S. 563 (1968), public employees retain free speech rights when speaking as citizens on matters of public concern. The critical question is whether the employee's interest in commenting on issues of public importance outweighs the employer's interest in promoting workplace efficiency.\n\nBrown spoke as a private citizen on a matter of significant public concern—educational policy and censorship. Her post was brief, non-disruptive, and made during non-working hours on a personal platform. There is no evidence it interfered with school operations or damaged working relationships.\n\nThe district's policy, as applied, is unconstitutionally overbroad. While schools may regulate speech that materially disrupts operations (Tinker v. Des Moines, 393 U.S. 503 (1969)), a general prohibition on criticism of school policy chills protected expression.\n\nWe hold that Brown's suspension violated her First Amendment rights. The judgment of the Court of Appeals is reversed, and judgment is entered for Brown on liability. Remanded for determination of damages.\n\nDissenting opinion by Massa, J., joined by Goff, J.: The majority undervalues the school district's interest in maintaining professional standards and avoiding appearance of endorsement.\n\nDickson, J., concurs in result only.`
+      },
+      {
+        id: 8,
+        title: "Wilson v. AutoNation USA",
+        court: "Florida Supreme Court",
+        date: "2023-04-20",
+        citation: "301 So. 3d 777",
+        summary: "Product liability case involving autonomous vehicle failure. Court held that software updates creating new safety risks trigger manufacturer's duty to warn under Restatement (Third) of Torts.",
+        fullText: `SUPREME COURT OF FLORIDA\n\nDAVID WILSON, Petitioner,\nv.\nAUTONATION USA, Respondent.\n\nCase No. SC22-891\n\nApril 20, 2023\n\nCANADY, C.J.\n\nWe review a decision of the Third District Court of Appeal concerning the duty of an automobile manufacturer to warn of safety risks introduced by software updates to autonomous driving systems.\n\nPetitioner David Wilson purchased a 2025 Velocity SUV equipped with Autonav 3.0, a Level 3 autonomous driving system. In June 2026, Respondent issued Software Update 3.2, which modified the emergency braking algorithm to reduce false positives. Two months later, Wilson's vehicle failed to brake when a pedestrian entered the roadway, resulting in serious injury.\n\nExpert analysis showed that while Update 3.2 reduced false braking incidents by 40%, it also increased stopping distance in pedestrian scenarios by 22%. Respondent did not notify owners of this trade-off.\n\nWilson sued for strict liability and negligence, alleging the update created a new hazard without adequate warning. The trial court granted summary judgment for Respondent, finding no duty to warn after sale. The Third District affirmed.\n\nWe quash the decision below.\n\nUnder the Restatement (Third) of Torts: Products Liability § 10, a manufacturer has a duty to provide a reasonable warning of a products hazard of which the manufacturer knows or should know.\n\nThis duty extends post-sale when: (1) the manufacturer learns of a previously unknown risk, and (2) the risk poses a substantial likelihood of harm, and (3) warning can effectively reduce the risk.\n\nHere, Respondent's internal testing before Release 3.2 documented the increased stopping distance. A technical memo from the engineering team stated: \"Pedestrian detection reliability is marginally degraded under low-light conditions.\"\n\nThe risk of failing to stop for pedestrians clearly poses a substantial likelihood of harm. A warning could have informed owners to exercise greater caution or delay the update.\n\nMoreover, modern vehicles are increasingly software-defined. Manufacturers cannot evade responsibility for safety consequences of their code changes.\n\nWe hold that when a software update materially alters safety characteristics of an autonomous system, the manufacturer has a duty to warn existing owners of new risks.\n\nThe cause is remanded for proceedings consistent with this opinion.\n\nLABARGA, J., dissents with opinion, joined by POLSTON, J., arguing that post-sale duty to warn should require legislation, not judicial creation.`
+      },
+      {
+        id: 9,
+        title: "Estate of Thompson v. CloudSecure Inc.",
+        court: "Virginia Supreme Court",
+        date: "2023-05-30",
+        citation: "908 S.E.2d 888",
+        summary: "Wrongful death action arising from data breach. Court held cloud storage provider owed duty of reasonable care to protect user data, and breach of that duty could support wrongful death claim when suicide resulted from non-consensual image distribution.",
+        fullText: `SUPREME COURT OF VIRGINIA\n\nESTATE OF AMANDA THOMPSON, by and through her personal representative,\nAppellant,\nv.\nCLOUDSECURE INC.,\nAppellee.\n\nRecord No. 221456\n\nOpinion by Justice DIAZ\n\nMay 30, 2023\n\nIn this wrongful death action, we decide whether a cloud storage provider owes a legal duty to exercise reasonable care in protecting user data from unauthorized access, and whether breach of that duty may support a claim for wrongful death when a data breach leads to non-consensual dissemination of private images and subsequent suicide.\n\nAmanda Thompson used CloudSecure's online storage service to back up personal files, including private photographs. In January 2021, hackers exploited a vulnerability in CloudSecure's authentication system and accessed over 100,000 accounts. Thompson's private images were posted on a public website with her name and hometown.\n\nDespite removal requests, the images circulated widely. Thompson, a 19-year-old college student, died by suicide two weeks later. Her estate sued CloudSecure for negligence, alleging the company failed to implement basic security measures like multi-factor authentication and regular penetration testing.\n\nThe trial court sustained CloudSecure's demurrer, holding that the company owed no duty to Thompson and that the causal connection between the breach and suicide was too attenuated.\n\nWe reverse in part.\n\nProviders of cloud storage services owe users a duty of reasonable care under the circumstances to protect stored data from foreseeable cyber threats. This duty arises from the contractual relationship and the reasonable expectations of users who entrust sensitive personal information to these services.\n\nThe duty is not unlimited. It requires implementation of security measures commensurate with the sensitivity of data and known threats. Here, CloudSecure ignored industry standards and failed to patch known vulnerabilities despite warnings from security researchers.\n\nOn the issue of proximate cause, we recognize the tragic chain of events. While suicide is a voluntary act, it may still be foreseeable in cases involving severe emotional trauma from public humiliation. The Restatement (Second) of Torts § 455 recognizes that intentional torts like public disclosure of private facts can lead to liability for resulting suicide.\n\nHere, the hackers' criminal acts do not necessarily break the chain of causation if CloudSecure's negligence was a substantial factor in enabling the breach.\n\nAccordingly, we hold that the Estate stated a viable claim for negligence. The demurrer should have been overruled. We do not reach the issue of damages at this stage.\n\nThe judgment of the trial court is reversed, and the case is remanded for further proceedings.\n\nCHIEF JUSTICE KELSEY and JUDGE MILLETTE join in this opinion.\n\nSenior Justice MIMS files a dissenting opinion, arguing that recognizing such liability would impose crushing burdens on technology companies.\n\nSenior Justice POWELL files a separate dissent, contending that the causal link is too remote as a matter of law.`
+      },
+      {
+        id: 10,
+        title: "O'Connor v. City of Portland",
+        court: "Oregon Supreme Court",
+        date: "2023-02-28",
+        citation: "492 P.3d 110",
+        summary: "Constitutional challenge to municipal surveillance ordinance. Court held that warrantless collection of facial recognition data in public spaces violated state constitutional right to privacy.",
+        fullText: `SUPREME COURT OF OREGON\n\nMARY O'CONNOR, et al.,\nPlaintiffs-Respondents,\nv.\nCITY OF PORTLAND, et al.,\nDefendants-Petitioners.\n\n(CC 2021-04567; CA A167889; SC S068888)\n\nArgued and Submitted October 5, 2022\nDecided February 28, 2023\n\nBALDWIN, J.\n\nThis case presents the question whether Portland's Automated Surveillance Ordinance, which authorizes the police bureau to collect and analyze facial recognition data from public video cameras without a warrant, violates Article I, Section 9 of the Oregon Constitution.\n\nPlaintiffs are residents and activists who regularly participate in public demonstrations in downtown Portland. They filed suit alleging the city's use of real-time facial recognition technology to identify and track individuals at protests and public gatherings constitutes an unreasonable search.\n\nThe trial court granted summary judgment for Plaintiffs, declaring the ordinance unconstitutional. The Court of Appeals affirmed. We allowed review and now affirm.\n\nArticle I, Section 9 provides: “No law shall authorize any search, except upon probable cause…” This court has long interpreted Section 9 as providing broader privacy protections than the Fourth Amendment. State v. Campbell, 359 Or 672 (2016).\n\nThe critical inquiry is whether individuals have a reasonable expectation of privacy in their biometric identifiers, even in public spaces. We conclude they do.\n\nFacial geometry is a uniquely identifying biological characteristic, akin to DNA or fingerprints. Automated, persistent tracking of individuals' movements across the city creates a comprehensive life-log that reveals intimate details—political affiliations, religious practices, medical visits, and personal relationships.\n\nThe city argues that individuals have no privacy in public, citing United States v. Knotts, 460 U.S. 276 (1983). But that case involved limited tracking with a beeper, not pervasive, permanent recording and analysis of biometric data.\n\nWe join the growing number of jurisdictions recognizing that emerging surveillance technologies require reevaluation of traditional privacy expectations. The warrantless, suspicionless collection of facial recognition data is categorically prohibited under Article I, Section 9.\n\nThe city may still use such technology with a warrant based on probable cause, or for limited purposes like identifying victims of crime or missing persons.\n\nThe decision of the Court of Appeals is affirmed. The Automated Surveillance Ordinance, as applied to facial recognition, is invalid.\n\nWALTERS, J., dissents, arguing that the majority's decision hampers legitimate law enforcement efforts to prevent violent crime.\n\nLandau, J., concurs in the result.`
+      },
+      {
+        id: 11,
+        title: "Parker v. TriState Energy Co.",
+        court: "Pennsylvania Supreme Court",
+        date: "2023-04-12",
+        citation: "287 A.3d 1023",
+        summary: "Environmental nuisance case involving fracking operations. Court held that surface owners have actionable claim for substantial and unreasonable interference with use and enjoyment of land due to noise, light, and truck traffic from nearby drilling sites.",
+        fullText: `SUPREME COURT OF PENNSYLVANIA\n\nWILLIAM PARKER, Appellant\nv.\nTRISTATE ENERGY COMPANY, Appellee\n\nNo. 12 MAP 2022\n\nDecided: April 12, 2023\n\nWECHT, J.\n\nWe consider whether a landowner may maintain a private nuisance action against a natural gas company for disturbances arising from hydraulic fracturing operations conducted on adjacent property.\n\nAppellant William Parker owns a 40-acre rural property in Susquehanna County. In 2020, Appellee acquired mineral rights on neighboring land and established a drilling site 800 feet from Parker's residence. Operations run 24/7, generating constant noise from compressors, bright lighting visible at night, and heavy truck traffic on the access road passing Parker's driveway.\n\nParker filed suit alleging private nuisance, trespass, and violation of state environmental regulations. The trial court granted summary judgment for TriState on all claims, citing the \"accommodations doctrine\" which limits surface owners' rights when mineral rights have been severed.\n\nThe Superior Court affirmed. We reverse in part.\n\nThe accommodations doctrine requires courts to balance the rights of surface and mineral estate owners. It does not eliminate nuisance claims altogether. When mineral development imposes substantial and unreasonable interference with surface use, relief may be appropriate.\n\nHere, Parker submitted affidavits from acoustical engineers measuring noise levels exceeding 65 dBA at his bedroom window—equivalent to a loud conversation and above Pennsylvania's nighttime limit for rural areas. He documented 40-60 truck trips per day on the access road, causing dust and safety concerns. Photographs show significant light pollution.\n\nThese conditions prevent Parker from enjoying his property—gardening, using his porch, or sleeping with windows open. For elderly retirees like Parker, quiet enjoyment of rural land is not a luxury but a reasonable expectation.\n\nWe hold that Parker has stated a viable private nuisance claim. The trial court erred in dismissing it at summary judgment. Questions of substantiality and reasonableness are typically for the jury.\n\nWe affirm dismissal of the trespass claim, as Parker presented no evidence of physical invasion beyond de minimis particulate matter.\n\nRemanded for further proceedings consistent with this opinion.\n\nBaer, J., files a dissenting opinion, joined by Todd, J., arguing that the accommodations doctrine precludes nuisance liability when drilling operations comply with regulatory requirements.\n\nChief Justice SAYLOR files a concurring opinion, emphasizing the need for legislative clarity on surface rights.`
+      },
+      {
+        id: 12,
+        title: "Nguyen v. Pacific Retail Holdings",
+        court: "Washington Supreme Court",
+        date: "2023-03-08",
+        citation: "2023 Wash. LEXIS 214",
+        summary: "Wage and hour class action regarding tip pooling. Court held that state law prohibits employers from including supervisors in mandatory tip pools, even if supervisors perform some frontline duties.",
+        fullText: `SUPREME COURT OF WASHINGTON\n\nANH NGUYEN, individually and as representative of others similarly situated,\nPetitioner,\nv.\nPACIFIC RETAIL HOLDINGS, LLC, d/b/a Bella Moda,\nRespondent.\n\nNo. 99876-1\n\nFiled: March 8, 2023\n\nGonzález, J.\n\nWe are asked to decide whether Washington's Minimum Wage Act, RCW 49.46.020, permits retail employers to include assistant managers in mandatory tip pools.\n\nPetitioner Anh Nguyen worked as a sales associate at Bella Moda, a clothing boutique in Seattle. The store implemented a mandatory tip pool that distributed customer gratuities among sales staff and assistant managers. Assistant managers spent approximately 20% of their time on sales floor duties but primarily supervised staff, conducted performance reviews, and had hiring/firing authority.\n\nNguyen filed a class action, alleging the tip pool violated RCW 49.46.020(3), which states: \"Moneys paid by a customer as a tip, gratuity, or gift... belong to the employee, not the employer.\" The Department of Labor & Industries has interpreted this to prohibit employers from keeping or sharing in tips.\n\nThe trial court dismissed the action, finding no statutory prohibition on supervisor participation. The Court of Appeals affirmed. We reverse.\n\nThe purpose of the Minimum Wage Act is to protect low-wage workers from exploitation. Tips are considered compensatory and distinct from wages.\n\nWhile federal regulations (29 C.F.R. § 531.54) allow tip pooling with supervisors if they perform substantial non-supervisory work, Washington law provides greater protection. The statute's plain language—\"belong to the employee\"—implies ownership by frontline workers who provide direct service.\n\nAllowing supervisors to share in tips creates inherent conflicts of interest and undermines worker morale. It also risks coercion, as employees may feel pressured to contribute to maintain good relations with management.\n\nWe hold that individuals with authority to hire, fire, discipline, or effectively recommend such actions may not participate in mandatory tip pools, regardless of time spent in direct service.\n\nThe judgment below is reversed, and the case is remanded for certification of the class and determination of damages.\n\nStephens, J., dissents, joined by Yu, J., arguing that the majority oversteps by creating a bright-line rule not found in the statute.\n\nMcCloud, C.J., concurs in the result.`
+      },
+      {
+        id: 13,
+        title: "Davis v. Federal Aviation Administration",
+        court: "United States Court of Appeals, Federal Circuit",
+        date: "2023-05-17",
+        citation: "62 F.4th 1305",
+        summary: "Whistleblower protection case involving aviation safety reports. Court held that internal safety database submissions are protected disclosures under AIR21 Act, even when containing preliminary or unverified information.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE FEDERAL CIRCUIT\n\nROBERT DAVIS, Petitioner\nv.\nFEDERAL AVIATION ADMINISTRATION, Respondent\n\nNo. 2022-1890\n\nDecided: May 17, 2023\n\nLOURIE, Circuit Judge.\n\nRobert Davis, an aerospace engineer employed by a FAA contractor, petitions for review of a final order of the Department of Labor Administrative Review Board dismissing his whistleblower complaint under the Wendell H. Ford Aviation Investment and Reform Act for the 21st Century (AIR21), 49 U.S.C. § 42121.\n\nDavis worked on software verification for the NextGen air traffic control system. In March 2021, he submitted several reports to the FAA's internal Aviation Safety Information Analysis and Sharing (ASIAS) database, flagging potential flaws in conflict detection algorithms. His reports stated the findings were preliminary and required further testing.\n\nIn June 2021, Davis was removed from the project and reassigned to administrative duties. The contractor cited \"interpersonal issues\" and \"failure to collaborate.\"\n\nDavis filed a complaint with OSHA, alleging retaliation for protected activity. The Administrative Law Judge found Davis engaged in protected conduct and that his reports were a contributing factor in the adverse action. However, the Review Board reversed, holding that Davis's submissions were not \"protected disclosures\" because they contained unverified data and speculative conclusions.\n\nWe reverse.\n\nAIR21 protects employees from retaliation for providing information about alleged violations of any law, rule, or regulation related to air carrier safety.\n\nThe statute defines \"protected activity\" broadly to include providing information to the employer that the employee reasonably believes relates to a safety violation.\n\nDavis's reports to ASIAS—a congressionally mandated safety database—clearly qualify. The fact that his analysis was preliminary does not negate protection. Early reporting of potential issues is precisely what the statute encourages.\n\nThe Review Board erred in requiring verified, conclusive findings. Such a standard would discourage early reporting and undermine aviation safety.\n\nWe hold that technical personnel may engage in protected activity by submitting good-faith safety concerns to official channels, even if based on incomplete data or requiring further investigation.\n\nThe order of the Review Board is VACATED, and the case is REMANDED with instructions to reinstate the ALJ's decision and order appropriate remedies.\n\nDYK, Circuit Judge, dissents, arguing that allowing speculative reports to qualify as protected activity could flood safety systems with unfounded claims.\n\nProst, C.J., joins the dissent.`
+      },
+      {
+        id: 14,
+        title: "Reed v. Social Media Platforms, Inc.",
+        court: "Massachusetts Supreme Judicial Court",
+        date: "2023-01-25",
+        citation: "178 N.E.3d 421",
+        summary: "Defamation case involving algorithmic content amplification. Court held that social media company could be held liable for negligently amplifying false statements when human moderators had been alerted to the content's falsity.",
+        fullText: `SUPREME JUDICIAL COURT\nOF MASSACHUSETTS\n\nSARAH REED\nPlaintiff,\nv.\nSOCIAL MEDIA PLATFORMS, INC.\nd/b/a ConnectNet\nDefendant.\n\nSJC-13245\n\nJanuary 25, 2023\n\nKAFKER, J.\n\nThis appeal requires us to consider whether a social media company can be held liable for defamation when its algorithm promotes false content after human moderators have been notified of its falsity.\n\nPlaintiff Sarah Reed is a mayoral candidate in Cambridge, Massachusetts. In October 2022, a fake post appeared on ConnectNet falsely claiming Reed had been convicted of embezzlement while serving on a nonprofit board. The post included fabricated court documents and was shared 12,000 times.\n\nReed's campaign team sent two takedown requests to ConnectNet's moderation team on October 15 and 17, providing evidence of the post's falsity. Despite these alerts, ConnectNet's algorithm continued to recommend the post to users, and it appeared in the \"Trending\" feed for four additional days.\n\nThe post was finally removed on October 21. By then, multiple news outlets had reported on the allegations, and Reed's poll numbers had dropped significantly. She lost the election by 2.3 points.\n\nReed sued for defamation, negligent infliction of emotional distress, and violation of Massachusetts consumer protection law (G.L. c. 93A). The trial court dismissed the claims, holding ConnectNet was immune under 47 U.S.C. § 230(c)(1) of the Communications Decency Act.\n\nWe granted direct appellate review and now reverse in part.\n\nSection 230 generally immunizes interactive computer services from liability for content created by third parties. However, immunity does not extend to a provider's own conduct.\n\nHere, the original post was undeniably third-party content. But ConnectNet's decision to algorithmically amplify the post after receiving credible notice of its falsity constitutes affirmative conduct beyond mere publication.\n\nAnalogous to a newspaper editor choosing to run a retraction in small print while continuing to promote the false story on the front page, ConnectNet's actions went beyond passive hosting.\n\nWe hold that when a social media platform receives reliable evidence that content is false and continues to actively promote it through recommendation systems, it may lose § 230 immunity for claims based on that amplification.\n\nThis ruling does not require platforms to monitor all content or make difficult truth determinations. But once alerted to clear falsity, deliberate amplification can support liability.\n\nThe dismissal of the defamation claim is reversed. The emotional distress and c. 93A claims are dismissed for failure to state a claim.\n\nCase remanded for further proceedings.\n\nLenk, J., dissents, joined by Lowy, J., arguing that any exception to § 230 should come from Congress, not the judiciary.\n\nCordy, J., concurs in part and dissents in part.`
+      },
+      {
+        id: 15,
+        title: "Harris v. National Institute of Health",
+        court: "United States Court of Federal Claims",
+        date: "2023-06-08",
+        citation: "163 Fed. Cl. 201",
+        summary: "Freedom of Information Act request for clinical trial data. Court held that exemption 4 (confidential business information) did not protect pharmaceutical company's raw study data when the drug had been on the market for over five years and the data had been partially published.",
+        fullText: `UNITED STATES COURT OF FEDERAL CLAIMS\n\nDR. LUCY HARRIS,\nPlaintiff,\nv.\nNATIONAL INSTITUTES OF HEALTH,\nDefendant.\n\nNo. 22-567C\n\nFiled: June 8, 2023\n\nSenior Judge ERIC G. BRUGGINK\n\nThis is a Freedom of Information Act (FOIA), 5 U.S.C. § 552, action brought by Dr. Lucy Harris, an epidemiologist at Johns Hopkins University, seeking release of complete raw data from clinical trials of DrugX (generic: zimovane), approved by the FDA in 2017 for treatment of chronic insomnia.\n\nPlaintiff submitted a FOIA request in January 2022 for all individual patient-level data, adverse event reports, and statistical analysis plans from Phases II and III trials. Defendant NIH, which co-funded the research, withheld the data under Exemption 4, which protects \"trade secrets and commercial or financial information obtained from a person and privileged or confidential.\"\n\nAfter an informal appeal was denied, Plaintiff filed suit. Cross-motions for summary judgment are now before the Court.\n\nExemption 4 protects confidential business information if disclosure is likely to impair the government's ability to obtain similar information in the future or cause substantial harm to the competitive position of the person from whom the information was obtained.\n\nHere, the information was generated by PharmaCorp under a cooperative research agreement with NIH. While PharmaCorp initially asserted confidentiality, the drug has been on the market since 2017, and summary results have been published in The New England Journal of Medicine and presented at medical conferences.\n\nThe D.C. Circuit's decision in Food & Drug Admin. v. Brown & Williamson Tobacco Corp., 529 U.S. 120 (2000), and subsequent cases establish that information loses confidentiality over time, especially when a product is commercialized.\n\nMoreover, the International Committee of Medical Journal Editors requires data sharing as a condition of publication. Many journals now mandate that clinical trial data be made available within two years of publication.\n\nPharmaCorp has not shown that releasing decade-old raw data would cause substantial competitive harm. The market for zimovane is generic, and the company's patents expired in 2022.\n\nAccordingly, Exemption 4 does not apply. Defendant's motion for summary judgment is DENIED. Plaintiff's motion is GRANTED. Defendant shall produce the requested data, with appropriate redactions for personally identifiable health information under HIPAA, within 30 days.\n\nNo costs.\n\nSO ORDERED.`
+      }
+    ];
+
+    // DOM Elements
+    const searchBar = document.getElementById('search-bar');
+    const resultsList = document.getElementById('results-list');
+    const detailContent = document.getElementById('case-detail');
+    const noSelection = document.getElementById('no-selection');
+    const caseTitle = document.getElementById('case-title');
+    const caseMeta = document.getElementById('case-meta');
+    const summaryText = document.getElementById('summary-text');
+    const fullTextContent = document.getElementById('full-text-content');
+    const notesContainer = document.getElementById('notes-container');
+    const extractEntitiesBtn = document.getElementById('extract-entities');
+    const clearHighlightsBtn = document.getElementById('clear-highlights');
+
+    // Current selected case
+    let currentCase = null;
+
+    // Notes stored in localStorage
+    let notes = JSON.parse(localStorage.getItem('vibe-law-notes')) || {};
+
+    // Initialize notes UI
+    function renderNotes() {
+      if (Object.keys(notes).length === 0) {
+        notesContainer.innerHTML = '<p style="color: var(--muted); font-size: 0.9rem;">Save highlighted text snippets to appear here.</p>';
+        return;
+      }
+
+      notesContainer.innerHTML = '';
+      const caseNotes = notes[currentCase.id] || [];
+      caseNotes.forEach((note, index) => {
+        const noteEl = document.createElement('div');
+        noteEl.className = 'note-item';
+        noteEl.innerHTML = `
+          <div>${note.text}</div>
+          <div class="note-actions">
+            <button class="btn btn-outline" data-action="delete" data-index="${index}">Delete</button>
+          </div>
+        `;
+        notesContainer.appendChild(noteEl);
+      });
+
+      // Add event listeners for delete buttons
+      notesContainer.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = e.target.getAttribute('data-index');
+          notes[currentCase.id].splice(index, 1);
+          if (notes[currentCase.id].length === 0) delete notes[currentCase.id];
+          localStorage.setItem('vibe-law-notes', JSON.stringify(notes));
+          renderNotes();
+        });
+      });
+    }
+
+    // Search functionality
+    function searchCases(query) {
+      if (!query.trim()) {
+        renderResults(mockCases);
+        return;
+      }
+
+      const lowerQuery = query.toLowerCase();
+      const filtered = mockCases.filter(c =>
+        c.title.toLowerCase().includes(lowerQuery) ||
+        c.court.toLowerCase().includes(lowerQuery) ||
+        c.summary.toLowerCase().includes(lowerQuery) ||
+        c.fullText.toLowerCase().includes(lowerQuery) ||
+        c.citation.toLowerCase().includes(lowerQuery)
+      );
+      renderResults(filtered);
+    }
+
+    // Render search results
+    function renderResults(cases) {
+      resultsList.innerHTML = '';
+      cases.forEach(caseItem => {
+        const li = document.createElement('li');
+        li.className = 'result-item';
+        li.innerHTML = `
+          <div class="result-title">${caseItem.title}</div>
+          <div class="result-meta">
+            <span>${caseItem.court}</span> &bull; 
+            <span>${formatDate(caseItem.date)}</span>
+          </div>
+          <div class="result-snippet">${caseItem.summary.substring(0, 120)}...</div>
+        `;
+        li.addEventListener('click', () => selectCase(caseItem));
+        resultsList.appendChild(li);
+      });
+    }
+
+    // Format date as Month DD, YYYY
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString(undefined, options);
+    }
+
+    // Select a case
+    function selectCase(caseItem) {
+      currentCase = caseItem;
+      noSelection.style.display = 'none';
+      detailContent.style.display = 'flex';
+
+      caseTitle.textContent = caseItem.title;
+      caseMeta.textContent = `${caseItem.court} • ${formatDate(caseItem.date)} • ${caseItem.citation}`;
+      summaryText.textContent = caseItem.summary;
+      fullTextContent.textContent = caseItem.fullText;
+
+      // Reset tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector('.tab[data-tab="summary"]').classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById('summary').classList.add('active');
+
+      renderNotes();
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+
+    // Extract Entities (simulated)
+    extractEntitiesBtn.addEventListener('click', () => {
+      if (!currentCase) return;
+
+      const fullTextEl = document.getElementById('full-text');
+      let text = fullTextEl.textContent;
+
+      // Simple regex patterns for names and dates
+      const namePattern = /\b[A-Z][a-z]+ [A-Z][a-z]+\b/g;
+      const datePattern = /\b\d{1,2}(?:st|nd|rd|th)? (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\b|\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b|\b\d{4}-\d{2}-\d{2}\b/g;
+
+      // Replace text with highlighted versions
+      text = text.replace(namePattern, match => `<span class="highlight">${match}</span>`);
+      text = text.replace(datePattern, match => `<span class="highlight">${match}</span>`);
+
+      fullTextEl.innerHTML = text;
+
+      // Rebind event for saving highlights to notes
+      bindHighlightClicks();
+    });
+
+    // Allow users to save highlighted text to notes
+    function bindHighlightClicks() {
+      document.querySelectorAll('.highlight').forEach(el => {
+        // Prevent multiple listeners
+        if (el.dataset.bound) return;
+        el.dataset.bound = 'true';
+
+        el.addEventListener('click', function() {
+          if (!currentCase) return;
+          
+          const text = this.textContent;
+          if (!notes[currentCase.id]) notes[currentCase.id] = [];
+          notes[currentCase.id].push({ text, timestamp: new Date().toISOString() });
+          localStorage.setItem('vibe-law-notes', JSON.stringify(notes));
+          renderNotes();
+          
+          // Visual feedback
+          this.style.backgroundColor = 'rgba(46, 139, 106, 0.4)';
+          setTimeout(() => {
+            this.style.backgroundColor = 'rgba(255, 220, 0, 0.25)';
+          }, 500);
+        });
+      });
+    }
+
+    // Clear highlights
+    clearHighlightsBtn.addEventListener('click', () => {
+      if (!currentCase) return;
+      fullTextContent.textContent = currentCase.fullText;
+      document.getElementById('full-text').classList.add('active');
+    });
+
+    // Search as you type
+    searchBar.addEventListener('input', (e) => {
+      searchCases(e.target.value);
+    });
+
+    // Initial render
+    renderResults(mockCases);
+  </script>
+</body>
+</html>

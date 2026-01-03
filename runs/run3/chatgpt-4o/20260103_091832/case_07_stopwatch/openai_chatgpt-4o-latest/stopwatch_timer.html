@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stopwatch & Timer</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #000;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #0f0;
+    }
+
+    .mode-toggle {
+      margin: 10px;
+    }
+
+    .clock-display {
+      font-size: 3em;
+      background: #111;
+      padding: 20px 40px;
+      border: 2px solid #0f0;
+      border-radius: 10px;
+      margin: 20px;
+      min-width: 300px;
+      text-align: center;
+    }
+
+    .controls button {
+      font-size: 1em;
+      padding: 10px 20px;
+      margin: 5px;
+      background-color: #222;
+      border: 1px solid #0f0;
+      color: #0f0;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background-color: #0f0;
+      color: #000;
+    }
+
+    .lap-list {
+      margin-top: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      width: 300px;
+      border: 1px solid #0f0;
+      padding: 10px;
+    }
+
+    .lap-list ul {
+      padding-left: 20px;
+    }
+
+    .timer-inputs input {
+      width: 40px;
+      font-size: 1em;
+      text-align: center;
+      margin: 0 5px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stopwatch & Timer</h1>
+  <div class="mode-toggle">
+    <button id="modeBtn">Switch to Timer</button>
+  </div>
+
+  <div id="stopwatchMode">
+    <div class="clock-display" id="stopwatchDisplay">00:00:00.000</div>
+    <div class="controls">
+      <button id="startStopwatch">Start</button>
+      <button id="stopStopwatch" disabled>Stop</button>
+      <button id="lapStopwatch" disabled>Lap</button>
+      <button id="resetStopwatch">Reset</button>
+    </div>
+    <div class="lap-list" id="lapList">
+      <strong>Laps:</strong>
+      <ul id="laps"></ul>
+    </div>
+  </div>
+
+  <div id="timerMode" class="hidden">
+    <div class="timer-inputs controls">
+      <label>H: <input type="number" id="hours" min="0" max="99" value="0"></label>
+      <label>M: <input type="number" id="minutes" min="0" max="59" value="0"></label>
+      <label>S: <input type="number" id="seconds" min="0" max="59" value="0"></label>
+    </div>
+    <div class="clock-display" id="timerDisplay">00:00:00</div>
+    <div class="controls">
+      <button id="startTimer">Start</button>
+      <button id="pauseTimer" disabled>Pause</button>
+      <button id="resetTimer">Reset</button>
+    </div>
+  </div>
+
+  <audio id="beep">
+    <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav">
+  </audio>
+
+  <script>
+    // Common
+    const modeBtn = document.getElementById('modeBtn');
+    const stopwatchMode = document.getElementById('stopwatchMode');
+    const timerMode = document.getElementById('timerMode');
+    let isStopwatch = true;
+
+    modeBtn.onclick = () => {
+      isStopwatch = !isStopwatch;
+      stopwatchMode.classList.toggle('hidden');
+      timerMode.classList.toggle('hidden');
+      modeBtn.textContent = isStopwatch ? "Switch to Timer" : "Switch to Stopwatch";
+    };
+
+    // Stopwatch
+    const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+    const startSWBtn = document.getElementById('startStopwatch');
+    const stopSWBtn = document.getElementById('stopStopwatch');
+    const lapSWBtn = document.getElementById('lapStopwatch');
+    const resetSWBtn = document.getElementById('resetStopwatch');
+    const lapsUl = document.getElementById('laps');
+
+    let swStartTime = null;
+    let swElapsed = 0;
+    let swInterval = null;
+
+    function formatTime(ms) {
+      const hours = Math.floor(ms / 3600000);
+      const minutes = Math.floor((ms % 3600000) / 60000);
+      const seconds = Math.floor((ms % 60000) / 1000);
+      const milliseconds = ms % 1000;
+      return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(milliseconds).padStart(3,'0')}`;
+    }
+
+    function updateStopwatch() {
+      const now = Date.now();
+      const elapsed = now - swStartTime + swElapsed;
+      stopwatchDisplay.textContent = formatTime(elapsed);
+    }
+
+    startSWBtn.onclick = () => {
+      swStartTime = Date.now();
+      swInterval = setInterval(updateStopwatch, 10);
+      startSWBtn.disabled = true;
+      stopSWBtn.disabled = false;
+      lapSWBtn.disabled = false;
+    };
+
+    stopSWBtn.onclick = () => {
+      clearInterval(swInterval);
+      swElapsed += Date.now() - swStartTime;
+      startSWBtn.disabled = false;
+      stopSWBtn.disabled = true;
+      lapSWBtn.disabled = true;
+    };
+
+    lapSWBtn.onclick = () => {
+      const now = Date.now();
+      const elapsed = now - swStartTime + swElapsed;
+      const li = document.createElement('li');
+      li.textContent = formatTime(elapsed);
+      lapsUl.appendChild(li);
+    };
+
+    resetSWBtn.onclick = () => {
+      clearInterval(swInterval);
+      swStartTime = null;
+      swElapsed = 0;
+      stopwatchDisplay.textContent = "00:00:00.000";
+      lapsUl.innerHTML = '';
+      startSWBtn.disabled = false;
+      stopSWBtn.disabled = true;
+      lapSWBtn.disabled = true;
+    };
+
+    // Timer
+    const timerDisplay = document.getElementById('timerDisplay');
+    const startTimerBtn = document.getElementById('startTimer');
+    const pauseTimerBtn = document.getElementById('pauseTimer');
+    const resetTimerBtn = document.getElementById('resetTimer');
+    const inputH = document.getElementById('hours');
+    const inputM = document.getElementById('minutes');
+    const inputS = document.getElementById('seconds');
+    const beep = document.getElementById('beep');
+
+    let timerTotal = 0;
+    let timerRemaining = 0;
+    let timerInterval = null;
+    let timerRunning = false;
+    let timerStartTime = null;
+
+    function formatTimer(ms) {
+      const totalSeconds = Math.ceil(ms / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    }
+
+    function updateTimer() {
+      const now = Date.now();
+      const elapsed = now - timerStartTime;
+      const remaining = timerRemaining - elapsed;
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        timerDisplay.textContent = "00:00:00";
+        beep.play();
+        startTimerBtn.disabled = false;
+        pauseTimerBtn.disabled = true;
+        return;
+      }
+      timerDisplay.textContent = formatTimer(remaining);
+    }
+
+    startTimerBtn.onclick = () => {
+      const h = parseInt(inputH.value) || 0;
+      const m = parseInt(inputM.value) || 0;
+      const s = parseInt(inputS.value) || 0;
+      if (!timerRunning) {
+        timerTotal = (h * 3600 + m * 60 + s) * 1000;
+        timerRemaining = timerTotal;
+        if (timerTotal <= 0) return;
+      }
+      timerStartTime = Date.now();
+      timerInterval = setInterval(updateTimer, 200);
+      timerRunning = true;
+      startTimerBtn.disabled = true;
+      pauseTimerBtn.disabled = false;
+    };
+
+    pauseTimerBtn.onclick = () => {
+      clearInterval(timerInterval);
+      const now = Date.now();
+      const elapsed = now - timerStartTime;
+      timerRemaining -= elapsed;
+      timerRunning = false;
+      startTimerBtn.disabled = false;
+      pauseTimerBtn.disabled = true;
+    };
+
+    resetTimerBtn.onclick = () => {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerDisplay.textContent = "00:00:00";
+      startTimerBtn.disabled = false;
+      pauseTimerBtn.disabled = true;
+    };
+  </script>
+</body>
+</html>

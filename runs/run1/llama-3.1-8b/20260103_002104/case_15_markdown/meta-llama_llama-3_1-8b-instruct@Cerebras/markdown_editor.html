@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+        .dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .left-pane {
+            width: 50%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .right-pane {
+            width: 50%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .textarea {
+            width: 100%;
+            height: 90vh;
+            padding: 10px;
+            font-size: 16px;
+            font-family: monospace;
+        }
+        .preview {
+            width: 100%;
+            height: 90vh;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .export-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .export-button:hover {
+            background-color: #3e8e41;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-pane">
+            <textarea id="markdown" class="textarea" placeholder="Write in Markdown"></textarea>
+            <button id="dark-mode-toggle" class="dark-mode-toggle">Toggle Dark Mode</button>
+            <button id="export-button" class="export-button">Export as HTML</button>
+        </div>
+        <div class="right-pane" id="preview"></div>
+    </div>
+    <script>
+        let markdown = document.getElementById('markdown');
+        let preview = document.getElementById('preview');
+        let darkModeToggle = document.getElementById('dark-mode-toggle');
+        let exportButton = document.getElementById('export-button');
+
+        function renderMarkdown(markdownText) {
+            let html = marked(markdownText);
+            preview.innerHTML = html;
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('markdown', markdown.value);
+        }
+
+        function loadFromLocalStorage() {
+            let storedMarkdown = localStorage.getItem('markdown');
+            if (storedMarkdown) {
+                markdown.value = storedMarkdown;
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        function exportAsHtml() {
+            let html = marked(markdown.value);
+            let a = document.createElement('a');
+            a.href = 'data:text/html;charset=utf-8,' + encodeURI(html);
+            a.download = 'output.html';
+            a.click();
+        }
+
+        markdown.addEventListener('input', function() {
+            renderMarkdown(markdown.value);
+            saveToLocalStorage();
+        });
+
+        loadFromLocalStorage();
+
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+
+        exportButton.addEventListener('click', exportAsHtml);
+
+        // Load markdown library
+        function loadScript(url, callback) {
+            let script = document.createElement('script');
+            script.src = url;
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.0/marked.min.js', function() {
+            renderMarkdown(markdown.value);
+        });
+    </script>
+</body>
+</html>

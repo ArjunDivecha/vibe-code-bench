@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --border-color: #ddd;
+            --accent-color: #2563eb;
+            --code-bg: #f0f0f0;
+            --blockquote-border: #666;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f0f23;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #333;
+            --accent-color: #60a5fa;
+            --code-bg: #252540;
+            --blockquote-border: #888;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--bg-tertiary);
+        }
+
+        button.primary {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        button.primary:hover {
+            opacity: 0.9;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 57px);
+        }
+
+        .editor-pane, .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border-color);
+        }
+
+        .pane-header {
+            background: var(--bg-secondary);
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #markdown-input {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        #preview {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            line-height: 1.6;
+        }
+
+        #preview h1, #preview h2, #preview h3 {
+            margin: 16px 0 8px;
+            line-height: 1.3;
+        }
+
+        #preview h1 { font-size: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        #preview h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        #preview h3 { font-size: 1.25rem; }
+
+        #preview p {
+            margin: 12px 0;
+        }
+
+        #preview ul, #preview ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        #preview li {
+            margin: 4px 0;
+        }
+
+        #preview code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        #preview pre code {
+            background: none;
+            padding: 0;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            margin: 12px 0;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        #preview a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 24px 0;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Markdown Editor</h1>
+        <div class="toolbar">
+            <button id="toggle-theme">🌙 Dark Mode</button>
+            <button id="clear-btn">Clear</button>
+            <button id="export-btn" class="primary">Export HTML</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="editor-pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="markdown-input" placeholder="Enter your markdown here..."></textarea>
+        </div>
+        <div class="preview-pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        const toggleThemeBtn = document.getElementById('toggle-theme');
+        const exportBtn = document.getElementById('export-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const notification = document.getElementById('notification');
+
+        // Load from localStorage
+        const savedMarkdown = localStorage.getItem('markdown-content');
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        
+        if (savedMarkdown) {
+            markdownInput.value = savedMarkdown;
+        }
+        
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        toggleThemeBtn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+        // Simple Markdown Parser
+        function parseMarkdown(text) {
+            let html = escapeHtml(text);
+
+            // Code blocks (```...```)
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre><code>${code.trim()}</code></pre>`;
+            });
+
+            // Inline code (`...`)
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold and italic (order matters - bold first)
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            html = html.replace(/___([^_]+)___/g, '<strong>$1</strong>');
+            html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+            // Links [text](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Blockquotes
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Ordered lists (1. 2. 3.)
+            html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+            
+            // Wrap consecutive list items in <ol>
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+                return '<ol>' + match + '</ol>';
+            });
+
+            // Unordered lists (- )
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            
+            // Wrap consecutive unordered list items in <ul>
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+                if (match.includes('<ol>')) return match; // Already wrapped
+                return '<ul>' + match + '</ul>';
+            });
+
+            // Horizontal rules
+            html = html.replace(/^---$/gm, '<hr>');
+
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+
+            // Clean up empty lists and lists inside paragraphs
+            html = html.replace(/<br><(ul|ol)>/g, '<$1>');
+            html = html.replace(/<\/(ul|ol)><br>/g, '</$1>');
+
+            return html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        function render() {
+            const markdown = markdownInput.value;
+            preview.innerHTML = parseMarkdown(markdown);
+            localStorage.setItem('markdown-content', markdown);
+        }
+
+        // Event Listeners
+        markdownInput.addEventListener('input', render);
+
+        toggleThemeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            toggleThemeBtn.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', newTheme);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all content?')) {
+                markdownInput.value = '';
+                render();
+                showNotification('Content cleared');
+            }
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const content = preview.innerHTML;
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a1a;
+        }
+        h1, h2, h3 { margin-top: 24px; line-height: 1.3; }
+        h1 { font-size: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+        h2 { font-size: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+        h3 { font-size: 1.25rem; }
+        p, li { margin: 12px 0; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+        pre { background: #f0f0f0; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #666; margin: 12px 0; padding: 8px 16px; background: #f5f5f5; color: #555; }
+        a { color: #2563eb; }
+        hr { border: none; border-top: 1px solid #ddd; margin: 24px 0; }
+        ul, ol { padding-left: 24px; }
+    </style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('HTML exported successfully!');
+        });
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>

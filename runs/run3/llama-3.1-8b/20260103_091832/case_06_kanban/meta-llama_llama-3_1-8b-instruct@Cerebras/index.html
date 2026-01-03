@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        #board {
+            display: flex;
+            gap: 10px;
+        }
+
+        .column {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .card header {
+            background-color: #f0f0f0;
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .urgent {
+            background-color: #ff0000;
+        }
+
+        .medium {
+            background-color: #ffff00;
+        }
+
+        .low {
+            background-color: #00ff00;
+        }
+
+        .card button {
+            float: right;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kanban Board</h1>
+    <div id="board">
+        <div class="column" id="to-do">
+            <h2>To Do</h2>
+            <div id="to-do-cards"></div>
+        </div>
+        <div class="column" id="in-progress">
+            <h2>In Progress</h2>
+            <div id="in-progress-cards"></div>
+        </div>
+        <div class="column" id="done">
+            <h2>Done</h2>
+            <div id="done-cards"></div>
+        </div>
+    </div>
+
+    <button id="add-card-button">Add Card</button>
+
+    <script>
+        // Get elements
+        const board = document.getElementById('board');
+        const toDoColumn = document.getElementById('to-do');
+        const inProgressColumn = document.getElementById('in-progress');
+        const doneColumn = document.getElementById('done');
+        const toDoCards = document.getElementById('to-do-cards');
+        const inProgressCards = document.getElementById('in-progress-cards');
+        const doneCards = document.getElementById('done-cards');
+        const addButton = document.getElementById('add-card-button');
+
+        // Load data from localStorage
+        const data = JSON.parse(localStorage.getItem('kanban-board-data')) || {
+            'to-do': [],
+            'in-progress': [],
+            'done': []
+        };
+
+        // Function to get all columns
+        function getColumns() {
+            return [toDoColumn, inProgressColumn, doneColumn];
+        }
+
+        // Function to get all cards in a column
+        function getCards(column) {
+            return column.querySelectorAll('.card');
+        }
+
+        // Function to add a new card
+        function addCard(title, priority) {
+            const newCard = document.createElement('div');
+            newCard.classList.add('card');
+            const header = document.createElement('header');
+            header.textContent = title;
+            newCard.appendChild(header);
+            const body = document.createElement('div');
+            let color;
+            if (priority === 'urgent') {
+                color = 'urgent';
+            } else if (priority === 'medium') {
+                color = 'medium';
+            } else {
+                color = 'low';
+            }
+            body.classList.add(color);
+            newCard.appendChild(body);
+            const buttons = document.createElement('div');
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Edit';
+            editButton.onclick = () => editCard(newCard);
+            buttons.appendChild(editButton);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => deleteCard(newCard);
+            buttons.appendChild(deleteButton);
+            newCard.appendChild(buttons);
+            const column = getColumns()[data['to-do'].indexOf(title)];
+            column.appendChild(newCard);
+            if (column === toDoColumn) {
+                data['to-do'].push(title);
+            } else if (column === inProgressColumn) {
+                data['in-progress'].push(title);
+            } else {
+                data['done'].push(title);
+            }
+            localStorage.setItem('kanban-board-data', JSON.stringify(data));
+        }
+
+        // Function to edit a card
+        function editCard(card) {
+            const title = card.firstElementChild.textContent;
+            const newTitle = prompt('Enter new title:', title);
+            if (newTitle !== null) {
+                const column = getColumns()[getCards(card.parentElement).indexOf(card)];
+                const index = data[column.id].indexOf(title);
+                data[column.id][index] = newTitle;
+                card.firstElementChild.textContent = newTitle;
+                localStorage.setItem('kanban-board-data', JSON.stringify(data));
+            }
+        }
+
+        // Function to delete a card
+        function deleteCard(card) {
+            const column = getColumns()[getCards(card.parentElement).indexOf(card)];
+            const index = data[column.id].indexOf(card.firstElementChild.textContent);
+            data[column.id].splice(index, 1);
+            column.removeChild(card);
+            localStorage.setItem('kanban-board-data', JSON.stringify(data));
+        }
+
+        // Function to drop a card
+        function dropCard(event) {
+            const card = event.target;
+            const column = event.target.parentElement;
+            const index = getCards(column).indexOf(card);
+            const columnId = column.id;
+            data[columnId].splice(index, 1);
+            const newIndex = getCards(getColumns()[columnId === 'to-do' ? 0 : columnId === 'in-progress' ? 1 : 2]).indexOf(card);
+            if (newIndex !== -1) {
+                getColumns()[columnId === 'to-do' ? 0 : columnId === 'in-progress' ? 1 : 2].appendChild(card);
+                if (columnId === 'to-do') {
+                    data['to-do'].splice(index, 1);
+                    data['to-do'].splice(newIndex, 0, card.firstElementChild.textContent);
+                } else if (columnId === 'in-progress') {
+                    data['in-progress'].splice(index, 1);
+                    data['in-progress'].splice(newIndex, 0, card.firstElementChild.textContent);
+                } else {
+                    data['done'].splice(index, 1);
+                    data['done'].splice(newIndex, 0, card.firstElementChild.textContent);
+                }
+                localStorage.setItem('kanban-board-data', JSON.stringify(data));
+            }
+        }
+
+        // Function to render cards in each column
+        function renderCards() {
+            getColumns().forEach((column, index) => {
+                getCards(column).forEach((card) => {
+                    column.removeChild(card);
+                });
+                data[Object.keys(data)[index]].forEach((cardTitle) => {
+                    addCard(cardTitle, 'low');
+                });
+            });
+        }
+
+        // Initialize cards
+        renderCards();
+
+        // Add event listeners
+        getColumns().forEach((column) => {
+            column.addEventListener('dragover', (event) => {
+                event.preventDefault();
+            });
+            column.addEventListener('drop', dropCard);
+        });
+
+        // Add event listener for add button
+        addButton.addEventListener('click', () => {
+            const title = prompt('Enter title:');
+            if (title !== null) {
+                addCard(title, 'low');
+            }
+        });
+    </script>
+</body>
+</html>

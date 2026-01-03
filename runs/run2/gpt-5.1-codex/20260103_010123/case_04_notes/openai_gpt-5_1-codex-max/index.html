@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Minimal Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+    --bg:#f7f8fb;
+    --card:#fff;
+    --primary:#4a6cff;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+    --shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+*{box-sizing:border-box;}
+body{
+    margin:0;
+    font-family: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    display:flex;
+    justify-content:center;
+}
+.wrapper{
+    width: min(1100px, 95vw);
+    padding:32px 20px 60px;
+}
+header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:24px;
+}
+h1{
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.5px;
+}
+header .actions{
+    display:flex;
+    gap:12px;
+}
+button, input, textarea{
+    font:inherit;
+}
+.btn{
+    border:none;
+    border-radius:10px;
+    padding:10px 14px;
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:active{transform:translateY(1px);}
+.btn.primary{
+    background:var(--primary);
+    color:#fff;
+    box-shadow: var(--shadow);
+}
+.btn.ghost{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--border);
+}
+.card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow: var(--shadow);
+}
+form{
+    padding:20px;
+    margin-bottom:22px;
+    display:grid;
+    gap:12px;
+}
+label{
+    font-weight:600;
+    font-size:14px;
+    margin-bottom:6px;
+    display:block;
+}
+input[type="text"]{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fafbff;
+    transition:border .15s ease, box-shadow .15s ease;
+}
+input[type="text"]:focus,
+textarea:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(74,108,255,0.15);
+}
+textarea{
+    width:100%;
+    min-height:140px;
+    padding:12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    resize:vertical;
+    background:#fafbff;
+}
+.format-bar{
+    display:flex;
+    gap:8px;
+}
+.format-bar .btn{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#f1f4ff;
+}
+.top-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+.search-box{
+    flex:1;
+    position:relative;
+}
+.search-box input{
+    padding-left:36px;
+}
+.search-box .icon{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    pointer-events:none;
+}
+.notes-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:14px;
+}
+.note{
+    position:relative;
+    padding:14px;
+    min-height:140px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    cursor:pointer;
+    transition:transform .08s ease, border .12s ease;
+}
+.note:hover{
+    transform:translateY(-2px);
+    border-color:#d6daf0;
+}
+.note h3{
+    margin:0;
+    font-size:16px;
+}
+.note p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.4;
+    display:-webkit-box;
+    -webkit-line-clamp:4;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    white-space:pre-wrap;
+}
+.note .meta{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:auto;
+}
+.note .delete{
+    position:absolute;
+    top:8px;
+    right:8px;
+    background:transparent;
+    border:none;
+    color:#ef4444;
+    font-size:15px;
+    cursor:pointer;
+}
+.empty{
+    text-align:center;
+    color:var(--muted);
+    padding:24px 12px;
+}
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:10px;
+    background:#eef2ff;
+    color:var(--primary);
+    font-size:13px;
+}
+@media(max-width:700px){
+    .note{min-height:120px;}
+    header{flex-direction:column; align-items:flex-start; gap:10px;}
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <h1>Notes</h1>
+        <div class="actions">
+            <button class="btn ghost" id="newBtn" title="Clear form">New</button>
+            <button class="btn primary" form="noteForm" type="submit">Save</button>
+        </div>
+    </header>
+
+    <form id="noteForm" class="card" autocomplete="off">
+        <div>
+            <label for="title">Title</label>
+            <input id="title" name="title" type="text" required placeholder="Meeting notes, Ideas, Todo...">
+        </div>
+        <div>
+            <label for="content">Content</label>
+            <div class="format-bar">
+                <button type="button" class="btn" data-format="bold"><b>B</b></button>
+                <button type="button" class="btn" data-format="italic"><i>I</i></button>
+                <div class="badge" id="statusBadge">New note</div>
+            </div>
+            <textarea id="content" name="content" required placeholder="Write something..."></textarea>
+        </div>
+        <input type="hidden" id="noteId">
+    </form>
+
+    <div class="top-row">
+        <div class="search-box">
+            <span class="icon">🔍</span>
+            <input id="search" type="text" placeholder="Search notes...">
+        </div>
+        <div class="badge" id="countBadge">0 notes</div>
+    </div>
+
+    <div id="notesContainer" class="notes-grid" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+    const form = document.getElementById('noteForm');
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+    const noteIdInput = document.getElementById('noteId');
+    const notesContainer = document.getElementById('notesContainer');
+    const searchInput = document.getElementById('search');
+    const countBadge = document.getElementById('countBadge');
+    const statusBadge = document.getElementById('statusBadge');
+    const newBtn = document.getElementById('newBtn');
+    const STORAGE_KEY = 'minimal-notes';
+
+    function loadNotes(){
+        try{
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        }catch(e){
+            console.error('Failed to load notes', e);
+            return [];
+        }
+    }
+    function saveNotes(list){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    function renderNotes(){
+        const query = searchInput.value.trim().toLowerCase();
+        const notes = loadNotes().sort((a,b) => b.updated - a.updated);
+        notesContainer.innerHTML = '';
+        const filtered = notes.filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
+        countBadge.textContent = `${filtered.length} ${filtered.length===1?'note':'notes'}`;
+        if(filtered.length === 0){
+            const empty = document.createElement('div');
+            empty.className = 'empty card';
+            empty.textContent = query ? 'No notes found.' : 'No notes yet. Start writing!';
+            notesContainer.appendChild(empty);
+            return;
+        }
+        filtered.forEach(note => {
+            const card = document.createElement('div');
+            card.className = 'note card';
+            card.dataset.id = note.id;
+            card.innerHTML = `
+                <button class="delete" title="Delete">✕</button>
+                <h3>${escapeHtml(note.title || 'Untitled')}</h3>
+                <p>${escapeHtml(note.content || '')}</p>
+                <div class="meta">${timeAgo(note.updated)}</div>
+            `;
+            notesContainer.appendChild(card);
+        });
+    }
+
+    function escapeHtml(str){
+        return str.replace(/[&<>"']/g, m => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+        }[m]));
+    }
+
+    function timeAgo(ts){
+        const diff = Date.now() - ts;
+        const minutes = Math.floor(diff/60000);
+        if(minutes < 1) return 'just now';
+        if(minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes/60);
+        if(hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours/24);
+        if(days < 7) return `${days}d ago`;
+        const date = new Date(ts);
+        return date.toLocaleDateString();
+    }
+
+    function clearForm(){
+        form.reset();
+        noteIdInput.value = '';
+        statusBadge.textContent = 'New note';
+        titleInput.focus();
+    }
+
+    form.addEventListener('submit', e=>{
+        e.preventDefault();
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+        if(!title && !content){
+            alert('Please add a title or content.');
+            return;
+        }
+        const notes = loadNotes();
+        const existingId = noteIdInput.value;
+        if(existingId){
+            const idx = notes.findIndex(n=>n.id === existingId);
+            if(idx !== -1){
+                notes[idx].title = title || 'Untitled';
+                notes[idx].content = content;
+                notes[idx].updated = Date.now();
+            }
+            statusBadge.textContent = 'Saved';
+        }else{
+            const newNote = {
+                id: cryptoRandomId(),
+                title: title || 'Untitled',
+                content,
+                updated: Date.now()
+            };
+            notes.push(newNote);
+            noteIdInput.value = newNote.id;
+            statusBadge.textContent = 'Saved';
+        }
+        saveNotes(notes);
+        renderNotes();
+        form.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+
+    notesContainer.addEventListener('click', e=>{
+        const delBtn = e.target.closest('.delete');
+        const card = e.target.closest('.note');
+        if(!card) return;
+        const id = card.dataset.id;
+        if(delBtn){
+            e.stopPropagation();
+            const notes = loadNotes().filter(n=>n.id !== id);
+            saveNotes(notes);
+            if(noteIdInput.value === id) clearForm();
+            renderNotes();
+            return;
+        }
+        // Populate for editing
+        const note = loadNotes().find(n=>n.id === id);
+        if(note){
+            titleInput.value = note.title;
+            contentInput.value = note.content;
+            noteIdInput.value = note.id;
+            statusBadge.textContent = 'Editing';
+            window.scrollTo({top:0, behavior:'smooth'});
+        }
+    });
+
+    searchInput.addEventListener('input', renderNotes);
+    newBtn.addEventListener('click', clearForm);
+
+    document.querySelectorAll('[data-format]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            applyFormat(btn.dataset.format);
+        });
+    });
+
+    function applyFormat(type){
+        const start = contentInput.selectionStart;
+        const end = contentInput.selectionEnd;
+        if(start === undefined || end === undefined) return;
+        const selected = contentInput.value.slice(start, end);
+        let wrapper = '';
+        if(type === 'bold') wrapper = '**';
+        if(type === 'italic') wrapper = '*';
+        const formatted = wrapper + selected + wrapper;
+        const newValue = contentInput.value.slice(0,start) + formatted + contentInput.value.slice(end);
+        contentInput.value = newValue;
+        const cursorPos = start + formatted.length;
+        contentInput.focus();
+        contentInput.setSelectionRange(cursorPos, cursorPos);
+    }
+
+    function cryptoRandomId(){
+        const arr = new Uint32Array(2);
+        crypto.getRandomValues(arr);
+        return Array.from(arr).map(n=>n.toString(16)).join('');
+    }
+
+    // Initial load
+    renderNotes();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Habit Tracker</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f0f0f0;
+		}
+		.container {
+			max-width: 800px;
+			margin: 40px auto;
+			background-color: #fff;
+			padding: 20px;
+			border: 1px solid #ddd;
+			border-radius: 10px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+		.header {
+			background-color: #4CAF50;
+			color: #fff;
+			padding: 10px;
+			border-bottom: 1px solid #ddd;
+		}
+		.habit {
+			margin-bottom: 10px;
+			padding: 10px;
+			border-bottom: 1px solid #ddd;
+		}
+		.habit .habit-name {
+			font-weight: bold;
+		}
+		.habit .habit-completed {
+			font-size: 14px;
+			color: #666;
+		}
+		.habit .habit-done {
+			background-color: #4CAF50;
+			color: #fff;
+			padding: 5px 10px;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+		.habit .habit-done:hover {
+			background-color: #3e8e41;
+		}
+		.calendar {
+			margin-top: 20px;
+		}
+		.calendar .day {
+			display: inline-block;
+			width: 60px;
+			height: 60px;
+			margin: 10px;
+			background-color: #ccc;
+			border-radius: 50%;
+			line-height: 60px;
+			text-align: center;
+			font-size: 24px;
+		}
+		.calendar .day.completed {
+			background-color: #4CAF50;
+			color: #fff;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>Habit Tracker</h1>
+		</div>
+		<div id="habits"></div>
+		<div class="calendar" id="calendar"></div>
+	</div>
+
+	<script>
+		const habits = JSON.parse(localStorage.getItem('habits')) || {};
+		const streaks = JSON.parse(localStorage.getItem('streaks')) || {};
+		const completed = JSON.parse(localStorage.getItem('completed')) || {};
+
+		function saveHabits() {
+			localStorage.setItem('habits', JSON.stringify(habits));
+			localStorage.setItem('streaks', JSON.stringify(streaks));
+			localStorage.setItem('completed', JSON.stringify(completed));
+		}
+
+		function addHabit(name) {
+			habits[name] = {
+				completed: []
+			};
+			streaks[name] = 0;
+			completed[name] = [];
+			saveHabits();
+			renderHabits();
+		}
+
+		function renderHabits() {
+			const habitsDiv = document.getElementById('habits');
+			habitsDiv.innerHTML = '';
+			for (const name in habits) {
+				const habitDiv = document.createElement('div');
+				habitDiv.className = 'habit';
+				habitDiv.innerHTML = `
+					<p class="habit-name">${name}</p>
+					<p class="habit-completed">Completed: ${habits[name].completed.length}</p>
+					<button class="habit-done" data-name="${name}">Done</button>
+				`;
+				habitsDiv.appendChild(habitDiv);
+				const doneButton = habitDiv.querySelector('.habit-done');
+				doneButton.addEventListener('click', () => {
+					const date = new Date();
+					const formattedDate = date.toISOString().split('T')[0];
+					completed[name].push(formattedDate);
+					streaks[name]++;
+					habits[name].completed.push(formattedDate);
+					saveHabits();
+					renderHabits();
+					renderCalendar();
+				});
+			}
+		}
+
+		function renderCalendar() {
+			const calendarDiv = document.getElementById('calendar');
+			calendarDiv.innerHTML = '';
+			const startDay = new Date().getDate() - 29;
+			for (let i = startDay; i <= new Date().getDate(); i++) {
+				const date = new Date();
+				date.setDate(i);
+				const dayDiv = document.createElement('div');
+				dayDiv.className = 'day';
+				dayDiv.style.background = habits[date.toISOString().split('T')[0]] ? '#4CAF50' : '#ccc';
+				dayDiv.style.color = habits[date.toISOString().split('T')[0]] ? '#fff' : '#666';
+				calendarDiv.appendChild(dayDiv);
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', renderHabits);
+		document.addEventListener('DOMContentLoaded', renderCalendar);
+
+		const addHabitForm = document.createElement('form');
+		addHabitForm.innerHTML = `
+			<input type="text" placeholder="Habit name">
+			<button type="submit">Add Habit</button>
+		`;
+		document.body.appendChild(addHabitForm);
+		addHabitForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const habitName = addHabitForm.querySelector('input[type="text"]').value;
+			addHabit(habitName);
+			addHabitForm.reset();
+		});
+	</script>
+</body>
+</html>

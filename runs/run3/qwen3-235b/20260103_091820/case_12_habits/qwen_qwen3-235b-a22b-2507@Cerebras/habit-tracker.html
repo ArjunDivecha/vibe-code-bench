@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #5cb85c;
+            --success-bg: #e8f5e8;
+            --border: #ddd;
+            --text: #333;
+            --light-gray: #f5f5f5;
+            --white: #fff;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        /* Habit Form Styles */
+        .habit-form {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        #habit-name {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+        
+        #add-habit {
+            padding: 10px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #add-habit:hover {
+            background-color: #357abd;
+        }
+        
+        /* Habit List Styles */
+        .habit-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: var(--light-gray);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        
+        .habit-item:hover {
+            background-color: #eee;
+        }
+        
+        .habit-name {
+            font-weight: 500;
+            flex-grow: 1;
+        }
+        
+        .habit-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: #666;
+            margin-right: 10px;
+        }
+        
+        .streak, .completion {
+            white-space: nowrap;
+        }
+        
+        .streak strong {
+            color: #d9534f;
+        }
+        
+        .completion strong {
+            color: #5cb85c;
+        }
+        
+        .delete-habit {
+            background: none;
+            border: none;
+            color: #d9534f;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        
+        .delete-habit:hover {
+            opacity: 1;
+        }
+        
+        /* Calendar Styles */
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 15px;
+        }
+        
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        
+        .calendar-header span {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            padding: 5px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .calendar-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .calendar-day.checked {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .calendar-day.today {
+            border: 2px solid var(--primary);
+            font-weight: bold;
+        }
+        
+        .day-label {
+            font-size: 10px;
+            margin-top: 2px;
+            color: #666;
+        }
+        
+        .no-habit-selected {
+            text-align: center;
+            color: #888;
+            padding: 40px 0;
+            font-style: italic;
+        }
+        
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 30px 0;
+            font-style: italic;
+        }
+        
+        .today-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ Habit Tracker</h1>
+    <p class="subtitle">Build momentum, one day at a time</p>
+    
+    <div class="container">
+        <div class="left-column">
+            <div class="card">
+                <h2>My Habits</h2>
+                <form class="habit-form" id="new-habit-form">
+                    <input type="text" id="habit-name" placeholder="Add a new habit..." required>
+                    <button type="submit" id="add-habit">Add</button>
+                </form>
+                
+                <div id="habits-list">
+                    <!-- Habits will be added here -->
+                </div>
+                
+                <div id="no-habits" class="empty-state">
+                    No habits yet. Add one to get started!
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-column">
+            <div class="card">
+                <h2 id="selected-habit-name">Select a habit to view progress</h2>
+                
+                <div id="habit-details">
+                    <div id="no-habit-selected" class="no-habit-selected">
+                        Select a habit from the list to see your progress
+                    </div>
+                    
+                    <div id="habit-stats" style="display: none;">
+                        <div class="habit-stats">
+                            <span class="streak">Streak: <strong id="streak-count">0</strong> days</span>
+                            <span class="completion">Completed: <strong id="completion-rate">0%</strong></span>
+                        </div>
+                        
+                        <div class="calendar-header">
+                            <span>Su</span>
+                            <span>Mo</span>
+                            <span>Tu</span>
+                            <span>We</span>
+                            <span>Th</span>
+                            <span>Fr</span>
+                            <span>Sa</span>
+                        </div>
+                        
+                        <div class="calendar" id="habit-calendar">
+                            <!-- Calendar days will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure
+        let habits = JSON.parse(localStorage.getItem('habits')) || [];
+        let selectedHabitId = null;
+        
+        // DOM elements
+        const habitForm = document.getElementById('new-habit-form');
+        const habitNameInput = document.getElementById('habit-name');
+        const habitsList = document.getElementById('habits-list');
+        const noHabits = document.getElementById('no-habits');
+        const selectedHabitNameEl = document.getElementById('selected-habit-name');
+        const habitStats = document.getElementById('habit-stats');
+        const noHabitSelected = document.getElementById('no-habit-selected');
+        const streakCount = document.getElementById('streak-count');
+        const completionRate = document.getElementById('completion-rate');
+        const habitCalendar = document.getElementById('habit-calendar');
+        
+        // Helper functions
+        function saveHabits() {
+            localStorage.setItem('habits', JSON.stringify(habits));
+        }
+        
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function getDatesLast30Days() {
+            const dates = [];
+            const today = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(today.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+            }
+            
+            return dates;
+        }
+        
+        function getDayOfWeek(dateString) {
+            const date = new Date(dateString);
+            return date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        }
+        
+        function getFormattedDate(dateString) {
+            const date = new Date(dateString);
+            const options = { month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+        
+        // Main functions
+        function addHabit(name) {
+            const newHabit = {
+                id: Date.now().toString(),
+                name: name,
+                createdAt: new Date().toISOString(),
+                completions: [] // Array of date strings
+            };
+            
+            habits.push(newHabit);
+            saveHabits();
+            renderHabits();
+            
+            // Select the new habit
+            selectHabit(newHabit.id);
+        }
+        
+        function deleteHabit(id) {
+            if (confirm('Are you sure you want to delete this habit?')) {
+                habits = habits.filter(habit => habit.id !== id);
+                saveHabits();
+                renderHabits();
+                
+                if (selectedHabitId === id) {
+                    selectedHabitId = null;
+                    renderSelectedHabit();
+                }
+            }
+        }
+        
+        function toggleHabitCompletion(habitId, date) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+            
+            const completionIndex = habit.completions.indexOf(date);
+            if (completionIndex === -1) {
+                habit.completions.push(date);
+            } else {
+                habit.completions.splice(completionIndex, 1);
+            }
+            
+            // Keep completions sorted
+            habit.completions.sort();
+            saveHabits();
+            renderHabits();
+            renderSelectedHabit();
+        }
+        
+        function selectHabit(id) {
+            selectedHabitId = id;
+            renderSelectedHabit();
+        }
+        
+        function calculateStreak(completions) {
+            if (completions.length === 0) return 0;
+            
+            const today = getTodayString();
+            const dates = getDatesLast30Days();
+            let streak = 0;
+            
+            // Check if today's habit is completed
+            const todayCompleted = completions.includes(today);
+            
+            // Start counting from today or yesterday (if today not completed)
+            let dateIndex = todayCompleted ? dates.length - 1 : dates.length - 2;
+            
+            while (dateIndex >= 0) {
+                const date = dates[dateIndex];
+                if (completions.includes(date)) {
+                    streak++;
+                    dateIndex--;
+                } else {
+                    break;
+                }
+            }
+            
+            // Add today's completion to streak if applicable
+            if (todayCompleted) {
+                streak++;
+            }
+            
+            return streak;
+        }
+        
+        function calculateCompletionRate(completions) {
+            const totalDays = 30;
+            const completedDays = completions.filter(date => {
+                const dateObj = new Date(date);
+                const today = new Date();
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(today.getDate() - 29);
+                return dateObj >= thirtyDaysAgo;
+            }).length;
+            
+            return Math.round((completedDays / totalDays) * 100);
+        }
+        
+        // Render functions
+        function renderHabits() {
+            if (habits.length === 0) {
+                habitsList.innerHTML = '';
+                noHabits.style.display = 'block';
+                return;
+            }
+            
+            noHabits.style.display = 'none';
+            habitsList.innerHTML = '';
+            
+            habits.forEach(habit => {
+                const habitItem = document.createElement('div');
+                habitItem.className = 'habit-item';
+                habitItem.innerHTML = `
+                    <span class="habit-name">${habit.name}</span>
+                    <div class="habit-stats">
+                        <span class="streak">Streak: <strong>${calculateStreak(habit.completions)}</strong> days</span>
+                        <span class="completion">Completed: <strong>${calculateCompletionRate(habit.completions)}%</strong></span>
+                    </div>
+                    <button class="delete-habit" data-id="${habit.id}">×</button>
+                `;
+                
+                habitItem.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('delete-habit')) {
+                        selectHabit(habit.id);
+                    }
+                });
+                
+                habitsList.appendChild(habitItem);
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-habit').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteHabit(e.target.dataset.id);
+                });
+            });
+        }
+        
+        function renderSelectedHabit() {
+            if (!selectedHabitId) {
+                noHabitSelected.style.display = 'block';
+                habitStats.style.display = 'none';
+                return;
+            }
+            
+            noHabitSelected.style.display = 'none';
+            habitStats.style.display = 'block';
+            
+            const habit = habits.find(h => h.id === selectedHabitId);
+            if (!habit) return;
+            
+            selectedHabitNameEl.textContent = habit.name;
+            
+            // Update stats
+            streakCount.textContent = calculateStreak(habit.completions);
+            completionRate.textContent = `${calculateCompletionRate(habit.completions)}%`;
+            
+            // Render calendar
+            renderCalendar(habit);
+        }
+        
+        function renderCalendar(habit) {
+            habitCalendar.innerHTML = '';
+            const dates = getDatesLast30Days();
+            const today = getTodayString();
+            
+            dates.forEach(date => {
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                day.dataset.date = date;
+                
+                // Add checked class if completed
+                if (habit.completions.includes(date)) {
+                    day.classList.add('checked');
+                }
+                
+                // Add today class if it's today
+                if (date === today) {
+                    day.classList.add('today');
+                }
+                
+                // Add day of month
+                const dateObj = new Date(date);
+                day.innerHTML = `<span>${dateObj.getDate()}</span>`;
+                
+                // Add day label for first row
+                if (dates.indexOf(date) < 7) {
+                    const dayLabel = document.createElement('div');
+                    dayLabel.className = 'day-label';
+                    dayLabel.textContent = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][getDayOfWeek(date)];
+                    day.appendChild(dayLabel);
+                }
+                
+                // Add tooltip with full date
+                day.title = getFormattedDate(date);
+                
+                // Add click handler
+                day.addEventListener('click', () => {
+                    toggleHabitCompletion(habit.id, date);
+                });
+                
+                habitCalendar.appendChild(day);
+            });
+        }
+        
+        // Event Listeners
+        habitForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = habitNameInput.value.trim();
+            if (name) {
+                addHabit(name);
+                habitNameInput.value = '';
+            }
+        });
+        
+        // Initialize
+        renderHabits();
+        renderSelectedHabit();
+    </script>
+</body>
+</html>

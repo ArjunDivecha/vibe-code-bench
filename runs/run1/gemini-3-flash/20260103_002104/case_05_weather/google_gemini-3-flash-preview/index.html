@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Weather Dashboard</title>
+    <style>
+        :root {
+            --bg-sunny: linear-gradient(135deg, #fceeb5 0%, #f9d423 100%);
+            --bg-cloudy: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+            --bg-rainy: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            --bg-default: #f4f7f6;
+            --card-white: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background 0.5s ease;
+            background: var(--bg-default);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        /* City Grid */
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .city-card {
+            background: var(--card-white);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .city-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+
+        .city-card.active {
+            border: 3px solid #3498db;
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin: 10px 0;
+        }
+
+        .temp {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Details Section */
+        .details-panel {
+            background: var(--card-white);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            padding-top: 40px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .bar {
+            width: 40px;
+            background: #3498db;
+            border-radius: 5px 5px 0 0;
+            transition: height 1s ease;
+            position: relative;
+        }
+
+        .bar:hover {
+            background: #2980b9;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            .bar {
+                width: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Weather Dashboard</h1>
+        <p>Select a city to explore detailed conditions</p>
+    </header>
+
+    <div class="city-grid" id="cityGrid">
+        <!-- JS will populate cards here -->
+    </div>
+
+    <div class="details-panel" id="detailsPanel">
+        <h2 id="detCity">City Name</h2>
+        <div class="details-grid">
+            <div>
+                <p><strong>Condition:</strong> <span id="detCond"></span></p>
+                <p><strong>Temperature:</strong> <span id="detTemp"></span>°C</p>
+                <p><strong>Humidity:</strong> <span id="detHum"></span>%</p>
+            </div>
+            <div>
+                <p><strong>Wind Speed:</strong> <span id="detWind"></span> km/h</p>
+                <p><strong>Pressure:</strong> <span id="detPress"></span> hPa</p>
+                <p><strong>Visibility:</strong> <span id="detVis"></span> km</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h3>Temperature Comparison (°C)</h3>
+        <div class="bar-chart" id="tempChart">
+            <!-- JS will populate bars here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const weatherData = [
+        { name: "New York", temp: 22, condition: "Sunny", humidity: 45, wind: 12, pressure: 1012, visibility: 10, icon: "☀️" },
+        { name: "London", temp: 15, condition: "Cloudy", humidity: 78, wind: 18, pressure: 1005, visibility: 8, icon: "☁️" },
+        { name: "Tokyo", temp: 28, condition: "Sunny", humidity: 60, wind: 10, pressure: 1010, visibility: 12, icon: "☀️" },
+        { name: "Sydney", temp: 19, condition: "Rainy", humidity: 85, wind: 25, pressure: 998, visibility: 5, icon: "🌧️" },
+        { name: "Paris", temp: 17, condition: "Cloudy", humidity: 70, wind: 15, pressure: 1008, visibility: 9, icon: "🌥️" }
+    ];
+
+    const cityGrid = document.getElementById('cityGrid');
+    const detailsPanel = document.getElementById('detailsPanel');
+    const tempChart = document.getElementById('tempChart');
+
+    function init() {
+        renderCards();
+        renderChart();
+    }
+
+    function renderCards() {
+        weatherData.forEach((city, index) => {
+            const card = document.createElement('div');
+            card.className = 'city-card';
+            card.innerHTML = `
+                <h3>${city.name}</h3>
+                <div class="icon">${city.icon}</div>
+                <div class="temp">${city.temp}°C</div>
+                <div style="color: #666">${city.condition}</div>
+            `;
+            card.onclick = () => selectCity(index, card);
+            cityGrid.appendChild(card);
+        });
+    }
+
+    function renderChart() {
+        const maxTemp = Math.max(...weatherData.map(c => c.temp));
+        weatherData.forEach(city => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bar-wrapper';
+            
+            const height = (city.temp / maxTemp) * 150;
+            
+            wrapper.innerHTML = `
+                <div class="bar" style="height: ${height}px">
+                    <span class="bar-value">${city.temp}°</span>
+                </div>
+                <div class="bar-label">${city.name}</div>
+            `;
+            tempChart.appendChild(wrapper);
+        });
+    }
+
+    function selectCity(index, element) {
+        const city = weatherData[index];
+        
+        // Update background based on condition
+        if (city.condition === 'Sunny') {
+            document.body.style.background = "linear-gradient(135deg, #fceeb5 0%, #f9d423 100%)";
+        } else if (city.condition === 'Rainy') {
+            document.body.style.background = "linear-gradient(135deg, #4b6cb7 0%, #182848 100%)";
+            document.body.style.color = "white"; // readability for dark bg
+        } else {
+            document.body.style.background = "linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%)";
+            document.body.style.color = "white";
+        }
+
+        // Reset color if sunny
+        if (city.condition === 'Sunny') document.body.style.color = "#333";
+
+        // Update Details
+        document.getElementById('detCity').innerText = city.name;
+        document.getElementById('detCond').innerText = city.condition + " " + city.icon;
+        document.getElementById('detTemp').innerText = city.temp;
+        document.getElementById('detHum').innerText = city.humidity;
+        document.getElementById('detWind').innerText = city.wind;
+        document.getElementById('detPress').innerText = city.pressure;
+        document.getElementById('detVis').innerText = city.visibility;
+
+        detailsPanel.style.display = 'block';
+
+        // Highlight selected card
+        document.querySelectorAll('.city-card').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+
+        // Scroll to details on mobile
+        if(window.innerWidth < 600) {
+            detailsPanel.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Password Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #111827;
+  --accent: #8b5cf6;
+  --accent2: #22d3ee;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: #1f2937;
+  --danger: #f43f5e;
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(139,92,246,0.15), transparent 40%),
+              radial-gradient(circle at 80% 0%, rgba(34,211,238,0.12), transparent 35%),
+              var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px;
+}
+h1 {
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+  font-weight: 800;
+}
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.card {
+  background: linear-gradient(145deg, rgba(17,24,39,0.9), rgba(12,17,31,0.95));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.label {
+  font-weight: 600;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.length-badge {
+  min-width: 42px;
+  text-align: center;
+  background: rgba(139,92,246,0.15);
+  color: #e9d5ff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(139,92,246,0.35);
+  font-weight: 700;
+}
+.switches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.toggle {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border 0.2s, transform 0.2s;
+}
+.toggle:hover { transform: translateY(-1px); border-color: rgba(139,92,246,0.6); }
+.toggle input { display: none; }
+.fake-check {
+  width: 20px; height: 20px;
+  border-radius: 8px;
+  border: 2px solid var(--muted);
+  position: relative;
+}
+.toggle input:checked + .fake-check {
+  border-color: var(--accent2);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+.toggle input:checked + .fake-check::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: #0f172a;
+  border-radius: 6px;
+}
+.small {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+button {
+  border: none;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 12px 30px rgba(139,92,246,0.3);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+button:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(139,92,246,0.4); }
+button.secondary {
+  background: rgba(255,255,255,0.06);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+#message {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 10px;
+  font-weight: 700;
+}
+.meter {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.meter span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease, background 0.3s ease;
+  border-radius: 8px;
+}
+.strength-label { font-weight: 700; }
+.generated-list, .history-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+.pass-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+.pass-text {
+  word-break: break-all;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+.copy-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.08);
+  color: var(--muted);
+}
+.history-list .pass-item { grid-column: span 1; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.input-num {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  min-width: 80px;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  body { padding: 16px; }
+  .row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Password Generator</h1>
+  <div class="subtitle">Create strong, unique passwords instantly. Tune length, character sets, and generate batches with ease.</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="control">
+        <div class="label">Password length <span class="small">8 - 32</span></div>
+        <div class="slider-wrap">
+          <input type="range" id="length" min="8" max="32" value="14">
+          <div class="length-badge" id="lengthValue">14</div>
+        </div>
+      </div>
+      <div class="control">
+        <div class="label">How many passwords? <span class="small">(1-10)</span></div>
+        <input class="input-num" type="number" id="count" min="1" max="10" value="3">
+      </div>
+    </div>
+
+    <div class="label" style="margin-top:4px;">Character sets</div>
+    <div class="switches" id="switches">
+      <label class="toggle">
+        <input type="checkbox" id="upper" checked>
+        <span class="fake-check"></span><span>Uppercase (A-Z)</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="lower" checked>
+        <span class="fake-check"></span><span>Lowercase (a-z)</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="numbers" checked>
+        <span class="fake-check"></span><span>Numbers (0-9)</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="symbols" checked>
+        <span class="fake-check"></span><span>Symbols (!@#...)</span>
+      </label>
+    </div>
+
+    <div class="actions" style="margin-top:14px;">
+      <button id="generate">Generate Passwords</button>
+      <button class="secondary" id="clearHistory">Clear history</button>
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span>Latest Password</span>
+    <div class="badge" id="lengthBadge"></div>
+  </div>
+  <div class="card" id="latestCard" style="display:none;">
+    <div class="flex-between">
+      <div class="pass-text" id="latestPass"></div>
+      <button class="copy-btn" id="copyLatest">📋 Copy</button>
+    </div>
+    <div class="flex-between">
+      <div class="meter"><span id="meterFill"></span></div>
+      <div class="strength-label" id="strengthLabel"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Batch Results</div>
+  <div class="generated-list" id="generatedList"></div>
+
+  <div class="section-title">
+    <span>History</span>
+    <span class="small">Recently generated passwords</span>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<script>
+(() => {
+  const lengthInput = document.getElementById('length');
+  const lengthValue = document.getElementById('lengthValue');
+  const countInput = document.getElementById('count');
+  const msg = document.getElementById('message');
+  const generatedList = document.getElementById('generatedList');
+  const historyList = document.getElementById('historyList');
+  const latestCard = document.getElementById('latestCard');
+  const latestPassEl = document.getElementById('latestPass');
+  const meterFill = document.getElementById('meterFill');
+  const strengthLabel = document.getElementById('strengthLabel');
+  const lengthBadge = document.getElementById('lengthBadge');
+  const copyLatestBtn = document.getElementById('copyLatest');
+  const maxHistory = 30;
+  let history = [];
+
+  const sets = {
+    upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    lower: "abcdefghijklmnopqrstuvwxyz",
+    numbers: "0123456789",
+    symbols: "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~"
+  };
+
+  const getSelections = () => ({
+    upper: document.getElementById('upper').checked,
+    lower: document.getElementById('lower').checked,
+    numbers: document.getElementById('numbers').checked,
+    symbols: document.getElementById('symbols').checked
+  });
+
+  lengthInput.addEventListener('input', () => {
+    lengthValue.textContent = lengthInput.value;
+  });
+
+  function getCharset(sel) {
+    let chars = "";
+    Object.keys(sel).forEach(k => { if (sel[k]) chars += sets[k]; });
+    return chars;
+  }
+
+  function secureRandomInt(max) {
+    const array = new Uint32Array(1);
+    let rand;
+    do {
+      crypto.getRandomValues(array);
+      rand = array[0] & 0xfffffff;
+    } while (rand >= Math.floor(0xfffffff / max) * max);
+    return rand % max;
+  }
+
+  function generatePassword(len, charset) {
+    let pass = "";
+    for (let i = 0; i < len; i++) {
+      const idx = secureRandomInt(charset.length);
+      pass += charset[idx];
+    }
+    return pass;
+  }
+
+  function computeStrength(pwd, sel) {
+    let score = 0;
+    const len = pwd.length;
+    score += Math.min(len, 32) * 2; // up to 64 pts
+    const variety = [
+      /[a-z]/.test(pwd),
+      /[A-Z]/.test(pwd),
+      /[0-9]/.test(pwd),
+      /[^a-zA-Z0-9]/.test(pwd)
+    ].filter(Boolean).length;
+    score += variety * 8;
+    if (len >= 16) score += 10;
+    if (len >= 24) score += 10;
+    score = Math.min(score, 100);
+    let label = "Weak", color = "linear-gradient(90deg, #f43f5e, #f97316)";
+    if (score >= 70) { label = "Strong"; color = "linear-gradient(90deg, #22c55e, #22d3ee)"; }
+    else if (score >= 50) { label = "Good"; color = "linear-gradient(90deg, #f59e0b, #fbbf24)"; }
+    else if (score >= 30) { label = "Fair"; color = "linear-gradient(90deg, #f97316, #f59e0b)"; }
+    return {score, label, color};
+  }
+
+  function showMessage(text, type="info") {
+    const colors = {info: varCSS('--muted'), error: varCSS('--danger'), success: varCSS('--success')};
+    msg.style.color = colors[type] || varCSS('--muted');
+    msg.textContent = text;
+  }
+  function varCSS(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
+
+  function renderGenerated(list) {
+    generatedList.innerHTML = "";
+    if (!list.length) {
+      generatedList.innerHTML = '<div class="small" style="grid-column:1/-1;">Nothing yet. Generate some passwords!</div>';
+      return;
+    }
+    list.forEach((pwd, idx) => {
+      const item = document.createElement('div');
+      item.className = 'pass-item';
+      const header = document.createElement('div');
+      header.className = 'flex-between';
+      const title = document.createElement('div');
+      title.className = 'badge';
+      title.textContent = `#${idx+1}`;
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = "📋 Copy";
+      btn.addEventListener('click', () => copyToClipboard(pwd));
+      header.appendChild(title);
+      header.appendChild(btn);
+      const text = document.createElement('div');
+      text.className = 'pass-text';
+      text.textContent = pwd;
+      item.appendChild(header);
+      item.appendChild(text);
+      generatedList.appendChild(item);
+    });
+  }
+
+  function renderLatest(pwd) {
+    latestCard.style.display = 'block';
+    latestPassEl.textContent = pwd;
+    lengthBadge.textContent = `${pwd.length} chars`;
+    const strength = computeStrength(pwd);
+    meterFill.style.width = `${strength.score}%`;
+    meterFill.style.background = strength.color;
+    strengthLabel.textContent = `${strength.label} (${Math.round(strength.score)}%)`;
+  }
+
+  function renderHistory() {
+    historyList.innerHTML = "";
+    if (!history.length) {
+      historyList.innerHTML = '<div class="small" style="grid-column:1/-1;">History will appear here.</div>';
+      return;
+    }
+    history.slice(0, maxHistory).forEach((entry, idx) => {
+      const item = document.createElement('div');
+      item.className = 'pass-item';
+      const top = document.createElement('div');
+      top.className = 'flex-between';
+      const label = document.createElement('div');
+      label.className = 'badge';
+      label.textContent = `#${idx+1}`;
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = "📋 Copy";
+      btn.addEventListener('click', () => copyToClipboard(entry.value));
+      top.appendChild(label);
+      top.appendChild(btn);
+      const val = document.createElement('div');
+      val.className = 'pass-text';
+      val.textContent = entry.value;
+      const time = document.createElement('div');
+      time.className = 'small';
+      time.textContent = entry.time;
+      item.appendChild(top);
+      item.appendChild(val);
+      item.appendChild(time);
+      historyList.appendChild(item);
+    });
+  }
+
+  function copyToClipboard(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showMessage("Password copied!", "success");
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showMessage("Password copied!", "success");
+    } catch (e) {
+      showMessage("Copy failed. Please copy manually.", "error");
+    }
+    document.body.removeChild(ta);
+  }
+
+  copyLatestBtn.addEventListener('click', () => copyToClipboard(latestPassEl.textContent));
+
+  document.getElementById('generate').addEventListener('click', () => {
+    const len = parseInt(lengthInput.value, 10);
+    let count = parseInt(countInput.value, 10);
+    const sel = getSelections();
+    const charset = getCharset(sel);
+    if (!charset.length) {
+      showMessage("Choose at least one character set.", "error");
+      return;
+    }
+    if (isNaN(count) || count < 1) count = 1;
+    if (count > 10) count = 10;
+    countInput.value = count;
+    const passwords = [];
+    for (let i = 0; i < count; i++) {
+      passwords.push(generatePassword(len, charset));
+    }
+    renderGenerated(passwords);
+    renderLatest(passwords[0]);
+    const now = new Date();
+    passwords.forEach(p => {
+      history.unshift({value: p, time: now.toLocaleString()});
+    });
+    if (history.length > maxHistory) history = history.slice(0, maxHistory);
+    renderHistory();
+    showMessage("New passwords generated.", "success");
+  });
+
+  document.getElementById('clearHistory').addEventListener('click', () => {
+    history = [];
+    renderHistory();
+    showMessage("History cleared.", "info");
+  });
+
+  // initial
+  renderGenerated([]);
+  renderHistory();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vibe-Law | Legal Case Search</title>
+  <style>
+    :root {
+      --bg-primary: #0b1426;
+      --bg-secondary: #132033;
+      --bg-tertiary: #1a2942;
+      --text-primary: #e6edf3;
+      --text-secondary: #a0aec0;
+      --accent-blue: #3b82f6;
+      --border-color: #2d3b51;
+      --hover-bg: #1a2942;
+      --highlight-bg: #0d213f;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'Helvetica', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--bg-secondary);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+
+    .search-container {
+      flex-grow: 1;
+      margin: 0 2rem;
+      position: relative;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      max-width: 600px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-blue);
+    }
+
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .results-pane {
+      width: 400px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .results-header {
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .results-list {
+      list-style: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .result-item {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .result-item:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .result-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .result-snippet {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .case-detail {
+      flex: 1;
+      display: flex;
+      background-color: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    .detail-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .detail-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .detail-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: #60a5fa;
+      border-bottom: 2px solid #60a5fa;
+    }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .summary-text {
+      line-height: 1.7;
+      white-space: pre-line;
+      font-size: 0.95rem;
+    }
+
+    .full-text {
+      line-height: 1.6;
+      font-size: 0.95rem;
+      white-space: pre-line;
+    }
+
+    .entity {
+      background-color: #1a2942;
+      border-bottom: 1px dashed #60a5fa;
+      color: #60a5fa;
+    }
+
+    .action-buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 4px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #1a2942;
+      border-color: #3b82f6;
+    }
+
+    button.primary {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    button.primary:hover {
+      background-color: #2563eb;
+    }
+
+    .notes-sidebar {
+      width: 300px;
+      background-color: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notes-header {
+      padding: 1rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+    }
+
+    .notes-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 1rem;
+    }
+
+    .note-item {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background-color: var(--highlight-bg);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .no-case-selected {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .no-case-selected i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 1200px) {
+      .notes-sidebar {
+        width: 250px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+      .results-pane {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .case-detail {
+        flex-direction: column;
+      }
+      .notes-sidebar {
+        width: 100%;
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Vibe-Law</div>
+    <div class="search-container">
+      <input type="text" id="search-bar" placeholder="Search case law..." />
+    </div>
+  </header>
+
+  <main>
+    <aside class="results-pane">
+      <div class="results-header">Results</div>
+      <ul class="results-list" id="results-list">
+        <!-- Results will be injected here -->
+      </ul>
+    </aside>
+
+    <div class="case-detail" id="case-detail">
+      <div class="no-case-selected" id="no-case-selected">
+        <i>📄</i>
+        <p>Select a case to view details</p>
+      </div>
+      <div class="detail-content" id="detail-content" style="display: none;">
+        <div class="detail-header">
+          <h2 class="detail-title" id="detail-title"></h2>
+          <p class="detail-subtitle" id="detail-subtitle"></p>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" data-tab="summary">Summary</div>
+          <div class="tab" data-tab="full-text">Full Text</div>
+        </div>
+
+        <div class="tab-content active" id="summary-content">
+          <div class="summary-text" id="summary-text"></div>
+        </div>
+        <div class="tab-content" id="full-text-content">
+          <div class="full-text" id="full-text"></div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="extract-entities">Extract Entities</button>
+          <button id="save-selection">Save Selected Text</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes-sidebar">
+      <div class="notes-header">My Notes</div>
+      <div class="notes-list" id="notes-list">
+        <!-- Notes will be injected here -->
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Mock legal cases
+    const cases = [
+      {
+        id: 1,
+        title: "Doe v. Smith",
+        court: "Supreme Court of California",
+        date: "2023-05-15",
+        summary: "Plaintiff Jane Doe filed suit against Dr. John Smith for medical malpractice.\n\nThe case centers on a misdiagnosis that allegedly led to worsening of the patient's condition. The court examined standards of care in diagnostic procedures and the burden of proof required in malpractice claims.",
+        fullText: `SUPREME COURT OF CALIFORNIA\nNo. S278123\n\nDOE, Plaintiff and Respondent,\nv.\nSMITH, Defendant and Appellant.\n\nOpinion filed May 15, 2023.\n\nThis is an appeal from a judgment entered in favor of plaintiff Jane Doe in an action alleging medical malpractice against Dr. John Smith, a licensed physician practicing internal medicine in Los Angeles County.\n\nThe plaintiff claimed that the defendant failed to diagnose a malignant tumor during a routine examination in February 2021, despite clear radiological indicators. This misdiagnosis allegedly delayed treatment by eight months, during which time the cancer metastasized.\n\nExpert testimony was presented by both parties. Dr. Emily Chen, testifying for the plaintiff, stated that the tumor was "readily identifiable" on the imaging studies. Dr. Robert Kim, for the defense, argued that the lesion was ambiguous and within the range of normal variants.\n\nThe jury returned a verdict in favor of the plaintiff, awarding $4.2 million in compensatory damages. The defendant moved for a new trial, which was denied.\n\nWe affirm the judgment of the court below. The evidence supports the jury's finding that Dr. Smith deviated from the accepted standard of care.\n\nDate: May 15, 2023\nChief Justice: Margaret Baxter`
+      },
+      {
+        id: 2,
+        title: "State v. Thompson",
+        court: "New York Court of Appeals",
+        date: "2022-11-30",
+        summary: "Prosecution of defendant for cyberstalking under New York Penal Law § 120.59.\n\nThe court addressed whether repeated anonymous emails threatening physical harm constitute a credible threat under the statute. First application of the law to digital communications.",
+        fullText: `NEW YORK COURT OF APPEALS\nDocket No. 128-2022\n\nTHE PEOPLE OF THE STATE OF NEW YORK, Respondent,\nv.\nTHOMPSON, Defendant–Appellant.\n\nSubmitted: October 12, 2022\nDecided: November 30, 2022\n\nDefendant James Thompson appeals his conviction for aggravated cyberstalking in violation of Penal Law § 120.59. The charges stem from a series of over 200 anonymous emails sent to victim Sarah Lin between June and December 2020.\n\nThe emails contained detailed threats of physical violence, including references to the victim's daily routines and workplace. The defendant was identified through IP address tracing and metadata analysis.\n\nAt trial, the defense argued that the messages were fictional writing and not intended to be perceived as credible threats. The prosecution introduced evidence of the emotional distress suffered by the victim, including diagnosis of PTSD.\n\nThe jury convicted the defendant on all counts. The Appellate Division affirmed.\n\nWe hold that the totality of circumstances—including specificity of threats, persistence of communication, and impact on the victim—supports the jury's conclusion that the communications constituted credible threats.\n\nJudgment affirmed.\n\nDecided: November 30, 2022\nJudge: Patricia O'Donnell`
+      },
+      {
+        id: 3,
+        title: "Johnson & Johnson v. United States",
+        court: "United States Supreme Court",
+        date: "2023-03-22",
+        summary: "Antitrust action brought by the Department of Justice against pharmaceutical giant.\n\nThe Court ruled 6-3 that the company's practice of paying generic manufacturers to delay market entry constituted illegal reverse payment patent settlement.",
+        fullText: `UNITED STATES SUPREME COURT\nNo. 22-417\n\nUNITED STATES, Petitioner,\nv.\nJOHNSON & JOHNSON, Respondent.\n\nArgued: January 10, 2023\nDecided: March 22, 2023\n\nThis case presents the question of whether "reverse payment" settlements in the pharmaceutical industry violate Section 1 of the Sherman Act.\n\nBetween 2017 and 2020, Johnson & Johnson entered into agreements with three generic drug manufacturers—Generix Pharma, Medisim Inc., and Apotex Solutions—whereby J&J paid a total of $820 million in exchange for delayed market entry of generic versions of its blockbuster drug Zoraxin.\n\nThe Federal Trade Commission initiated proceedings, followed by a civil suit filed by the Department of Justice. The District Court for the District of New Jersey found for the United States. The Third Circuit affirmed.\n\nWe affirm. Such payments, when unjustified by legitimate business considerations, serve to maintain monopolies and suppress competition in violation of antitrust laws.\n\nThe judgment of the Third Circuit is affirmed.\n\nJustice Elena Martinez delivered the opinion of the Court.\n\nDecided: March 22, 2023`
+      },
+      {
+        id: 4,
+        title: "City of Boston v. Greenpeace Energy Initiative",
+        court: "Massachusetts Supreme Judicial Court",
+        date: "2023-01-18",
+        summary: "Challenge to municipal ordinance restricting renewable energy protests near critical infrastructure.\n\nThe court balanced First Amendment rights against public safety concerns, striking down the 100-foot exclusion zone as overbroad.",
+        fullText: `MASSACHUSETTS SUPREME JUDICIAL COURT\nSJC-13422\n\nCITY OF BOSTON, Appellant,\nv.\nGREENPEACE ENERGY INITIATIVE, Appellee.\n\nHeard: December 5, 2022\nDecided: January 18, 2023\n\nThe City of Boston appeals from a Superior Court judgment invalidating Ordinance No. 22-17, which established a 100-foot exclusion zone around energy substations during periods of heightened alert.\n\nThe ordinance was enacted after a protest at the South Boston Substation on April 22, 2022, during which demonstrators chained themselves to equipment enclosures, causing a partial power outage.\n\nThe Commonwealth argues that the exclusion zone is a reasonable time, place, and manner restriction. The appellee contends it is overbroad and infringes on core political speech.\n\nWe conclude that while the government has a compelling interest in protecting critical infrastructure, the 100-foot radius is not narrowly tailored. Less restrictive alternatives, such as enhanced security or temporary restrictions based on specific threats, are available.\n\nThe judgment below is affirmed.\n\nDecided: January 18, 2023\nChief Justice: Daniel Reeves`
+      },
+      {
+        id: 5,
+        title: "Smith v. Amazon Logistics, Inc.",
+        court: "Washington Supreme Court",
+        date: "2022-09-14",
+        summary: "Class action regarding independent contractor classification of delivery drivers.\n\nThe court applied the ABC test and found that drivers were employees under state law, entitling them to minimum wage, overtime, and benefits.",
+        fullText: `WASHINGTON SUPREME COURT\nNo. 102478-3\n\nJAMES SMITH, ET AL., Petitioners,\nv.\nAMAZON LOGISTICS, INC., Respondent.\n\nFiled: September 14, 2022\n\nThis consolidated appeal arises from a class action brought by over 5,000 delivery drivers who worked for Amazon Logistics in Washington State.\n\nThe drivers alleged they were misclassified as independent contractors, depriving them of minimum wage, overtime pay, workers' compensation, and other employment protections under RCW Title 49.\n\nThe trial court certified the class and granted summary judgment for the plaintiffs. The Court of Appeals reversed.\n\nWe reverse the Court of Appeals and reinstate the trial court's decision.\n\nUnder the ABC test set forth in RCW 49.52.005(2), the employer bears the burden of proving: (A) the worker is free from control; (B) the work is outside the usual course of business; and (C) the worker is customarily engaged in an independent business.\n\nAmazon fails prong B: delivering packages is central to its business model. It also fails prong A: drivers must adhere to strict delivery windows, wear branded uniforms, and use GPS-monitored vehicles.\n\nThe workers are employees as a matter of law.\n\nDecided: September 14, 2022\nJustice: Alicia Nguyen`
+      },
+      {
+        id: 6,
+        title: "United States v. Chen",
+        court: "Ninth Circuit Court of Appeals",
+        date: "2023-04-05",
+        summary: "Appeal from conviction for economic espionage under 18 U.S.C. § 1831.\n\nThe court examined whether trade secrets were adequately protected by the victim corporation and whether the defendant's actions constituted unauthorized appropriation.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE NINTH CIRCUIT\n\nNo. 22-30145\n\nUNITED STATES OF AMERICA, Plaintiff-Appellee,\nv.\nWEI CHEN, Defendant-Appellant.\n\nFiled: April 5, 2023\n\nDefendant-appellant Wei Chen appeals his conviction on two counts of economic espionage and one count of theft of trade secrets.\n\nChen was employed as a senior engineer at QuantumChip Technologies in San Diego. He copied over 12,000 files containing proprietary designs for next-generation semiconductors to a personal external drive shortly before resigning to join a Chinese competitor, NanoSilicon Ltd.\n\nThe defense argued that the information was publicly available or constituted general knowledge. The prosecution presented evidence that access controls were in place, including encrypted servers, badge-access laboratories, and non-disclosure agreements.\n\nThe jury convicted Chen on all counts. He was sentenced to 78 months in prison and ordered to pay $18 million in restitution.\n\nWe affirm. The district court properly admitted evidence of the security measures used to protect the trade secrets. The jury's verdict is supported by substantial evidence.\n\nAFFIRMED.\n\nDecided: April 5, 2023\nCircuit Judge: Maria Thompson`
+      },
+      {
+        id: 7,
+        title: "Doe Children's Trust v. Merck & Co.",
+        court: "New Jersey Supreme Court",
+        date: "2022-12-08",
+        summary: "Product liability suit concerning long-term side effects of pediatric vaccine.\n\nThe court addressed statute of limitations issues and the discoverability rule in cases involving latent injuries.",
+        fullText: `NEW JERSEY SUPREME COURT\nA-23-21\n\nDOE CHILDREN'S TRUST, Plaintiff-Appellant,\nv.\nMERCK & CO., INC., Defendant-Respondent.\n\nArgued: October 18, 2022\nDecided: December 8, 2022\n\nThis appeal concerns whether the statute of limitations for personal injury claims begins to run when a vaccine is administered or when the injury is discovered.\n\nPlaintiff represents a class of children who received the Neurovax vaccine between 2010 and 2015. Neurological symptoms, including seizures and developmental regression, emerged between 2018 and 2021.\n\nThe trial court dismissed the claims as time-barred under N.J.S.A. 2A:14-2, which generally provides a two-year limitations period. The Appellate Division affirmed.\n\nWe reverse. Under the discovery rule, the limitations period begins when the plaintiff knows or reasonably should know of the injury and its connection to the defendant's conduct.\n\nIn cases involving latent injuries from pharmaceuticals, the onset of symptoms does not necessarily equate to discovery of causation. Here, medical consensus on the link between Neurovax and neurological damage was not established until 2021.\n\nThe complaint was filed within two years of that determination.\n\nReversed and remanded.\n\nDecided: December 8, 2022\nJustice: Robert Caldwell`
+      },
+      {
+        id: 8,
+        title: "ACLU v. Florida Department of Corrections",
+        court: "Eleventh Circuit Court of Appeals",
+        date: "2023-02-16",
+        summary: "First Amendment challenge to prison email monitoring system.\n\nThe court ruled that automated scanning of inmate emails with attorneys violated attorney-client privilege when content was reviewed without a warrant.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE ELEVENTH CIRCUIT\n\nNo. 22-12893\n\nAMERICAN CIVIL LIBERTIES UNION, et al., Plaintiffs-Appellants,\nv.\nFLORIDA DEPARTMENT OF CORRECTIONS, et al., Defendants-Appellees.\n\nFiled: February 16, 2023\n\nThis appeal concerns the constitutionality of Florida's SecureMail system, which automatically scans all electronic correspondence sent by inmates for keywords related to security threats.\n\nThe plaintiffs, including the ACLU and several law firms, argue that the system violates attorney-client privilege when emails to or from attorneys are scanned and flagged for human review without a warrant or exigent circumstances.\n\nThe district court granted summary judgment to the defendants, finding the system a reasonable security measure.\n\nWe reverse in part. While automated scanning using algorithms may be permissible, any human review of communications clearly marked as attorney-client privileged must be accompanied by a warrant or judicial authorization, absent emergency conditions.\n\nThe automated flagging of such communications based on recipient address alone creates an unacceptable risk of intrusion into privileged discourse.\n\nREVERSED and REMANDED.\n\nDecided: February 16, 2023\nCircuit Judge: Anita Patel`
+      },
+      {
+        id: 9,
+        title: "Texas v. Environmental Protection Agency",
+        court: "Fifth Circuit Court of Appeals",
+        date: "2023-06-01",
+        summary: "Challenge to EPA's authority to regulate carbon emissions under the Clean Air Act.\n\nThe court applied the major questions doctrine, holding that Congress must clearly authorize agency actions of vast economic significance.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE FIFTH CIRCUIT\n\nNo. 23-10111\n\nSTATE OF TEXAS, et al., Petitioners,\nv.\nENVIRONMENTAL PROTECTION AGENCY, Respondent.\n\nFiled: June 1, 2023\n\nPetitioners, including the States of Texas, Louisiana, and West Virginia, challenge the Environmental Protection Agency's "Clean Power Plan 2.0," which sets nationwide carbon emission limits for power plants.\n\nThe rule requires a 40% reduction from 2005 levels by 2030 and encourages a shift from coal to renewable energy through market mechanisms.\n\nPetitioners argue that the EPA has exceeded its statutory authority under the Clean Air Act and violated the nondelegation doctrine and the major questions doctrine.\n\nWe hold that the Clean Air Act does not clearly authorize the EPA to implement generation-shifting mandates that effectively restructure the nation's energy mix.\n\nSuch decisions of vast economic and political significance must be made by Congress, not administrative agencies.\n\nThe rule is VACATED.\n\nDecided: June 1, 2023\nCircuit Judge: Charles Whitaker`
+      },
+      {
+        id: 10,
+        title: "Brown v. Meta Platforms, Inc.",
+        court: "Northern District of California",
+        date: "2023-04-20",
+        summary: "Class action alleging algorithmic discrimination in housing advertisements.\n\nThe court denied the motion to dismiss, finding plausible claims under the Fair Housing Act based on targeting practices that excluded protected groups.",
+        fullText: `UNITED STATES DISTRICT COURT\nNORTHERN DISTRICT OF CALIFORNIA\n\nCase No. 22-cv-07845-JST\n\nLISA BROWN, on behalf of herself and others similarly situated, Plaintiff,\nv.\nMETA PLATFORMS, INC., Defendant.\n\nORDER DENYING MOTION TO DISMISS\nFiled: April 20, 2023\n\nPlaintiff brings this class action alleging that Meta's advertising algorithms violated the Fair Housing Act (FHA), 42 U.S.C. § 3601 et seq., by allowing advertisers to exclude users from seeing housing ads based on race, gender, and familial status.\n\nDefendant moved to dismiss on grounds of Section 230 immunity and lack of plausibility.\n\nThe court finds that Section 230 does not bar claims based on the design and operation of the defendant's own advertising tools. The complaint alleges that Meta created and promoted targeting categories that facilitate housing discrimination.\n\nPlaintiff has pled sufficient facts to state a claim under the FHA. The motion to dismiss is DENIED.\n\nDiscovery shall proceed.\n\nIT IS SO ORDERED.\n\nDated: April 20, 2023\nJudge: Jennifer S. Taylor`
+      },
+      {
+        id: 11,
+        title: "New York Times Co. v. U.S. Department of Justice",
+        court: "Second Circuit Court of Appeals",
+        date: "2022-10-11",
+        summary: "Freedom of information action concerning redacted surveillance records.\n\nThe court ordered disclosure of documents related to FISA court approvals, finding that public interest outweighed national security exemptions under FOIA Exemption 1.",
+        fullText: `UNITED STATES COURT OF APPELS\nFOR THE SECOND CIRCUIT\n\nNo. 22-1876\n\nTHE NEW YORK TIMES COMPANY, Plaintiff–Appellant,\nv.\nUNITED STATES DEPARTMENT OF JUSTICE, Defendant–Appellee.\n\nFiled: October 11, 2022\n\nPlaintiff-appellant The New York Times Company appeals from a district court order denying its Freedom of Information Act (FOIA) request for unredacted copies of Foreign Intelligence Surveillance Court (FISC) orders and applications from 2015 to 2020.\n\nThe Department of Justice withheld the documents under FOIA Exemption 1 (national defense and foreign policy) and Exemption 3 (information specifically exempted by statute).\n\nThe district court deferred to the agency's affidavits and denied the request.\n\nWe reverse. While FISA proceedings are necessarily secret, redacted versions of the applications and orders—omitting specific targets, methods, and technical details—can be disclosed without harming national security.\n\nThe public interest in understanding the scope and use of surveillance powers is substantial, particularly in light of prior FISC overreach documented in declassified reports.\n\nThe case is remanded with instructions to order disclosure of redacted documents within 60 days.\n\nREVERSED and REMANDED.\n\nDecided: October 11, 2022\nCircuit Judge: Susan Eldridge`
+      },
+      {
+        id: 12,
+        title: "California v. ExxonMobil Corp.",
+        court: "California Court of Appeal",
+        date: "2023-03-08",
+        summary: "Public nuisance action seeking damages for climate change impacts.\n\nThe court upheld the state's right to pursue claims against fossil fuel companies for sea-level rise damage to public infrastructure.",
+        fullText: `CALIFORNIA COURT OF APPEAL\nFIRST APPELLATE DISTRICT\n\nCase No. A162389\n\nSTATE OF CALIFORNIA, Plaintiff and Respondent,\nv.\nEXXONMOBIL CORPORATION, Defendant and Appellant.\n\nFiled: March 8, 2023\n\nDefendant ExxonMobil appeals the trial court's denial of its motion to strike under the anti-SLAPP statute and for summary judgment in this public nuisance action.\n\nCalifornia seeks billions in damages to fund seawalls, stormwater system upgrades, and coastal realignment projects necessitated by sea-level rise.\n\nExxon argues the claims are barred by federal displacement, political question doctrine, and lack of proximate cause.\n\nWe affirm. State common law nuisance claims based on tangible harm to public property are not preempted by federal environmental statutes.\n\nWhile climate change is a global phenomenon, California has presented evidence that Exxon's decades-long campaign of disinformation about climate risks—while continuing to extract and market fossil fuels—represents a substantial contribution to the harm.\n\nProximate cause is a factual issue for the jury.\n\nThe claims may proceed.\n\nDecided: March 8, 2023\nPresiding Justice: Helen Ramirez`
+      },
+      {
+        id: 13,
+        title: "Garcia v. United States Citizenship and Immigration Services",
+        court: "D.C. Circuit Court of Appeals",
+        date: "2022-12-15",
+        summary: "Mandamus action to compel adjudication of visa application.\n\nThe court found unreasonable delay in processing and ordered the agency to issue a decision within 30 days.",
+        fullText: `UNITED STATES COURT OF APPEALS\nFOR THE DISTRICT OF COLUMBIA CIRCUIT\n\nNo. 22-5231\n\nMARIA GARCIA, Petitioner,\nv.\nUNITED STATES CITIZENSHIP AND IMMIGRATION SERVICES, Respondent.\n\nFiled: December 15, 2022\n\nPetitioner Maria Garcia seeks a writ of mandamus to compel USCIS to adjudicate her I-751 petition to remove conditions on residence, filed 28 months ago.\n\nUnder 8 U.S.C. § 1501(a), such petitions must be decided within 90 days. The government acknowledges the delay but cites pandemic-related backlogs.\n\nWe have jurisdiction under the Administrative Procedure Act. Mandamus relief is appropriate when (1) the plaintiff has a clear right to relief, (2) the defendant has a clear duty to act, and (3) no other adequate remedy exists.\n\nAll three conditions are met. The statute creates a mandatory duty. The delay is unreasonable. Petitioner faces deportation proceedings that are stayed pending this petition.\n\nWe grant the writ and order USCIS to issue a final decision within 30 days of this opinion.\n\nWRIT GRANTED.\n\nDecided: December 15, 2022\nCircuit Judge: Thomas Engler`
+      },
+      {
+        id: 14,
+        title: "Pfizer Inc. v. BioSecure Labs",
+        court: "Delaware Court of Chancery",
+        date: "2023-05-03",
+        summary: "Breach of contract and trade secret misappropriation in biotech joint venture.\n\nThe court awarded $210 million in damages after finding defendant used shared research to develop a competing vaccine.",
+        fullText: `COURT OF CHANCERY OF THE STATE OF DELAWARE\n\nC.A. No. 2021-0887-KSJM\n\nPFIZER INC., Plaintiff,\nv.\nBIOSecure LABS, LLC, Defendant.\n\nMEMORANDUM OPINION\nDate: May 3, 2023\n\nThis is a breach of contract and trade secret misappropriation case arising from a failed joint venture to develop a universal coronavirus vaccine.\n\nThe parties entered into a Collaboration Agreement in January 2020. Under the agreement, Pfizer provided proprietary antigen designs and adjuvant technology, while BioSecure contributed mRNA delivery systems.\n\nThe joint project was terminated in August 2021. Three months later, BioSecure announced a competing vaccine using an antigen sequence nearly identical to Pfizer's.\n\nPfizer sued, alleging breach of the confidentiality provisions and misappropriation under the Delaware Uniform Trade Secrets Act.\n\nAfter a four-day evidentiary hearing, I find for the plaintiff. BioSecure's scientists had access to Pfizer's designs. The sequence similarity is beyond coincidence. BioSecure failed to prove independent development.\n\nI award $210 million in damages: $140 million in lost profits and $70 million as a reasonable royalty.\n\nIT IS SO ORDERED.\n\nVice Chancellor: Karen S. Jacobs`
+      },
+      {
+        id: 15,
+        title: "NAACP v. Alabama Secretary of State",
+        court: "Alabama Supreme Court",
+        date: "2023-01-30",
+        summary: "Challenge to voter ID law's impact on minority communities.\n\nThe court applied strict scrutiny and upheld the law, finding that alternative forms of identification and free ID cards addressed disproportionate burdens.",
+        fullText: `SUPREME COURT OF ALABAMA\n\nCase No. 1220156\n\nNATIONAL ASSOCIATION FOR THE ADVANCEMENT OF COLORED PEOPLE, Plaintiff-Appellant,\nv.\nSECRETARY OF STATE JOHN MERRILL, in his official capacity, Defendant-Appellee.\n\nFiled: January 30, 2023\n\nPlaintiff appeals the dismissal of its challenge to Alabama's Secure Voter Identification Act, which requires photo ID to vote in person.\n\nThe NAACP argues the law violates the Alabama Constitution's equal protection clause by disproportionately affecting Black, elderly, and low-income voters.\n\nDefendant responds that the state offers free photo IDs through the Department of Public Health and mobile registration units in underserved areas.\n\nWe apply strict scrutiny, as the law implicates the fundamental right to vote.\n\nThe state has a compelling interest in ensuring election integrity and preventing fraud. The photo ID requirement is narrowly tailored to that goal.\n\nThe availability of free IDs and outreach programs mitigates any disproportionate impact.\n\nThe judgment is AFFIRMED.\n\nDecided: January 30, 2023\nChief Justice: Tom Parker`
+      }
+    ];
+
+    // DOM Elements
+    const searchBar = document.getElementById('search-bar');
+    const resultsList = document.getElementById('results-list');
+    const noCaseSelected = document.getElementById('no-case-selected');
+    const detailContent = document.getElementById('detail-content');
+    const detailTitle = document.getElementById('detail-title');
+    const detailSubtitle = document.getElementById('detail-subtitle');
+    const summaryText = document.getElementById('summary-text');
+    const fullTextEl = document.getElementById('full-text');
+    const tabs = document.querySelectorAll('.tab');
+    const summaryContent = document.getElementById('summary-content');
+    const fullTextContent = document.getElementById('full-text-content');
+    const extractEntitiesBtn = document.getElementById('extract-entities');
+    const saveSelectionBtn = document.getElementById('save-selection');
+    const notesList = document.getElementById('notes-list');
+
+    let currentCase = null;
+
+    // Search and display results
+    function renderResults(query = '') {
+      resultsList.innerHTML = '';
+      const filtered = cases.filter(c => 
+        c.title.toLowerCase().includes(query.toLowerCase()) ||
+        c.court.toLowerCase().includes(query.toLowerCase()) ||
+        c.summary.toLowerCase().includes(query.toLowerCase())
+      );
+
+      filtered.forEach(c => {
+        const li = document.createElement('li');
+        li.className = 'result-item';
+        li.innerHTML = `
+          <div class="result-title">${c.title}</div>
+          <div class="result-meta">${c.court} | ${formatDate(c.date)}</div>
+          <div class="result-snippet">${c.summary.substring(0, 120)}...</div>
+        `;
+        li.addEventListener('click', () => selectCase(c));
+        resultsList.appendChild(li);
+      });
+    }
+
+    function selectCase(c) {
+      currentCase = c;
+      noCaseSelected.style.display = 'none';
+      detailContent.style.display = 'block';
+
+      detailTitle.textContent = c.title;
+      detailSubtitle.textContent = `${c.court} | Decided on ${formatDate(c.date)}`;
+      summaryText.textContent = c.summary;
+      fullTextEl.textContent = c.fullText;
+
+      // Activate summary tab
+      tabs.forEach(t => t.classList.remove('active'));
+      document.querySelector('.tab[data-tab="summary"]').classList.add('active');
+      summaryContent.classList.add('active');
+      fullTextContent.classList.remove('active');
+
+      loadNotes();
+    }
+
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString(undefined, options);
+    }
+
+    // Tabs
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        document.getElementById('summary-content').classList.remove('active');
+        document.getElementById('full-text-content').classList.remove('active');
+        
+        if (target === 'summary') {
+          summaryContent.classList.add('active');
+        } else {
+          fullTextContent.classList.add('active');
+        }
+      });
+    });
+
+    // Extract Entities (simulated)
+    extractEntitiesBtn.addEventListener('click', () => {
+      const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+      const targetEl = activeTab === 'summary' ? summaryText : fullTextEl;
+      
+      const text = targetEl.textContent;
+      
+      // Simple regex-based entity detection (names and dates)
+      const nameRegex = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+      const dateRegex = /\b(\d{1,2}[/-]\d{1,2}[/-]\d{4}|\d{4}-\d{2}-\d{2}|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})\b/g;
+      
+      let highlighted = text
+        .replace(nameRegex, '<span class="entity">$1</span>')
+        .replace(dateRegex, '<span class="entity">$1</span>');
+      
+      targetEl.innerHTML = highlighted;
+    });
+
+    // Save selected text
+    saveSelectionBtn.addEventListener('click', () => {
+      const selection = window.getSelection();
+      if (selection.rangeCount === 0) {
+        alert('Please select some text to save.');
+        return;
+      }
+      
+      const text = selection.toString().trim();
+      if (text.length === 0) {
+        alert('Please select some text to save.');
+        return;
+      }
+      
+      let caseNotes = JSON.parse(localStorage.getItem(`notes_${currentCase.id}`) || '[]');
+      caseNotes.push({
+        text: text,
+        timestamp: new Date().toISOString()
+      });
+      
+      localStorage.setItem(`notes_${currentCase.id}`, JSON.stringify(caseNotes));
+      loadNotes();
+      
+      // Clear selection
+      selection.removeAllRanges();
+    });
+
+    // Load notes for current case
+    function loadNotes() {
+      if (!currentCase) return;
+      
+      const caseNotes = JSON.parse(localStorage.getItem(`notes_${currentCase.id}`) || '[]');
+      notesList.innerHTML = '';
+      
+      if (caseNotes.length === 0) {
+        notesList.innerHTML = '<div class="note-item" style="color: var(--text-secondary); font-style: italic;">No notes yet. Select text and click "Save Selected Text".</div>';
+        return;
+      }
+      
+      caseNotes.slice().reverse().forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'note-item';
+        div.textContent = note.text;
+        notesList.appendChild(div);
+      });
+    }
+
+    // Search functionality
+    searchBar.addEventListener('input', (e) => {
+      renderResults(e.target.value);
+    });
+
+    // Initial render
+    renderResults();
+  </script>
+</body>
+</html>

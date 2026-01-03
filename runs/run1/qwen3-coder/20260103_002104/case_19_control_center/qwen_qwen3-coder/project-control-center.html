@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #0b1120;
+            --light: #f1f5f9;
+            --gray: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px rgba(2, 12, 24, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker), #1e293b);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(12px);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: var(--glass-bg);
+            border-right: 1px solid var(--glass-border);
+            padding: 24px 0;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+            z-index: 10;
+        }
+
+        .logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 24px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0 16px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+
+        .nav-link.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass-bg);
+        }
+
+        /* Widgets Grid */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .widget {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--glass-shadow);
+            transition: var(--transition);
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(2, 12, 24, 0.4);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .widget-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .widget-actions {
+            color: var(--gray);
+            cursor: pointer;
+        }
+
+        /* Active Projects Widget */
+        .project-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+
+        .project-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .project-title {
+            font-weight: 600;
+        }
+
+        .project-status {
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-paused {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .status-completed {
+            background: rgba(100, 116, 139, 0.2);
+            color: var(--gray);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-80 { width: 80%; background: var(--success); }
+        .progress-45 { width: 45%; background: var(--warning); }
+        .progress-100 { width: 100%; background: var(--gray); }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Recent Activity */
+        .activity-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        /* Quick Links */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .link-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .link-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .link-icon {
+            font-size: 1.75rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .link-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Task List */
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-checkbox {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--gray);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .task-checkbox.checked::after {
+            content: "✓";
+            color: white;
+            font-size: 12px;
+        }
+
+        .task-text {
+            flex: 1;
+        }
+
+        .task-text.completed {
+            text-decoration: line-through;
+            color: var(--gray);
+        }
+
+        .add-task {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .task-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            font-size: 1rem;
+        }
+
+        .task-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--darker);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            transition: var(--transition);
+            border: 1px solid var(--glass-border);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            color: var(--light);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-chart-network"></i> ControlHub</h1>
+            </div>
+            <div class="nav-links">
+                <div class="nav-link active" data-view="home">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-link" data-view="projects">
+                    <i class="fas fa-folder"></i>
+                    <span>Projects</span>
+                </div>
+                <div class="nav-link" data-view="calendar">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </div>
+                <div class="nav-link" data-view="team">
+                    <i class="fas fa-users"></i>
+                    <span>Team</span>
+                </div>
+                <div class="nav-link" data-view="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </div>
+                <div class="nav-link" data-view="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h2>Dashboard</h2>
+                <div class="user-actions">
+                    <button class="btn btn-outline">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button class="btn btn-primary" id="newProjectBtn">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                </div>
+            </div>
+
+            <div class="widgets-grid">
+                <!-- Active Projects -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3 class="widget-title">Active Projects</h3>
+                        <div class="widget-actions">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-title">Website Redesign</div>
+                            <div class="project-status status-active">Active</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-80"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>80% completed</span>
+                            <span>5 days left</span>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-title">Mobile App</div>
+                            <div class="project-status status-active">Active</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-45"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>45% completed</span>
+                            <span>12 days left</span>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-title">Marketing Campaign</div>
+                            <div class="project-status status-paused">Paused</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-100"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>100% completed</span>
+                            <span>Completed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3 class="widget-title">Recent Activity</h3>
+                        <div class="widget-actions">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Sarah joined the team</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Website redesign phase 1 completed</div>
+                            <div class="activity-time">5 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">New design document uploaded</div>
+                            <div class="activity-time">Yesterday</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Mike commented on your task</div>
+                            <div class="activity-time">2 days ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3 class="widget-title">Quick Links</h3>
+                        <div class="widget-actions">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="links-grid">
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="link-title">Tasks</div>
+                        </div>
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="link-title">Messages</div>
+                        </div>
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="link-title">Reports</div>
+                        </div>
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="link-title">Storage</div>
+                        </div>
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="link-title">Analytics</div>
+                        </div>
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="link-title">Settings</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3 class="widget-title">Task List</h3>
+                        <div class="widget-actions">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div id="taskList">
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-text">Complete project proposal</div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox checked"></div>
+                            <div class="task-text completed">Review design mockups</div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-text">Schedule team meeting</div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-text">Update project timeline</div>
+                        </div>
+                    </div>
+                    <div class="add-task">
+                        <input type="text" class="task-input" id="newTaskInput" placeholder="Add a new task...">
+                        <button class="btn btn-primary" id="addTaskBtn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Project Modal -->
+    <div class="modal" id="newProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Project</h3>
+                <button class="close-modal" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Project Name</label>
+                <input type="text" class="form-input" id="projectName" placeholder="Enter project name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-input" id="projectDescription" placeholder="Enter project description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Team Members</label>
+                <input type="text" class="form-input" id="teamMembers" placeholder="Add team members">
+            </div>
+            <div class="form-footer">
+                <button class="btn btn-outline" id="cancelProjectBtn">Cancel</button>
+                <button class="btn btn-primary" id="createProjectBtn">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const viewTitle = document.querySelector('.header h2');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                // Remove active class from all links
+                navLinks.forEach(l => l.classList.remove('active'));
+                // Add active class to clicked link
+                link.classList.add('active');
+                
+                // Update view title
+                const viewName = link.querySelector('span').textContent;
+                viewTitle.textContent = viewName;
+            });
+        });
+
+        // Task List Functionality
+        const taskList = document.getElementById('taskList');
+        const newTaskInput = document.getElementById('newTaskInput');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        
+        // Load tasks from localStorage
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            taskList.innerHTML = '';
+            
+            tasks.forEach((task, index) => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task-item';
+                taskElement.innerHTML = `
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}"></div>
+                    <div class="task-text ${task.completed ? 'completed' : ''}">${task.text}</div>
+                `;
+                
+                taskElement.querySelector('.task-checkbox').addEventListener('click', () => {
+                    toggleTask(index);
+                });
+                
+                taskList.appendChild(taskElement);
+            });
+        }
+        
+        // Save tasks to localStorage
+        function saveTasks(tasks) {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+        
+        // Add new task
+        function addTask() {
+            const text = newTaskInput.value.trim();
+            if (text) {
+                const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+                tasks.push({ text, completed: false });
+                saveTasks(tasks);
+                loadTasks();
+                newTaskInput.value = '';
+            }
+        }
+        
+        // Toggle task completion
+        function toggleTask(index) {
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks(tasks);
+            loadTasks();
+        }
+        
+        // Event listeners for tasks
+        addTaskBtn.addEventListener('click', addTask);
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+        
+        // Initialize tasks
+        loadTasks();
+        
+        // Modal functionality
+        const newProjectBtn = document.getElementById('newProjectBtn');
+        const modal = document.getElementById('newProjectModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+        const createProjectBtn = document.getElementById('createProjectBtn');
+        
+        newProjectBtn.addEventListener('click', () => {
+            modal.classList.add('active');
+        });
+        
+        function closeProjectModal() {
+            modal.classList.remove('active');
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectDescription').value = '';
+            document.getElementById('teamMembers').value = '';
+        }
+        
+        closeModal.addEventListener('click', closeProjectModal);
+        cancelProjectBtn.addEventListener('click', closeProjectModal);
+        
+        createProjectBtn.addEventListener('click', () => {
+            const name = document.getElementById('projectName').value;
+            if (name) {
+                // In a real app, you would create the project here
+                alert(`Project "${name}" created successfully!`);
+                closeProjectModal();
+            } else {
+                alert('Please enter a project name');
+            }
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeProjectModal();
+            }
+        });
+        
+        // Task checkbox interaction
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('task-checkbox')) {
+                e.target.classList.toggle('checked');
+                const taskText = e.target.nextElementSibling;
+                taskText.classList.toggle('completed');
+            }
+        });
+    </script>
+</body>
+</html>

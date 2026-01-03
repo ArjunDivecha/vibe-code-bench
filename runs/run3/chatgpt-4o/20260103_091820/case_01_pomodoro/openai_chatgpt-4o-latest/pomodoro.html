@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pomodoro Timer</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #ff6347;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin-bottom: 0.2em;
+    }
+
+    #session-label {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    #timer {
+      font-size: 6em;
+      margin-bottom: 1em;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1em;
+    }
+
+    button {
+      font-size: 1.2em;
+      padding: 0.5em 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: white;
+      color: #ff6347;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #ffe5e0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pomodoro Timer</h1>
+  <div id="session-label">Work 1</div>
+  <div id="timer">25:00</div>
+  <div class="buttons">
+    <button id="start-button">Start</button>
+    <button id="pause-button">Pause</button>
+    <button id="reset-button">Reset</button>
+  </div>
+
+  <script>
+    const timerDisplay = document.getElementById('timer');
+    const startButton = document.getElementById('start-button');
+    const pauseButton = document.getElementById('pause-button');
+    const resetButton = document.getElementById('reset-button');
+    const sessionLabel = document.getElementById('session-label');
+
+    let workDuration = 25 * 60; // 25 minutes
+    let breakDuration = 5 * 60; // 5 minutes
+    let currentDuration = workDuration;
+    let isRunning = false;
+    let isWorkSession = true;
+    let sessionCount = 1;
+    let interval = null;
+
+    function updateDisplay() {
+      let minutes = Math.floor(currentDuration / 60);
+      let seconds = currentDuration % 60;
+      timerDisplay.textContent =
+        String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
+    function updateSessionLabel() {
+      const type = isWorkSession ? 'Work' : 'Break';
+      sessionLabel.textContent = `${type} ${Math.ceil(sessionCount / 2)}`;
+    }
+
+    function playBeep() {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1000, context.currentTime);
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.2);
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      isRunning = true;
+      interval = setInterval(() => {
+        if (currentDuration > 0) {
+          currentDuration--;
+          updateDisplay();
+        } else {
+          playBeep();
+          clearInterval(interval);
+          isRunning = false;
+          isWorkSession = !isWorkSession;
+          sessionCount++;
+          currentDuration = isWorkSession ? workDuration : breakDuration;
+          updateSessionLabel();
+          updateDisplay();
+          startTimer();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (interval) {
+        clearInterval(interval);
+        isRunning = false;
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      isWorkSession = true;
+      sessionCount = 1;
+      currentDuration = workDuration;
+      updateDisplay();
+      updateSessionLabel();
+    }
+
+    startButton.addEventListener('click', startTimer);
+    pauseButton.addEventListener('click', pauseTimer);
+    resetButton.addEventListener('click', resetTimer);
+
+    updateDisplay();
+    updateSessionLabel();
+  </script>
+</body>
+</html>

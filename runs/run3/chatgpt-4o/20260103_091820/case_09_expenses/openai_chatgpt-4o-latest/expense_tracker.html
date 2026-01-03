@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f4;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    form input, form select, form button {
+      padding: 10px;
+      font-size: 1em;
+    }
+
+    form input[type="date"] {
+      flex: 1 1 150px;
+    }
+
+    form input[type="number"], form select, form input[type="text"] {
+      flex: 1 1 200px;
+    }
+
+    form button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      flex: 1 1 100px;
+    }
+
+    form button:hover {
+      background-color: #218838;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filters input, .filters select {
+      padding: 8px;
+      font-size: 1em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    .summary {
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Expense Tracker</h1>
+    <form id="expense-form">
+      <input type="number" id="amount" placeholder="Amount" required min="0.01" step="0.01"/>
+      <select id="category" required>
+        <option value="">Select Category</option>
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Entertainment</option>
+        <option>Bills</option>
+        <option>Shopping</option>
+        <option>Other</option>
+      </select>
+      <input type="text" id="description" placeholder="Description" required />
+      <input type="date" id="date" required />
+      <button type="submit">Add Expense</button>
+    </form>
+
+    <div class="filters">
+      <select id="filter-category">
+        <option value="">All Categories</option>
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Entertainment</option>
+        <option>Bills</option>
+        <option>Shopping</option>
+        <option>Other</option>
+      </select>
+      <input type="date" id="filter-from" />
+      <input type="date" id="filter-to" />
+      <button onclick="filterExpenses()">Filter</button>
+      <button onclick="resetFilters()">Reset</button>
+    </div>
+
+    <div class="summary">
+      <strong>Total Spending:</strong> $<span id="total-spending">0.00</span><br/>
+      <strong>Breakdown:</strong>
+      <ul id="category-breakdown"></ul>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Category</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="expense-table-body"></tbody>
+    </table>
+
+    <canvas id="pie-chart" width="400" height="400"></canvas>
+  </div>
+
+  <script>
+    const form = document.getElementById('expense-form');
+    const tableBody = document.getElementById('expense-table-body');
+    const totalSpendingEl = document.getElementById('total-spending');
+    const breakdownEl = document.getElementById('category-breakdown');
+    const pieCanvas = document.getElementById('pie-chart');
+
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+    function saveExpenses() {
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+    }
+
+    function addExpense(e) {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('amount').value);
+      const category = document.getElementById('category').value;
+      const description = document.getElementById('description').value;
+      const date = document.getElementById('date').value;
+
+      if (!amount || !category || !description || !date) return;
+
+      expenses.push({ amount, category, description, date });
+      saveExpenses();
+      form.reset();
+      renderExpenses();
+    }
+
+    function filterExpenses() {
+      const filterCategory = document.getElementById('filter-category').value;
+      const fromDate = document.getElementById('filter-from').value;
+      const toDate = document.getElementById('filter-to').value;
+      renderExpenses(filterCategory, fromDate, toDate);
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-category').value = '';
+      document.getElementById('filter-from').value = '';
+      document.getElementById('filter-to').value = '';
+      renderExpenses();
+    }
+
+    function renderExpenses(filterCategory = '', fromDate = '', toDate = '') {
+      tableBody.innerHTML = '';
+      let filtered = expenses.filter(exp => {
+        const inCategory = filterCategory ? exp.category === filterCategory : true;
+        const inFrom = fromDate ? exp.date >= fromDate : true;
+        const inTo = toDate ? exp.date <= toDate : true;
+        return inCategory && inFrom && inTo;
+      });
+
+      let total = 0;
+      const breakdown = {};
+
+      filtered.forEach(exp => {
+        total += exp.amount;
+        breakdown[exp.category] = (breakdown[exp.category] || 0) + exp.amount;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${exp.date}</td>
+          <td>$${exp.amount.toFixed(2)}</td>
+          <td>${exp.category}</td>
+          <td>${exp.description}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      totalSpendingEl.textContent = total.toFixed(2);
+
+      breakdownEl.innerHTML = '';
+      for (let cat in breakdown) {
+        const li = document.createElement('li');
+        li.textContent = `${cat}: $${breakdown[cat].toFixed(2)}`;
+        breakdownEl.appendChild(li);
+      }
+
+      drawPieChart(breakdown);
+    }
+
+    function drawPieChart(data) {
+      const ctx = pieCanvas.getContext('2d');
+      ctx.clearRect(0, 0, pieCanvas.width, pieCanvas.height);
+
+      const total = Object.values(data).reduce((a,b) => a+b, 0);
+      if (total === 0) return;
+
+      let startAngle = 0;
+      const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#66BB6A', '#BA68C8', '#FFA726'];
+      const keys = Object.keys(data);
+
+      keys.forEach((category, i) => {
+        const value = data[category];
+        const sliceAngle = 2 * Math.PI * value / total;
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.moveTo(pieCanvas.width/2, pieCanvas.height/2);
+        ctx.arc(pieCanvas.width/2, pieCanvas.height/2, 150, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fill();
+        startAngle += sliceAngle;
+      });
+    }
+
+    form.addEventListener('submit', addExpense);
+    renderExpenses();
+  </script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            height: 100vh;
+            background-color: #f5f5f5;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100vh;
+        }
+        
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #ddd;
+            z-index: 10;
+        }
+        
+        .dark-mode .toolbar {
+            background-color: #2d2d2d;
+            border-color: #444;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .dark-mode h1 {
+            color: #e0e0e0;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4a90e2;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3a7bc8;
+        }
+        
+        .dark-mode button {
+            background-color: #3a7bc8;
+        }
+        
+        .dark-mode button:hover {
+            background-color: #4a90e2;
+        }
+        
+        .pane-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .pane {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            height: calc(100vh - 70px);
+        }
+        
+        #editor {
+            resize: none;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            line-height: 1.6;
+            font-family: 'Courier New', Courier, monospace;
+            background-color: transparent;
+        }
+        
+        #preview {
+            overflow: auto;
+            padding: 20px;
+            background-color: white;
+            border-left: 1px solid #ddd;
+        }
+        
+        .dark-mode #preview {
+            background-color: #2d2d2d;
+            border-left-color: #444;
+        }
+        
+        #preview h1, #preview h2, #preview h3 {
+            color: #4a90e2;
+        }
+        
+        .dark-mode #preview h1, .dark-mode #preview h2, .dark-mode #preview h3 {
+            color: #4a90e2;
+        }
+        
+        #preview pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+            margin: 1rem 0;
+        }
+        
+        .dark-mode #preview pre {
+            background-color: #333;
+            color: #e0e0e0;
+        }
+        
+        #preview code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .dark-mode #preview code {
+            background-color: #444;
+            color: #e0e0e0;
+        }
+        
+        #preview blockquote {
+            border-left: 4px solid #4a90e2;
+            padding-left: 15px;
+            margin: 1rem 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .dark-mode #preview blockquote {
+            color: #aaa;
+        }
+        
+        #preview ul, #preview ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        #preview li {
+            margin: 0.5rem 0;
+        }
+        
+        #preview a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+        
+        #preview a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .pane-container {
+                flex-direction: column;
+            }
+            
+            #preview {
+                border-left: none;
+                border-top: 1px solid #ddd;
+            }
+            
+            .dark-mode #preview {
+                border-top-color: #444;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <h1>Markdown Editor</h1>
+            <div class="buttons">
+                <button id="darkModeToggle">Dark Mode</button>
+                <button id="exportBtn">Export as HTML</button>
+            </div>
+        </div>
+        <div class="pane-container">
+            <div class="pane">
+                <textarea id="editor" placeholder="Enter your markdown here..."></textarea>
+            </div>
+            <div class="pane">
+                <div id="preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const exportBtn = document.getElementById('exportBtn');
+        
+        // Check for saved content and dark mode preference
+        const savedContent = localStorage.getItem('markdownContent');
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        
+        // Set saved content if it exists
+        if (savedContent) {
+            editor.value = savedContent;
+            renderMarkdown();
+        }
+        
+        // Set dark mode if it was previously enabled
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.textContent = 'Light Mode';
+        }
+        
+        // Auto-save and live preview
+        editor.addEventListener('input', () => {
+            localStorage.setItem('markdownContent', editor.value);
+            renderMarkdown();
+        });
+        
+        // Dark mode toggle
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            darkModeToggle.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        });
+        
+        // Export as HTML
+        exportBtn.addEventListener('click', () => {
+            const markdownContent = editor.value;
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        blockquote {
+            border-left: 4px solid #4a90e2;
+            padding-left: 15px;
+            margin: 1rem 0;
+            color: #666;
+            font-style: italic;
+        }
+        ul, ol {
+            padding-left: 2rem;
+        }
+        li {
+            margin: 0.5rem 0;
+        }
+        a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        h1, h2, h3 {
+            color: #4a90e2;
+        }
+    </style>
+</head>
+<body>
+    ${renderToHTML(editor.value)}
+</body>
+</html>`;
+            
+            // Create a blob and download link
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        
+        // Markdown parser and renderer
+        function renderMarkdown() {
+            preview.innerHTML = renderToHTML(editor.value);
+        }
+        
+        function renderToHTML(markdown) {
+            if (!markdown) return '';
+            
+            // Process code blocks first to avoid processing their contents
+            const codeBlocks = [];
+            markdown = markdown.replace(/```([\s\S]*?)```/g, (match, content) => {
+                const lang = content.match(/^\s*([a-z]+)/i);
+                const code = lang ? content.substring(lang[0].length).trim() : content.trim();
+                const langClass = lang ? ` class="language-${lang[1]}"` : '';
+                const codeBlock = `<pre${langClass}><code${langClass}>${escapeHtml(code)}</code></pre>`;
+                codeBlocks.push(codeBlock);
+                return `@@@CODE_BLOCK_${codeBlocks.length - 1}@@@`;
+            });
+            
+            // Process blockquotes
+            markdown = markdown.replace(/^> *(.*)$/gm, (match, content) => {
+                return `<blockquote>${processInlineElements(content)}</blockquote>`;
+            });
+            
+            // Process headers
+            markdown = markdown.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            markdown = markdown.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            markdown = markdown.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // Process lists
+            // Process list items
+            const listItems = [];
+            markdown = markdown.replace(/^(\s*)[-*+] (.+)$/gm, (match, indent, content) => {
+                const level = indent.length / 2;
+                const listItem = `<li>${processInlineElements(content)}</li>`;
+                listItems.push({ item: listItem, level });
+                return `@@@LIST_ITEM@@@`;
+            });
+            
+            // Rebuild lists from collected items
+            if (listItems.length > 0) {
+                let result = '';
+                let currentLevel = 0;
+                let listStack = [];
+                
+                for (let i = 0; i < listItems.length; i++) {
+                    const item = listItems[i];
+                    const nextLevel = i + 1 < listItems.length ? listItems[i + 1].level : -1;
+                    
+                    if (item.level > currentLevel) {
+                        // Open new list
+                        result += '<ul>';
+                        listStack.push('ul');
+                        currentLevel = item.level;
+                    } else if (item.level < currentLevel) {
+                        // Close lists
+                        while (currentLevel > item.level) {
+                            result += '</li></ul>';
+                            listStack.pop();
+                            currentLevel--;
+                        }
+                        result += '</li>';
+                    } else if (i > 0) {
+                        result += '</li>';
+                    }
+                    
+                    result += item.item;
+                    
+                    // Close list if next item is at a lower level
+                    if (nextLevel < item.level) {
+                        while (currentLevel > nextLevel && currentLevel >= 0) {
+                            result += '</li></ul>';
+                            listStack.pop();
+                            currentLevel--;
+                        }
+                    }
+                }
+                
+                // Close remaining lists
+                while (listStack.length > 0) {
+                    result += '</li></ul>';
+                    listStack.pop();
+                }
+                
+                // Replace all list items with the processed list
+                markdown = markdown.replace(/@@@LIST_ITEM@@@/g, () => {
+                    const match = result.match(/<li>.*<\/li>/);
+                    if (match) {
+                        result = result.substring(match[0].length);
+                        return match[0];
+                    }
+                    return '';
+                });
+            }
+            
+            // Process ordered lists
+            const orderedListItems = [];
+            markdown = markdown.replace(/^(\s*)\d+\. (.+)$/gm, (match, indent, content) => {
+                const level = indent.length / 2;
+                const listItem = `<li>${processInlineElements(content)}</li>`;
+                orderedListItems.push({ item: listItem, level });
+                return `@@@ORDERED_LIST_ITEM@@@`;
+            });
+            
+            // Rebuild ordered lists from collected items
+            if (orderedListItems.length > 0) {
+                let result = '';
+                let currentLevel = 0;
+                let listStack = [];
+                
+                for (let i = 0; i < orderedListItems.length; i++) {
+                    const item = orderedListItems[i];
+                    const nextLevel = i + 1 < orderedListItems.length ? orderedListItems[i + 1].level : -1;
+                    
+                    if (item.level > currentLevel) {
+                        // Open new list
+                        result += '<ol>';
+                        listStack.push('ol');
+                        currentLevel = item.level;
+                    } else if (item.level < currentLevel) {
+                        // Close lists
+                        while (currentLevel > item.level) {
+                            result += '</li></ol>';
+                            listStack.pop();
+                            currentLevel--;
+                        }
+                        result += '</li>';
+                    } else if (i > 0) {
+                        result += '</li>';
+                    }
+                    
+                    result += item.item;
+                    
+                    // Close list if next item is at a lower level
+                    if (nextLevel < item.level) {
+                        while (currentLevel > nextLevel && currentLevel >= 0) {
+                            result += '</li></ol>';
+                            listStack.pop();
+                            currentLevel--;
+                        }
+                    }
+                }
+                
+                // Close remaining lists
+                while (listStack.length > 0) {
+                    result += '</li></ol>';
+                    listStack.pop();
+                }
+                
+                // Replace all ordered list items with the processed list
+                markdown = markdown.replace(/@@@ORDERED_LIST_ITEM@@@/g, () => {
+                    const match = result.match(/<li>.*<\/li>/);
+                    if (match) {
+                        result = result.substring(match[0].length);
+                        return match[0];
+                    }
+                    return '';
+                });
+            }
+            
+            // Process paragraphs
+            markdown = markdown.replace(/(^|\n\n)([^\n]+?)(\n\n|$)/g, (match, before, content, after) => {
+                if (content.startsWith('<h') || content.startsWith('<ul') || content.startsWith('<ol') || content.startsWith('<blockquote')) {
+                    return match;
+                }
+                return `<p>${processInlineElements(content)}</p>`;
+            });
+            
+            // Replace code block placeholders
+            markdown = markdown.replace(/@@@CODE_BLOCK_(\d+)@@@/g, (match, index) => {
+                return codeBlocks[parseInt(index)];
+            });
+            
+            return markdown;
+        }
+        
+        // Process inline elements (bold, italic, links, inline code)
+        function processInlineElements(text) {
+            if (!text) return '';
+            
+            // Escape HTML
+            text = escapeHtml(text);
+            
+            // Handle inline code
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Handle bold
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Handle italic
+            text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            
+            // Handle links
+            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+            
+            return text;
+        }
+        
+        // Escape HTML special characters
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

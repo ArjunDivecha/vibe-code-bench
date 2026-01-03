@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fun Quiz Challenge</title>
+<style>
+:root {
+  --primary:#6a5acd;
+  --secondary:#ff8c00;
+  --bg:#0f1020;
+  --card:#1b1c38;
+  --text:#f8f8ff;
+  --muted:#b8b8d1;
+  --correct:#2ecc71;
+  --wrong:#e74c3c;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(106,90,205,.25), transparent 25%),
+              radial-gradient(circle at 80% 30%, rgba(255,140,0,.2), transparent 25%),
+              radial-gradient(circle at 50% 80%, rgba(46,204,113,.25), transparent 20%),
+              var(--bg);
+  color: var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+h1,h2,h3 { margin:0; }
+.container {
+  width: min(800px, 95vw);
+  background: linear-gradient(145deg, rgba(27,28,56,0.95), rgba(27,28,56,0.75));
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  overflow:hidden;
+  position:relative;
+}
+.header {
+  padding:24px 28px;
+  background: rgba(255,255,255,0.02);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.logo {
+  width:44px;
+  height:44px;
+  background: radial-gradient(circle at 30% 30%, #fff, #ffd166);
+  border-radius:50%;
+  position:relative;
+  box-shadow: 0 8px 25px rgba(255,140,0,0.35);
+}
+.logo::after {
+  content:"?";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-weight:800;
+  color:#1b1c38;
+  font-size:26px;
+}
+.status {
+  display:flex;
+  gap:14px;
+  align-items:center;
+  color:var(--muted);
+  font-size:14px;
+}
+.pill {
+  padding:6px 12px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--text);
+  font-weight:600;
+}
+.main {
+  position:relative;
+  min-height:350px;
+  overflow:hidden;
+}
+.screen {
+  padding:32px;
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:24px;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(10px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.screen.active {
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0);
+}
+.button {
+  background: linear-gradient(135deg, var(--primary), #8a7bff);
+  color:#fff;
+  border:none;
+  padding:14px 22px;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:0.2px;
+  cursor:pointer;
+  box-shadow:0 12px 35px rgba(106,90,205,0.35);
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+.button:hover { transform: translateY(-2px); box-shadow:0 16px 35px rgba(106,90,205,0.4);}
+.button:active { transform: translateY(0); }
+.start-hero {
+  font-size:42px;
+  line-height:1.1;
+}
+.subtitle {
+  color:var(--muted);
+  max-width:600px;
+}
+.quiz-card {
+  background: rgba(255,255,255,0.02);
+  border-radius:16px;
+  padding:22px;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.question {
+  font-size:22px;
+  margin-bottom:10px;
+  font-weight:700;
+}
+.options {
+  display:grid;
+  gap:12px;
+  margin-top:16px;
+}
+.option {
+  padding:14px 16px;
+  background: rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  transition: transform .12s ease, border-color .2s ease, background .2s ease;
+  position:relative;
+  overflow:hidden;
+}
+.option:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.15); }
+.option.disabled { cursor:not-allowed; opacity:0.8; }
+.badge {
+  width:28px; height:28px;
+  display:grid; place-items:center;
+  border-radius:8px;
+  background: rgba(255,255,255,0.08);
+  font-weight:700;
+  color:var(--muted);
+}
+.option.correct { border-color: rgba(46,204,113,0.6); background: rgba(46,204,113,0.08); }
+.option.wrong { border-color: rgba(231,76,60,0.6); background: rgba(231,76,60,0.08); }
+.option.correct .badge { background: rgba(46,204,113,0.15); color:#7ff0b4; }
+.option.wrong .badge { background: rgba(231,76,60,0.15); color:#ff9f9f; }
+.feedback {
+  min-height:24px;
+  font-weight:700;
+}
+.feedback.correct { color: var(--correct);}
+.feedback.wrong { color: var(--wrong);}
+.progress {
+  height:10px;
+  background: rgba(255,255,255,0.06);
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:14px;
+}
+.progress-bar {
+  height:100%;
+  width:0%;
+  background: linear-gradient(90deg, var(--secondary), #ffd166);
+  transition: width .35s ease;
+}
+.controls {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:18px;
+}
+.score-box {
+  padding:10px 14px;
+  border-radius:12px;
+  background: rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--muted);
+}
+.score-box strong { color:var(--text); }
+.result-score {
+  font-size:38px;
+  font-weight:800;
+}
+.fade-in {
+  animation: fadeUp .6s ease forwards;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(8px); }
+  to { opacity:1; transform: translateY(0); }
+}
+.confetti {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.confetti span {
+  position:absolute;
+  width:10px; height:18px;
+  background: #ffd166;
+  animation: fall 1.6s ease forwards;
+  opacity:0.9;
+  transform: rotate(12deg);
+}
+@keyframes fall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity:1;}
+  100% { transform: translateY(120vh) rotate(280deg); opacity:0;}
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div style="font-weight:800; letter-spacing:0.5px;">Quiz Odyssey</div>
+          <div style="color:var(--muted); font-size:13px;">Test your quirky knowledge</div>
+        </div>
+      </div>
+      <div class="status">
+        <div class="pill" id="pill-progress">0 / 10</div>
+        <div class="pill" id="pill-score">Score: 0</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="screen active" id="start-screen">
+        <div class="fade-in">
+          <div class="start-hero">Ready for a quick brain flex?</div>
+          <div class="subtitle">Ten quirky questions across space llamas, moon cheese, neon dinosaurs, and more. Click "Begin Quiz" when you're set!</div>
+        </div>
+        <div>
+          <button class="button" id="start-btn">🚀 Begin Quiz</button>
+        </div>
+      </div>
+
+      <div class="screen" id="quiz-screen">
+        <div class="quiz-card fade-in">
+          <div class="question" id="question-text">Question will appear here</div>
+          <div class="options" id="options"></div>
+          <div class="feedback" id="feedback"></div>
+          <div class="progress">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <div class="controls">
+            <div class="score-box">Score: <strong id="score-display">0</strong></div>
+            <button class="button" id="next-btn">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" id="result-screen">
+        <div class="fade-in">
+          <h2>Quiz Complete!</h2>
+          <div class="result-score">Your Score: <span id="final-score">0</span>/10</div>
+          <div class="subtitle" id="result-message"></div>
+          <div style="margin-top:18px;">
+            <button class="button" id="restart-btn">Play Again</button>
+          </div>
+        </div>
+        <div class="confetti" id="confetti"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const questions = [
+  {q:"Which planet in our solar system spins on its side like a sleepy rolling log?", options:["Venus","Mars","Uranus","Jupiter"], answer:2},
+  {q:"What animal famously cannot look up?", options:["Cow","Goldfish","Penguin","Shark"], answer:0},
+  {q:"How many colors are there in a classic pack of Skittles in the US?", options:["4","5","6","7"], answer:1},
+  {q:"Which instrument has 47 strings and 7 pedals?", options:["Harp","Grand piano","Cello","Mandolin"], answer:0},
+  {q:"What is the main ingredient in traditional hummus?", options:["Chickpeas","Lentils","White beans","Peanuts"], answer:0},
+  {q:"Which sea creature has three hearts?", options:["Seahorse","Octopus","Starfish","Manta ray"], answer:1},
+  {q:"In which city would you find the 'Walk of Fame' with star-studded sidewalks?", options:["New York","Las Vegas","Los Angeles","Miami"], answer:2},
+  {q:"Which metal is liquid at room temperature?", options:["Mercury","Aluminum","Sodium","Lead"], answer:0},
+  {q:"What is the collective noun for a group of crows?", options:["A crew","A parliament","A murder","A conspiracy"], answer:2},
+  {q:"Which famous physicist wrote 'A Brief History of Time'?", options:["Albert Einstein","Stephen Hawking","Isaac Newton","Carl Sagan"], answer:1}
+];
+
+const startScreen = document.getElementById("start-screen");
+const quizScreen = document.getElementById("quiz-screen");
+const resultScreen = document.getElementById("result-screen");
+const startBtn = document.getElementById("start-btn");
+const nextBtn = document.getElementById("next-btn");
+const restartBtn = document.getElementById("restart-btn");
+const questionText = document.getElementById("question-text");
+const optionsEl = document.getElementById("options");
+const feedbackEl = document.getElementById("feedback");
+const progressBar = document.getElementById("progress-bar");
+const scoreDisplay = document.getElementById("score-display");
+const pillProgress = document.getElementById("pill-progress");
+const pillScore = document.getElementById("pill-score");
+const finalScore = document.getElementById("final-score");
+const resultMsg = document.getElementById("result-message");
+const confettiBox = document.getElementById("confetti");
+
+let current = 0;
+let score = 0;
+let locked = false;
+
+function showScreen(screen){
+  [startScreen, quizScreen, resultScreen].forEach(s=>s.classList.remove("active"));
+  screen.classList.add("active");
+}
+
+function resetQuiz(){
+  current = 0;
+  score = 0;
+  updateStatus();
+  showScreen(quizScreen);
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const data = questions[current];
+  questionText.textContent = `Q${current+1}. ${data.q}`;
+  optionsEl.innerHTML = "";
+  feedbackEl.textContent = "";
+  progressBar.style.width = `${(current)/questions.length*100}%`;
+  locked = false;
+
+  data.options.forEach((opt, idx)=>{
+    const btn = document.createElement("div");
+    btn.className = "option fade-in";
+    btn.innerHTML = `<div class="badge">${String.fromCharCode(65+idx)}</div><div>${opt}</div>`;
+    btn.addEventListener("click", ()=>handleAnswer(idx, btn));
+    optionsEl.appendChild(btn);
+  });
+  nextBtn.disabled = true;
+  nextBtn.style.opacity = 0.7;
+}
+
+function handleAnswer(choice, element){
+  if(locked) return;
+  locked = true;
+  const correctIndex = questions[current].answer;
+  const optionNodes = optionsEl.querySelectorAll(".option");
+  optionNodes.forEach((opt, idx)=>{
+    opt.classList.add("disabled");
+    if(idx===correctIndex) opt.classList.add("correct");
+    if(idx===choice && idx!==correctIndex) opt.classList.add("wrong");
+  });
+
+  if(choice === correctIndex){
+    feedbackEl.textContent = "Nice! That's correct.";
+    feedbackEl.className = "feedback correct";
+    score++;
+  } else {
+    feedbackEl.textContent = `Oops! The correct answer was ${String.fromCharCode(65+correctIndex)}.`;
+    feedbackEl.className = "feedback wrong";
+  }
+  scoreDisplay.textContent = score;
+  pillScore.textContent = `Score: ${score}`;
+  nextBtn.disabled = false;
+  nextBtn.style.opacity = 1;
+  progressBar.style.width = `${(current+1)/questions.length*100}%`;
+}
+
+function updateStatus(){
+  pillProgress.textContent = `${current} / ${questions.length}`;
+  pillScore.textContent = `Score: ${score}`;
+  scoreDisplay.textContent = score;
+}
+
+function finishQuiz(){
+  finalScore.textContent = score;
+  const ratio = score / questions.length;
+  if(ratio === 1) {
+    resultMsg.textContent = "Flawless victory! You're a trivia legend.";
+  } else if(ratio >= 0.7){
+    resultMsg.textContent = "Great job! You clearly know your stuff.";
+  } else if(ratio >= 0.4){
+    resultMsg.textContent = "Not bad! A little more practice and you'll ace it.";
+  } else {
+    resultMsg.textContent = "Tough round! Try again and beat your score.";
+  }
+  showScreen(resultScreen);
+  launchConfetti();
+}
+
+function launchConfetti(){
+  confettiBox.innerHTML = "";
+  const colors = ["#ffd166","#6a5acd","#2ecc71","#ff8c00","#ff6b6b","#5ad1cd"];
+  for(let i=0;i<80;i++){
+    const span = document.createElement("span");
+    span.style.left = Math.random()*100+"%";
+    span.style.top = -Math.random()*20+"px";
+    span.style.background = colors[Math.floor(Math.random()*colors.length)];
+    span.style.animationDelay = (Math.random()*0.8)+"s";
+    span.style.animationDuration = (1+Math.random()*1.2)+"s";
+    confettiBox.appendChild(span);
+  }
+}
+
+startBtn.addEventListener("click", ()=>{
+  resetQuiz();
+  showScreen(quizScreen);
+});
+
+nextBtn.addEventListener("click", ()=>{
+  if(current < questions.length-1){
+    current++;
+    updateStatus();
+    renderQuestion();
+  } else {
+    finishQuiz();
+  }
+  pillProgress.textContent = `${Math.min(current+1, questions.length)} / ${questions.length}`;
+});
+
+restartBtn.addEventListener("click", ()=>{
+  showScreen(startScreen);
+  confettiBox.innerHTML = "";
+  pillProgress.textContent = `0 / ${questions.length}`;
+  pillScore.textContent = `Score: 0`;
+});
+
+updateStatus();
+</script>
+</body>
+</html>

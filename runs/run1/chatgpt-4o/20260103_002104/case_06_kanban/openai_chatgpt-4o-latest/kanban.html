@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kanban Board</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      padding: 20px;
+    }
+    #board {
+      display: flex;
+      justify-content: space-around;
+      padding: 20px;
+    }
+    .column {
+      background: #e0e0e0;
+      padding: 10px;
+      border-radius: 5px;
+      width: 30%;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+    .column h2 {
+      text-align: center;
+    }
+    .card {
+      background: white;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      cursor: grab;
+    }
+    .card.urgent {
+      border-left: 5px solid red;
+    }
+    .card.medium {
+      border-left: 5px solid orange;
+    }
+    .card.low {
+      border-left: 5px solid green;
+    }
+    .card:hover {
+      background-color: #f0f0f0;
+    }
+    .add-card {
+      margin-top: auto;
+      text-align: center;
+    }
+    .add-card button {
+      padding: 8px 12px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .add-card button:hover {
+      background: #0056b3;
+    }
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      width: 300px;
+    }
+    .modal-content label {
+      display: block;
+      margin-top: 10px;
+    }
+    .modal-content input, .modal-content select {
+      width: 100%;
+      padding: 5px;
+      margin-top: 5px;
+    }
+    .modal-content button {
+      margin-top: 15px;
+      padding: 8px 12px;
+    }
+    .card-buttons {
+      text-align: right;
+      margin-top: 5px;
+    }
+    .card-buttons button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: #555;
+    }
+    .card-buttons button:hover {
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kanban Board</h1>
+  <div id="board">
+    <div class="column" data-column="todo">
+      <h2>To Do</h2>
+      <div class="card-container" id="todo"></div>
+      <div class="add-card">
+        <button onclick="openModal('todo')">+ Add Card</button>
+      </div>
+    </div>
+    <div class="column" data-column="inprogress">
+      <h2>In Progress</h2>
+      <div class="card-container" id="inprogress"></div>
+      <div class="add-card">
+        <button onclick="openModal('inprogress')">+ Add Card</button>
+      </div>
+    </div>
+    <div class="column" data-column="done">
+      <h2>Done</h2>
+      <div class="card-container" id="done"></div>
+      <div class="add-card">
+        <button onclick="openModal('done')">+ Add Card</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="cardModal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Add Card</h3>
+      <label for="cardTitle">Title:</label>
+      <input type="text" id="cardTitle" />
+      <label for="cardPriority">Priority:</label>
+      <select id="cardPriority">
+        <option value="urgent">Urgent (Red)</option>
+        <option value="medium">Medium (Yellow)</option>
+        <option value="low">Low (Green)</option>
+      </select>
+      <div style="text-align: right;">
+        <button onclick="saveCard()">Save</button>
+        <button onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let editingCard = null;
+    let currentColumn = null;
+
+    function openModal(columnId, card = null) {
+      document.getElementById('cardModal').style.display = 'flex';
+      currentColumn = columnId;
+      editingCard = card;
+
+      if (card) {
+        document.getElementById('modalTitle').textContent = 'Edit Card';
+        document.getElementById('cardTitle').value = card.querySelector('.card-title').textContent;
+        document.getElementById('cardPriority').value = card.dataset.priority;
+      } else {
+        document.getElementById('modalTitle').textContent = 'Add Card';
+        document.getElementById('cardTitle').value = '';
+        document.getElementById('cardPriority').value = 'low';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('cardModal').style.display = 'none';
+      editingCard = null;
+    }
+
+    function saveCard() {
+      const title = document.getElementById('cardTitle').value.trim();
+      const priority = document.getElementById('cardPriority').value;
+
+      if (!title) {
+        alert('Title cannot be empty.');
+        return;
+      }
+
+      if (editingCard) {
+        editingCard.querySelector('.card-title').textContent = title;
+        editingCard.className = `card ${priority}`;
+        editingCard.dataset.priority = priority;
+      } else {
+        const card = document.createElement('div');
+        card.className = `card ${priority}`;
+        card.draggable = true;
+        card.dataset.priority = priority;
+        card.innerHTML = `<div class="card-title">${title}</div>
+                          <div class="card-buttons">
+                            <button onclick="openModal('${currentColumn}', this.parentElement.parentElement)">✏️</button>
+                            <button onclick="deleteCard(this)">🗑️</button>
+                          </div>`;
+        addDragEvents(card);
+        document.getElementById(currentColumn).appendChild(card);
+      }
+      saveToLocalStorage();
+      closeModal();
+    }
+
+    function deleteCard(btn) {
+      if (confirm('Delete this card?')) {
+        const card = btn.parentElement.parentElement;
+        card.parentElement.removeChild(card);
+        saveToLocalStorage();
+      }
+    }
+
+    function addDragEvents(card) {
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', '');
+        card.classList.add('dragging');
+        window.draggedCard = card;
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        window.draggedCard = null;
+      });
+    }
+
+    document.querySelectorAll('.column').forEach(column => {
+      column.addEventListener('dragover', (e) => {
+        e.preventDefault();
+      });
+      column.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetColumn = column.querySelector('.card-container');
+        if (window.draggedCard) {
+          targetColumn.appendChild(window.draggedCard);
+          saveToLocalStorage();
+        }
+      });
+    });
+
+    function saveToLocalStorage() {
+      const data = {};
+      ['todo', 'inprogress', 'done'].forEach(columnId => {
+        const cards = Array.from(document.getElementById(columnId).children).map(card => ({
+          title: card.querySelector('.card-title').textContent,
+          priority: card.dataset.priority
+        }));
+        data[columnId] = cards;
+      });
+      localStorage.setItem('kanbanData', JSON.stringify(data));
+    }
+
+    function loadFromLocalStorage() {
+      const data = JSON.parse(localStorage.getItem('kanbanData') || '{}');
+      ['todo', 'inprogress', 'done'].forEach(columnId => {
+        const container = document.getElementById(columnId);
+        container.innerHTML = '';
+        (data[columnId] || []).forEach(cardData => {
+          const card = document.createElement('div');
+          card.className = `card ${cardData.priority}`;
+          card.draggable = true;
+          card.dataset.priority = cardData.priority;
+          card.innerHTML = `<div class="card-title">${cardData.title}</div>
+                            <div class="card-buttons">
+                              <button onclick="openModal('${columnId}', this.parentElement.parentElement)">✏️</button>
+                              <button onclick="deleteCard(this)">🗑️</button>
+                            </div>`;
+          addDragEvents(card);
+          container.appendChild(card);
+        });
+      });
+    }
+
+    window.onload = function() {
+      loadFromLocalStorage();
+    };
+  </script>
+</body>
+</html>

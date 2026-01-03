@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Trivia Challenge</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        #app {
+            width: 90%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { color: var(--primary); margin-bottom: 1.5rem; }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        .options-container {
+            display: grid;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .option {
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .option:hover:not(.disabled) {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .option.correct {
+            background-color: var(--success) !important;
+            color: white;
+            border-color: var(--success);
+            animation: pulse 0.4s ease;
+        }
+
+        .option.wrong {
+            background-color: var(--error) !important;
+            color: white;
+            border-color: var(--error);
+            animation: shake 0.4s ease;
+        }
+
+        .disabled {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .score-badge {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <h1>🧠 Quiz Master</h1>
+        <p>Test your knowledge with 10 random trivia questions!</p>
+        <button class="btn" onclick="quiz.start()">Begin Quiz</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen" class="screen">
+        <div class="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+        <div class="score-badge">Question <span id="q-current">1</span>/10</div>
+        <h2 id="question-text">Question loading...</h2>
+        <div id="options" class="options-container"></div>
+    </div>
+
+    <!-- End Screen -->
+    <div id="end-screen" class="screen">
+        <div class="result-icon" id="result-emoji">🏆</div>
+        <h1>Quiz Complete!</h1>
+        <p>Your final score is:</p>
+        <h2 id="final-score" style="font-size: 3rem; margin: 0.5rem 0;">0/10</h2>
+        <p id="result-message">Great job!</p>
+        <button class="btn" onclick="quiz.reset()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "Which planet is known as the Red Planet?",
+            options: ["Venus", "Mars", "Jupiter", "Saturn"],
+            correct: 1
+        },
+        {
+            q: "What is the capital city of Japan?",
+            options: ["Seoul", "Beijing", "Tokyo", "Bangkok"],
+            correct: 2
+        },
+        {
+            q: "How many legs does a spider have?",
+            options: ["6", "8", "10", "12"],
+            correct: 1
+        },
+        {
+            q: "Which scientist proposed the theory of relativity?",
+            options: ["Isaac Newton", "Nikola Tesla", "Albert Einstein", "Marie Curie"],
+            correct: 2
+        },
+        {
+            q: "What is the largest ocean on Earth?",
+            options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
+            correct: 3
+        },
+        {
+            q: "Which fruit is often associated with Isaac Newton?",
+            options: ["Apple", "Orange", "Banana", "Pear"],
+            correct: 0
+        },
+        {
+            q: "In which year did the Titanic sink?",
+            options: ["1905", "1912", "1920", "1933"],
+            correct: 1
+        },
+        {
+            q: "What is the hardest natural substance on Earth?",
+            options: ["Gold", "Iron", "Diamond", "Quartz"],
+            correct: 2
+        },
+        {
+            q: "Which gas do plants absorb from the atmosphere?",
+            options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"],
+            correct: 1
+        },
+        {
+            q: "How many colors are in a rainbow?",
+            options: ["5", "6", "7", "8"],
+            correct: 2
+        }
+    ];
+
+    const quiz = {
+        currentIndex: 0,
+        score: 0,
+        answered: false,
+
+        start() {
+            this.currentIndex = 0;
+            this.score = 0;
+            this.showScreen('quiz-screen');
+            this.loadQuestion();
+        },
+
+        showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        },
+
+        loadQuestion() {
+            this.answered = false;
+            const q = questions[this.currentIndex];
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('q-current').innerText = this.currentIndex + 1;
+            
+            const progress = ((this.currentIndex) / questions.length) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const button = document.createElement('div');
+                button.className = 'option';
+                button.innerText = opt;
+                button.onclick = () => this.handleAnswer(index, button);
+                optionsDiv.appendChild(button);
+            });
+        },
+
+        handleAnswer(index, element) {
+            if (this.answered) return;
+            this.answered = true;
+
+            const q = questions[this.currentIndex];
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+
+            if (index === q.correct) {
+                element.classList.add('correct');
+                this.score++;
+            } else {
+                element.classList.add('wrong');
+                options[q.correct].classList.add('correct');
+            }
+
+            setTimeout(() => {
+                this.nextQuestion();
+            }, 1500);
+        },
+
+        nextQuestion() {
+            this.currentIndex++;
+            if (this.currentIndex < questions.length) {
+                this.loadQuestion();
+            } else {
+                this.showEndScreen();
+            }
+        },
+
+        showEndScreen() {
+            document.getElementById('progress-fill').style.width = `100%`;
+            this.showScreen('end-screen');
+            document.getElementById('final-score').innerText = `${this.score}/${questions.length}`;
+            
+            const emoji = document.getElementById('result-emoji');
+            const msg = document.getElementById('result-message');
+
+            if (this.score === 10) {
+                emoji.innerText = "👑";
+                msg.innerText = "Perfect Score! You're a genius!";
+            } else if (this.score >= 7) {
+                emoji.innerText = "🌟";
+                msg.innerText = "Impressive work!";
+            } else if (this.score >= 5) {
+                emoji.innerText = "👍";
+                msg.innerText = "Not bad at all!";
+            } else {
+                emoji.innerText = "📚";
+                msg.innerText = "Time to hit the books!";
+            }
+        },
+
+        reset() {
+            this.showScreen('start-screen');
+        }
+    };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        
+        #start-screen {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #question {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #options {
+            padding: 20px;
+        }
+        
+        .option {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        
+        .option:hover {
+            background-color: #f0f0f0;
+        }
+        
+        #score {
+            font-size: 36px;
+            font-weight: bold;
+            padding: 20px;
+        }
+        
+        #again {
+            font-size: 24px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-100%);
+            }
+        }
+        
+        #start-screen.show {
+            animation: slideIn 1s;
+        }
+        
+        #question.show {
+            animation: slideIn 1s;
+        }
+        
+        #score.show {
+            animation: slideIn 1s;
+        }
+        
+        #again.show {
+            animation: slideIn 1s;
+        }
+        
+        .correct {
+            background-color: #c6efce;
+        }
+        
+        .incorrect {
+            background-color: #ffc6c6;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="show">
+        <h1>Quiz App</h1>
+        <button id="begin-quiz">Begin Quiz</button>
+    </div>
+    <div id="question" style="display: none;">
+        <h1 id="question-text"></h1>
+        <div id="options">
+            <div class="option" id="option-1"></div>
+            <div class="option" id="option-2"></div>
+            <div class="option" id="option-3"></div>
+            <div class="option" id="option-4"></div>
+        </div>
+        <div id="score" style="display: none;"></div>
+        <button id="submit-answer">Submit</button>
+    </div>
+    <div id="again" style="display: none;">
+        <h1>Quiz Over!</h1>
+        <p id="final-score"></p>
+        <button id="play-again">Play Again?</button>
+    </div>
+    <script>
+        let questions = [
+            {
+                question: "What is the largest planet in our solar system?",
+                options: ["Earth", "Saturn", "Jupiter", "Uranus"],
+                correct: 2
+            },
+            {
+                question: "Who painted the famous painting 'The Starry Night'?",
+                options: ["Leonardo da Vinci", "Vincent van Gogh", "Pablo Picasso", "Claude Monet"],
+                correct: 1
+            },
+            {
+                question: "What is the chemical symbol for gold?",
+                options: ["Ag", "Au", "Hg", "Pb"],
+                correct: 1
+            },
+            {
+                question: "Which country is home to the ancient city of Machu Picchu?",
+                options: ["Argentina", "Bolivia", "Brazil", "Peru"],
+                correct: 3
+            },
+            {
+                question: "Who wrote the famous novel 'To Kill a Mockingbird'?",
+                options: ["F. Scott Fitzgerald", "Harper Lee", "Jane Austen", "J.K. Rowling"],
+                correct: 1
+            },
+            {
+                question: "What is the largest mammal on Earth?",
+                options: ["Blue whale", "Fin whale", "Humpback whale", "Sperm whale"],
+                correct: 0
+            },
+            {
+                question: "Which artist created the famous sculpture 'David'?",
+                options: ["Michelangelo", "Leonardo da Vinci", "Raphael", "Donatello"],
+                correct: 0
+            },
+            {
+                question: "What is the chemical symbol for silver?",
+                options: ["Ag", "Au", "Hg", "Pb"],
+                correct: 0
+            },
+            {
+                question: "Which country is home to the ancient city of Petra?",
+                options: ["Egypt", "Jordan", "Israel", "Lebanon"],
+                correct: 1
+            },
+            {
+                question: "Who wrote the famous play 'Romeo and Juliet'?",
+                options: ["William Shakespeare", "John Milton", "Edgar Allan Poe", "Charles Dickens"],
+                correct: 0
+            }
+        ];
+        
+        let currentQuestion = 0;
+        let score = 0;
+        let showQuestion = document.getElementById("question");
+        let showScore = document.getElementById("score");
+        let startScreen = document.getElementById("start-screen");
+        let again = document.getElementById("again");
+        let questionText = document.getElementById("question-text");
+        let option1 = document.getElementById("option-1");
+        let option2 = document.getElementById("option-2");
+        let option3 = document.getElementById("option-3");
+        let option4 = document.getElementById("option-4");
+        let submitAnswer = document.getElementById("submit-answer");
+        let playAgain = document.getElementById("play-again");
+        
+        showQuestion.style.display = "none";
+        again.style.display = "none";
+        
+        document.getElementById("begin-quiz").addEventListener("click", function() {
+            startScreen.classList.remove("show");
+            showQuestion.classList.add("show");
+            showQuestion.style.display = "block";
+            displayQuestion();
+        });
+        
+        submitAnswer.addEventListener("click", function() {
+            let selectedOption = document.querySelector(".selected");
+            if (selectedOption) {
+                let correctOption = questions[currentQuestion].options[questions[currentQuestion].correct];
+                let optionText = selectedOption.textContent;
+                if (correctOption === optionText) {
+                    selectedOption.classList.add("correct");
+                    score++;
+                } else {
+                    selectedOption.classList.add("incorrect");
+                }
+                selectedOption.classList.add("selected");
+                document.querySelectorAll(".option").forEach(option => {
+                    option.removeEventListener("click", selectOption);
+                });
+                submitAnswer.disabled = true;
+                showScore.style.display = "block";
+                setTimeout(function() {
+                    showScore.style.display = "none";
+                    showQuestion.style.display = "none";
+                    again.classList.add("show");
+                    again.style.display = "block";
+                    displayFinalScore();
+                    document.getElementById("option-1").classList.remove("selected");
+                    document.getElementById("option-2").classList.remove("selected");
+                    document.getElementById("option-3").classList.remove("selected");
+                    document.getElementById("option-4").classList.remove("selected");
+                    document.getElementById("submit-answer").disabled = false;
+                }, 2000);
+                currentQuestion++;
+                if (currentQuestion >= questions.length) {
+                    again.style.display = "block";
+                    showQuestion.style.display = "none";
+                }
+            }
+        });
+        
+        function displayQuestion() {
+            let currentQuestion = questions[currentQuestion];
+            questionText.textContent = currentQuestion.question;
+            option1.textContent = currentQuestion.options[0];
+            option2.textContent = currentQuestion.options[1];
+            option3.textContent = currentQuestion.options[2];
+            option4.textContent = currentQuestion.options[3];
+            document.querySelectorAll(".option").forEach(option => {
+                option.addEventListener("click", selectOption);
+            });
+        }
+        
+        function selectOption() {
+            let selectedOption = this;
+            selectedOption.classList.add("selected");
+            document.querySelectorAll(".option").forEach(option => {
+                option.removeEventListener("click", selectOption);
+            });
+            document.getElementById("submit-answer").click();
+        }
+        
+        function displayFinalScore() {
+            let finalScore = document.getElementById("final-score");
+            finalScore.textContent = "Your final score is: " + score + "/" + questions.length;
+        }
+        
+        playAgain.addEventListener("click", function() {
+            score = 0;
+            currentQuestion = 0;
+            showQuestion.style.display = "none";
+            again.style.display = "none";
+            startScreen.classList.add("show");
+            startScreen.style.display = "block";
+        });
+    </script>
+</body>
+</html>

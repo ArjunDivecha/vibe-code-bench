@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch & Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #0a0a0a;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 
+                0 0 0 4px #333,
+                0 0 0 8px #1a1a1a,
+                0 20px 50px rgba(0, 0, 0, 0.5),
+                inset 0 0 30px rgba(0, 0, 0, 0.5);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .toggle-btn {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            color: #666;
+            padding: 12px 25px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .toggle-btn:first-child {
+            border-radius: 8px 0 0 8px;
+            border-right: none;
+        }
+
+        .toggle-btn:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+            color: #00ff88;
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .display {
+            background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+            border: 3px solid #333;
+            border-radius: 10px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 
+                inset 0 0 30px rgba(0, 0, 0, 0.8),
+                0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .time {
+            font-size: 48px;
+            color: #00ff88;
+            text-shadow: 
+                0 0 10px rgba(0, 255, 136, 0.5),
+                0 0 20px rgba(0, 255, 136, 0.3),
+                0 0 40px rgba(0, 255, 136, 0.2);
+            letter-spacing: 4px;
+            font-weight: bold;
+        }
+
+        .milliseconds {
+            font-size: 28px;
+            color: #00aa55;
+        }
+
+        .timer-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timer-input {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            color: #00ff88;
+            font-family: inherit;
+            font-size: 32px;
+            width: 80px;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .timer-input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .timer-input::-webkit-inner-spin-button,
+        .timer-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .timer-input-label {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .timer-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(145deg, #00cc6a, #00aa55);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 200, 106, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 200, 106, 0.5);
+        }
+
+        .btn-stop {
+            background: linear-gradient(145deg, #ff4444, #cc3333);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 68, 68, 0.5);
+        }
+
+        .btn-lap {
+            background: linear-gradient(145deg, #4488ff, #3366cc);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(68, 136, 255, 0.4);
+        }
+
+        .btn-lap:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(68, 136, 255, 0.5);
+        }
+
+        .btn-reset {
+            background: linear-gradient(145deg, #666, #444);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(100, 100, 100, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(100, 100, 100, 0.5);
+        }
+
+        .btn-pause {
+            background: linear-gradient(145deg, #ffaa00, #cc8800);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 170, 0, 0.4);
+        }
+
+        .btn-pause:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 170, 0, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .laps {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #0d0d0d;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 15px;
+            color: #00ff88;
+            border-bottom: 1px solid #222;
+            font-size: 14px;
+        }
+
+        .lap-item:last-child {
+            border-bottom: none;
+        }
+
+        .lap-number {
+            color: #666;
+        }
+
+        .lap-time {
+            font-family: inherit;
+        }
+
+        .laps::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .laps::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .laps::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .laps::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .alarm-indicator {
+            display: none;
+            text-align: center;
+            color: #ff4444;
+            font-size: 18px;
+            margin-bottom: 15px;
+            animation: pulse 0.5s infinite;
+        }
+
+        .alarm-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .time-up {
+            animation: timeUp 0.5s infinite;
+        }
+
+        @keyframes timeUp {
+            0%, 100% { 
+                color: #00ff88;
+                text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            }
+            50% { 
+                color: #ff4444;
+                text-shadow: 0 0 20px rgba(255, 68, 68, 0.8);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mode-toggle">
+            <button class="toggle-btn active" id="stopwatchMode">Stopwatch</button>
+            <button class="toggle-btn" id="timerMode">Timer</button>
+        </div>
+
+        <!-- Stopwatch Section -->
+        <div id="stopwatchSection">
+            <div class="display">
+                <div class="time" id="stopwatchDisplay">00:00:00<span class="milliseconds">.000</span></div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-start" id="swStart">Start</button>
+                <button class="btn btn-stop hidden" id="swStop">Stop</button>
+                <button class="btn btn-lap" id="swLap" disabled>Lap</button>
+                <button class="btn btn-reset" id="swReset">Reset</button>
+            </div>
+            <div class="laps" id="swLaps">
+                <!-- Laps will be added here -->
+            </div>
+        </div>
+
+        <!-- Timer Section -->
+        <div id="timerSection" class="hidden">
+            <div class="alarm-indicator" id="alarmIndicator">⏰ TIME'S UP! ⏰</div>
+            <div class="display" id="timerDisplayContainer">
+                <div class="timer-inputs" id="timerInputs">
+                    <div class="timer-input-group">
+                        <input type="number" class="timer-input" id="timerHours" min="0" max="99" value="00" oninput="padInput(this)">
+                        <span class="timer-input-label">HRS</span>
+                    </div>
+                    <div class="timer-input-group">
+                        <input type="number" class="timer-input" id="timerMinutes" min="0" max="59" value="05" oninput="padInput(this)">
+                        <span class="timer-input-label">MIN</span>
+                    </div>
+                    <div class="timer-input-group">
+                        <input type="number" class="timer-input" id="timerSeconds" min="0" max="59" value="00" oninput="padInput(this)">
+                        <span class="timer-input-label">SEC</span>
+                    </div>
+                </div>
+                <div class="time hidden" id="timerCountdown">00:00:00<span class="milliseconds">.000</span></div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-start" id="timerStart">Start</button>
+                <button class="btn btn-pause hidden" id="timerPause">Pause</button>
+                <button class="btn btn-reset" id="timerReset">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context for alarm sound
+        let audioContext = null;
+        let oscillator = null;
+        let gainNode = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playAlarm() {
+            initAudio();
+            stopAlarm();
+            
+            oscillator = audioContext.createOscillator();
+            gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 880;
+            oscillator.type = 'square';
+            
+            gainNode.gain.value = 0.3;
+            
+            // Beep pattern
+            const now = audioContext.currentTime;
+            for (let i = 0; i < 10; i++) {
+                oscillator.frequency.setValueAtTime(880, now + i * 0.5);
+                oscillator.frequency.setValueAtTime(660, now + i * 0.5 + 0.25);
+                gainNode.gain.setValueAtTime(0.3, now + i * 0.5);
+                gainNode.gain.setValueAtTime(0, now + i * 0.5 + 0.25);
+                gainNode.gain.setValueAtTime(0.3, now + i * 0.5 + 0.4);
+            }
+            
+            oscillator.start(now);
+            oscillator.stop(now + 5);
+        }
+
+        function stopAlarm() {
+            if (oscillator) {
+                try {
+                    oscillator.stop();
+                } catch (e) {}
+                oscillator = null;
+            }
+        }
+
+        // Mode Toggle
+        const stopwatchMode = document.getElementById('stopwatchMode');
+        const timerMode = document.getElementById('timerMode');
+        const stopwatchSection = document.getElementById('stopwatchSection');
+        const timerSection = document.getElementById('timerSection');
+
+        stopwatchMode.addEventListener('click', () => {
+            stopwatchMode.classList.add('active');
+            timerMode.classList.remove('active');
+            stopwatchSection.classList.remove('hidden');
+            timerSection.classList.add('hidden');
+        });
+
+        timerMode.addEventListener('click', () => {
+            timerMode.classList.add('active');
+            stopwatchMode.classList.remove('active');
+            timerSection.classList.remove('hidden');
+            stopwatchSection.classList.add('hidden');
+        });
+
+        // Stopwatch
+        let swStartTime = 0;
+        let swElapsedTime = 0;
+        let swInterval = null;
+        let swRunning = false;
+        let lapCount = 0;
+
+        const swDisplay = document.getElementById('stopwatchDisplay');
+        const swStart = document.getElementById('swStart');
+        const swStop = document.getElementById('swStop');
+        const swLap = document.getElementById('swLap');
+        const swReset = document.getElementById('swReset');
+        const swLaps = document.getElementById('swLaps');
+
+        function formatTime(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = ms % 1000;
+            return {
+                main: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+                ms: `.${String(milliseconds).padStart(3, '0')}`
+            };
+        }
+
+        function updateStopwatch() {
+            const currentTime = Date.now();
+            swElapsedTime = currentTime - swStartTime;
+            const time = formatTime(swElapsedTime);
+            swDisplay.innerHTML = `${time.main}<span class="milliseconds">${time.ms}</span>`;
+        }
+
+        swStart.addEventListener('click', () => {
+            initAudio();
+            swStartTime = Date.now() - swElapsedTime;
+            swInterval = setInterval(updateStopwatch, 10);
+            swRunning = true;
+            swStart.classList.add('hidden');
+            swStop.classList.remove('hidden');
+            swLap.disabled = false;
+        });
+
+        swStop.addEventListener('click', () => {
+            clearInterval(swInterval);
+            swRunning = false;
+            swStop.classList.add('hidden');
+            swStart.classList.remove('hidden');
+        });
+
+        swLap.addEventListener('click', () => {
+            lapCount++;
+            const time = formatTime(swElapsedTime);
+            const lapItem = document.createElement('div');
+            lapItem.className = 'lap-item';
+            lapItem.innerHTML = `
+                <span class="lap-number">Lap ${String(lapCount).padStart(2, '0')}</span>
+                <span class="lap-time">${time.main}${time.ms}</span>
+            `;
+            swLaps.insertBefore(lapItem, swLaps.firstChild);
+        });
+
+        swReset.addEventListener('click', () => {
+            clearInterval(swInterval);
+            swRunning = false;
+            swElapsedTime = 0;
+            lapCount = 0;
+            swDisplay.innerHTML = `00:00:00<span class="milliseconds">.000</span>`;
+            swStart.classList.remove('hidden');
+            swStop.classList.add('hidden');
+            swLap.disabled = true;
+            swLaps.innerHTML = '';
+        });
+
+        // Timer
+        let timerInterval = null;
+        let timerRemaining = 0;
+        let timerRunning = false;
+        let timerEndTime = null;
+
+        const timerInputs = document.getElementById('timerInputs');
+        const timerCountdown = document.getElementById('timerCountdown');
+        const timerStart = document.getElementById('timerStart');
+        const timerPause = document.getElementById('timerPause');
+        const timerReset = document.getElementById('timerReset');
+        const alarmIndicator = document.getElementById('alarmIndicator');
+
+        const timerHours = document.getElementById('timerHours');
+        const timerMinutes = document.getElementById('timerMinutes');
+        const timerSeconds = document.getElementById('timerSeconds');
+
+        function padInput(input) {
+            let value = parseInt(input.value) || 0;
+            const max = parseInt(input.max);
+            const min = parseInt(input.min);
+            
+            if (value > max) value = max;
+            if (value < min) value = min;
+            
+            input.value = String(value).padStart(2, '0');
+        }
+
+        function formatTimerTime(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = ms % 1000;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+        }
+
+        function updateTimer() {
+            const now = Date.now();
+            timerRemaining = Math.max(0, timerEndTime - now);
+            
+            if (timerRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerRunning = false;
+                timerCountdown.innerHTML = `00:00:00<span class="milliseconds">.000</span>`;
+                timerCountdown.classList.add('time-up');
+                alarmIndicator.classList.add('active');
+                playAlarm();
+                timerStart.classList.remove('hidden');
+                timerPause.classList.add('hidden');
+            } else {
+                const timeStr = formatTimerTime(timerRemaining);
+                const [main, ms] = timeStr.split('.');
+                timerCountdown.innerHTML = `${main}<span class="milliseconds">.${ms}</span>`;
+            }
+        }
+
+        timerStart.addEventListener('click', () => {
+            initAudio();
+            stopAlarm();
+            alarmIndicator.classList.remove('active');
+            timerCountdown.classList.remove('time-up');
+
+            if (!timerRunning && timerRemaining === 0) {
+                const hours = parseInt(timerHours.value) || 0;
+                const minutes = parseInt(timerMinutes.value) || 0;
+                const seconds = parseInt(timerSeconds.value) || 0;
+                timerRemaining = (hours * 3600000) + (minutes * 60000) + (seconds * 1000);
+            }
+
+            if (timerRemaining > 0) {
+                timerEndTime = Date.now() + timerRemaining;
+                timerInterval = setInterval(updateTimer, 10);
+                timerRunning = true;
+                timerInputs.classList.add('hidden');
+                timerCountdown.classList.remove('hidden');
+                timerStart.classList.add('hidden');
+                timerPause.classList.remove('hidden');
+            }
+        });
+
+        timerPause.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerPause.classList.add('hidden');
+            timerStart.classList.remove('hidden');
+            timerStart.textContent = 'Resume';
+        });
+
+        timerReset.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            stopAlarm();
+            timerRunning = false;
+            timerRemaining = 0;
+            timerInputs.classList.remove('hidden');
+            timerCountdown.classList.add('hidden');
+            timerCountdown.classList.remove('time-up');
+            alarmIndicator.classList.remove('active');
+            timerStart.classList.remove('hidden');
+            timerStart.textContent = 'Start';
+            timerPause.classList.add('hidden');
+        });
+
+        // Initialize inputs
+        padInput(timerHours);
+        padInput(timerMinutes);
+        padInput(timerSeconds);
+    </script>
+</body>
+</html>

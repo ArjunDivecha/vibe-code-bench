@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fun Quiz App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 90%;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      text-align: center;
+      animation: fadeIn 1s ease;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background-color: #4CAF50;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .question {
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option {
+      background-color: #333;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .option:hover {
+      background-color: #555;
+    }
+
+    .correct {
+      background-color: #4CAF50 !important;
+    }
+
+    .incorrect {
+      background-color: #e74c3c !important;
+    }
+
+    .score {
+      font-size: 1.2rem;
+      margin-top: 1rem;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.9);}
+      to {opacity: 1; transform: scale(1);}
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="start-screen">
+    <h1>Welcome to the Fun Quiz!</h1>
+    <button onclick="startQuiz()">Begin Quiz</button>
+  </div>
+
+  <div class="container hidden" id="quiz-screen">
+    <div class="question" id="question-text">Question goes here</div>
+    <div class="options" id="options-container"></div>
+    <div class="score" id="score-display">Score: 0</div>
+  </div>
+
+  <div class="container hidden" id="end-screen">
+    <h1>Quiz Complete!</h1>
+    <p id="final-score">Your score: X / 10</p>
+    <button onclick="restartQuiz()">Play Again</button>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        question: "What color is a polar bear's skin under its fur?",
+        options: ["White", "Black", "Pink", "Gray"],
+        answer: 1
+      },
+      {
+        question: "Which planet has the most moons?",
+        options: ["Earth", "Saturn", "Mars", "Jupiter"],
+        answer: 1
+      },
+      {
+        question: "What is a group of flamingos called?",
+        options: ["Gaggle", "Flock", "Paddle", "Flamboyance"],
+        answer: 3
+      },
+      {
+        question: "Which instrument has keys, pedals, and strings?",
+        options: ["Violin", "Flute", "Piano", "Drums"],
+        answer: 2
+      },
+      {
+        question: "Which country invented ice cream?",
+        options: ["USA", "Italy", "China", "France"],
+        answer: 2
+      },
+      {
+        question: "What is the tiniest bone in the human body?",
+        options: ["Stapes", "Femur", "Ulna", "Tibia"],
+        answer: 0
+      },
+      {
+        question: "Which animal can sleep for up to 3 years?",
+        options: ["Frog", "Snail", "Turtle", "Bear"],
+        answer: 1
+      },
+      {
+        question: "What is the only food that never spoils?",
+        options: ["Rice", "Salt", "Sugar", "Honey"],
+        answer: 3
+      },
+      {
+        question: "Which bird is known for its beautiful dancing skills?",
+        options: ["Peacock", "Penguin", "Flamingo", "Bird of Paradise"],
+        answer: 3
+      },
+      {
+        question: "What is the name of the fairy in Peter Pan?",
+        options: ["Tinker Bell", "Fairy Dust", "Pixie Pop", "Luna"],
+        answer: 0
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+
+    const startScreen = document.getElementById("start-screen");
+    const quizScreen = document.getElementById("quiz-screen");
+    const endScreen = document.getElementById("end-screen");
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options-container");
+    const scoreDisplay = document.getElementById("score-display");
+    const finalScore = document.getElementById("final-score");
+
+    function startQuiz() {
+      startScreen.classList.add("hidden");
+      endScreen.classList.add("hidden");
+      quizScreen.classList.remove("hidden");
+      currentQuestion = 0;
+      score = 0;
+      scoreDisplay.textContent = `Score: ${score}`;
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      questionText.textContent = q.question;
+      optionsContainer.innerHTML = "";
+      q.options.forEach((option, index) => {
+        const btn = document.createElement("div");
+        btn.textContent = option;
+        btn.className = "option";
+        btn.onclick = () => selectAnswer(index, btn);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function selectAnswer(selectedIndex, buttonElement) {
+      const correctIndex = questions[currentQuestion].answer;
+      const allOptions = optionsContainer.children;
+
+      for (let i = 0; i < allOptions.length; i++) {
+        allOptions[i].onclick = null;
+        if (i === correctIndex) {
+          allOptions[i].classList.add("correct");
+        } else if (i === selectedIndex) {
+          allOptions[i].classList.add("incorrect");
+        }
+      }
+
+      if (selectedIndex === correctIndex) {
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
+      }
+
+      setTimeout(() => {
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          showEndScreen();
+        }
+      }, 1000);
+    }
+
+    function showEndScreen() {
+      quizScreen.classList.add("hidden");
+      endScreen.classList.remove("hidden");
+      finalScore.textContent = `Your score: ${score} / ${questions.length}`;
+    }
+
+    function restartQuiz() {
+      startQuiz();
+    }
+  </script>
+</body>
+</html>

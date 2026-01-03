@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law</title>
+    <style>
+        /* Dark Mode Legal */
+        body, html {
+            background-color: #333;
+        }
+        #search-bar {
+            width: 500px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        #results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #results-list li {
+            padding: 10px;
+            border-bottom: 1px solid #555;
+        }
+        #results-list li:hover {
+            background-color: #444;
+        }
+        #detail-view {
+            display: none;
+            padding: 20px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #444;
+        }
+        #detail-view .tab-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        #detail-view .tab {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #detail-view .tab:hover {
+            background-color: #555;
+        }
+        #detail-view .tab.active {
+            background-color: #666;
+        }
+        #detail-view .full-text {
+            padding: 20px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #444;
+        }
+        #notes-sidebar {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            background-color: #333;
+            padding: 20px;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+        #notes-sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #notes-sidebar li {
+            padding: 10px;
+            border-bottom: 1px solid #555;
+        }
+        #notes-sidebar li:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <input id="search-bar" type="text" placeholder="Query case law...">
+    <ul id="results-list"></ul>
+    <div id="detail-view">
+        <div class="tab-container">
+            <button class="tab" id="summary-tab">Summary</button>
+            <button class="tab" id="full-text-tab">Full Text</button>
+        </div>
+        <div class="full-text" id="full-text-content"></div>
+        <button id="extract-entities-btn">Extract Entities</button>
+        <div id="notes-sidebar">
+            <h2>Notes</h2>
+            <ul id="notes-list"></ul>
+            <input id="notes-input" type="text" placeholder="Add a note...">
+            <button id="add-note-btn">Add Note</button>
+        </div>
+    </div>
+
+    <script>
+        const mockCases = [
+            {
+                title: "Smith v. Johnson",
+                court: "Supreme Court",
+                date: "2022-01-01",
+                previewSnippet: "In a landmark decision, the Supreme Court ruled that...",
+                fullText: "This is the full text of the case..."
+            },
+            {
+                title: "Johnson v. Smith",
+                court: "Appellate Court",
+                date: "2022-02-01",
+                previewSnippet: "The Appellate Court upheld the lower court's decision...",
+                fullText: "This is the full text of the case..."
+            },
+            // ... 10-15 more mock cases
+        ];
+
+        const searchResultsList = document.getElementById("results-list");
+        const searchInput = document.getElementById("search-bar");
+        const detailView = document.getElementById("detail-view");
+        const summaryTab = document.getElementById("summary-tab");
+        const fullTextTab = document.getElementById("full-text-tab");
+        const fullTextContent = document.getElementById("full-text-content");
+        const extractEntitiesBtn = document.getElementById("extract-entities-btn");
+        const notesSidebar = document.getElementById("notes-sidebar");
+        const notesList = document.getElementById("notes-list");
+        const notesInput = document.getElementById("notes-input");
+        const addNoteBtn = document.getElementById("add-note-btn");
+
+        searchInput.addEventListener("input", () => {
+            const searchQuery = searchInput.value.toLowerCase();
+            const filteredCases = mockCases.filter((case_) => {
+                return case_.title.toLowerCase().includes(searchQuery) ||
+                       case_.court.toLowerCase().includes(searchQuery) ||
+                       case_.date.toLowerCase().includes(searchQuery) ||
+                       case_.previewSnippet.toLowerCase().includes(searchQuery);
+            });
+            searchResultsList.innerHTML = "";
+            filteredCases.forEach((case_) => {
+                const caseListItem = document.createElement("LI");
+                caseListItem.innerHTML = `
+                    <h2>${case_.title}</h2>
+                    <p>Court: ${case_.court}</p>
+                    <p>Date: ${case_.date}</p>
+                    <p>Preview Snippet: ${case_.previewSnippet}</p>
+                `;
+                caseListItem.addEventListener("click", () => {
+                    showDetailView(case_);
+                });
+                searchResultsList.appendChild(caseListItem);
+            });
+        });
+
+        summaryTab.addEventListener("click", () => {
+            summaryTab.classList.add("active");
+            fullTextTab.classList.remove("active");
+            fullTextContent.style.display = "none";
+            document.getElementById("summary-content").style.display = "block";
+        });
+
+        fullTextTab.addEventListener("click", () => {
+            fullTextTab.classList.add("active");
+            summaryTab.classList.remove("active");
+            fullTextContent.style.display = "block";
+            document.getElementById("summary-content").style.display = "none";
+        });
+
+        extractEntitiesBtn.addEventListener("click", () => {
+            // Simulated entity extraction: highlight names and dates
+            const textContent = fullTextContent.innerHTML;
+            const names = ["John Smith", "Jane Doe"];
+            const dates = ["2022-01-01", "2022-02-01"];
+            names.forEach((name) => {
+                textContent = textContent.replace(new RegExp(name, "g"), `<span style="background-color: yellow">${name}</span>`);
+            });
+            dates.forEach((date) => {
+                textContent = textContent.replace(new RegExp(date, "g"), `<span style="background-color: yellow">${date}</span>`);
+            });
+            fullTextContent.innerHTML = textContent;
+        });
+
+        addNoteBtn.addEventListener("click", () => {
+            const noteText = notesInput.value;
+            if (noteText) {
+                const noteListItem = document.createElement("LI");
+                noteListItem.innerHTML = `
+                    <p>${noteText}</p>
+                    <button class="delete-note-btn">Delete</button>
+                `;
+                notesList.appendChild(noteListItem);
+                notesInput.value = "";
+                noteListItem.querySelector(".delete-note-btn").addEventListener("click", () => {
+                    notesList.removeChild(noteListItem);
+                });
+            }
+        });
+
+        function showDetailView(case_) {
+            detailView.style.display = "block";
+            const summaryContent = document.createElement("DIV");
+            summaryContent.innerHTML = `
+                <h2>${case_.title}</h2>
+                <p>Court: ${case_.court}</p>
+                <p>Date: ${case_.date}</p>
+                <p>Preview Snippet: ${case_.previewSnippet}</p>
+            `;
+            document.getElementById("summary-content").appendChild(summaryContent);
+            fullTextContent.innerHTML = case_.fullText;
+            notesList.innerHTML = "";
+            const storedNotes = localStorage.getItem("notes");
+            if (storedNotes) {
+                const notes = JSON.parse(storedNotes);
+                notes.forEach((note) => {
+                    const noteListItem = document.createElement("LI");
+                    noteListItem.innerHTML = `
+                        <p>${note}</p>
+                        <button class="delete-note-btn">Delete</button>
+                    `;
+                    notesList.appendChild(noteListItem);
+                    noteListItem.querySelector(".delete-note-btn").addEventListener("click", () => {
+                        notesList.removeChild(noteListItem);
+                    });
+                });
+            }
+        }
+    </script>
+</body>
+</html>

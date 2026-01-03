@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --sidebar-width: 260px;
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        aside {
+            width: var(--sidebar-width);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 3rem;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        nav ul {
+            list-style: none;
+        }
+
+        nav li {
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+        }
+
+        nav li:hover {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            transform: translateX(5px);
+        }
+
+        nav li.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-primary);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        /* --- Main Content --- */
+        main {
+            flex-grow: 1;
+            padding: 2rem 3rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        /* --- Dashboard Grid --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- Project List Widget --- */
+        .project-item {
+            margin-bottom: 1.2rem;
+        }
+
+        .project-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            border-radius: 10px;
+            transition: width 1s ease-in-out;
+        }
+
+        /* --- Activity Timeline --- */
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            bottom: 5px;
+            width: 2px;
+            background: var(--glass-border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            border: 2px solid #1e293b;
+        }
+
+        .timeline-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .timeline-desc {
+            font-size: 0.9rem;
+            margin-top: 2px;
+        }
+
+        /* --- Task List --- */
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .task-item:last-child { border-bottom: none; }
+
+        .task-item input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--accent-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .task-item input[type="checkbox"]:checked {
+            background: var(--accent-primary);
+        }
+
+        .task-item input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            left: 2px;
+            top: -1px;
+        }
+
+        .task-text {
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+
+        .task-item input:checked + .task-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        /* --- Quick Links Grid --- */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .link-icon {
+            background: rgba(255, 255, 255, 0.03);
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .link-icon:hover {
+            background: var(--glass-bg);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .link-icon i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 { margin-bottom: 1.5rem; }
+
+        .form-group { margin-bottom: 1.2rem; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.8rem 1rem;
+        }
+
+        /* --- Views --- */
+        .view-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">STRATOS.IO</div>
+        <nav>
+            <ul>
+                <li class="active" onclick="switchView('home', this)">
+                    <span>🏠</span> Home
+                </li>
+                <li onclick="switchView('projects', this)">
+                    <span>📂</span> Projects
+                </li>
+                <li onclick="switchView('settings', this)">
+                    <span>⚙️</span> Settings
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main>
+        <!-- Home View -->
+        <div id="home" class="view-content active">
+            <div class="header">
+                <div>
+                    <h1>Welcome back, Alex</h1>
+                    <p style="color: var(--text-muted)">Here's what's happening today.</p>
+                </div>
+                <button class="btn-primary" onclick="openModal()">+ New Project</button>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Active Projects -->
+                <div class="card">
+                    <div class="card-title">Active Projects <span>...</span></div>
+                    <div id="project-list">
+                        <!-- Projects injected here -->
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div class="card">
+                    <div class="card-title">Tasks <span>...</span></div>
+                    <div id="task-list">
+                        <!-- Tasks injected here -->
+                    </div>
+                    <div class="task-item" style="border:none; margin-top:10px">
+                        <input type="text" id="new-task-input" placeholder="Add new task..." 
+                               style="background:transparent; border:none; color:white; outline:none; width:100%; font-size:0.9rem;">
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-title">Recent Activity</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">2 hours ago</div>
+                            <div class="timeline-desc">Deployed <b>v2.4.0</b> to Production</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">5 hours ago</div>
+                            <div class="timeline-desc">Sarah joined <b>Project Phoenix</b></div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">Yesterday</div>
+                            <div class="timeline-desc">Client meeting: Requirements finalized</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="card">
+                    <div class="card-title">Quick Access</div>
+                    <div class="links-grid">
+                        <div class="link-icon"><span>☁️</span>Cloud</div>
+                        <div class="link-icon"><span>📊</span>Stats</div>
+                        <div class="link-icon"><span>✉️</span>Mail</div>
+                        <div class="link-icon"><span>🛠️</span>Dev</div>
+                        <div class="link-icon"><span>🔒</span>Vault</div>
+                        <div class="link-icon"><span>🎨</span>Assets</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects View -->
+        <div id="projects" class="view-content">
+            <div class="header">
+                <h1>Project Archive</h1>
+            </div>
+            <div class="card">
+                <p style="color: var(--text-muted)">All your archived and completed projects will appear here.</p>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings" class="view-content">
+            <div class="header">
+                <h1>Settings</h1>
+            </div>
+            <div class="card" style="max-width: 600px;">
+                <div class="form-group">
+                    <label>Profile Name</label>
+                    <input type="text" value="Alex Rivera">
+                </div>
+                <div class="form-group">
+                    <label>Email Notification</label>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <input type="checkbox" checked style="width:auto"> Enable daily digests
+                    </div>
+                </div>
+                <button class="btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>Create New Project</h2>
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" id="projName" placeholder="e.g. Apollo Interface">
+            </div>
+            <div class="form-group">
+                <label>Progress (%)</label>
+                <input type="number" id="projProgress" placeholder="0 - 100">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="addProject()">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial Data
+        let projects = [
+            { name: "Alpha Dashboard", progress: 75, color: "#38bdf8" },
+            { name: "Mobile App Redesign", progress: 40, color: "#818cf8" },
+            { name: "Marketing Site", progress: 95, color: "#34d399" }
+        ];
+
+        let tasks = JSON.parse(localStorage.getItem('cc_tasks')) || [
+            { id: 1, text: "Review pull requests", done: true },
+            { id: 2, text: "Update documentation", done: false },
+            { id: 3, text: "Design system audit", done: false }
+        ];
+
+        // View Switching
+        function switchView(viewId, el) {
+            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('nav li').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById(viewId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('modalOverlay');
+        function openModal() { modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; }
+
+        // Render Projects
+        function renderProjects() {
+            const container = document.getElementById('project-list');
+            container.innerHTML = projects.map(p => `
+                <div class="project-item">
+                    <div class="project-info">
+                        <span>${p.name}</span>
+                        <span>${p.progress}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${p.progress}%; background: ${p.color || 'var(--accent-primary)'}"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addProject() {
+            const name = document.getElementById('projName').value;
+            const prog = document.getElementById('projProgress').value;
+            if(!name) return;
+            
+            projects.unshift({ name, progress: prog || 0, color: '#f472b6' });
+            renderProjects();
+            closeModal();
+            document.getElementById('projName').value = '';
+            document.getElementById('projProgress').value = '';
+        }
+
+        // Task Logic
+        function renderTasks() {
+            const container = document.getElementById('task-list');
+            container.innerHTML = tasks.map(t => `
+                <div class="task-item">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})">
+                    <div class="task-text">${t.text}</div>
+                </div>
+            `).join('');
+            localStorage.setItem('cc_tasks', JSON.stringify(tasks));
+        }
+
+        function toggleTask(id) {
+            tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
+            renderTasks();
+        }
+
+        document.getElementById('new-task-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                tasks.push({
+                    id: Date.now(),
+                    text: this.value.trim(),
+                    done: false
+                });
+                this.value = '';
+                renderTasks();
+            }
+        });
+
+        // Initialize
+        window.onload = () => {
+            renderProjects();
+            renderTasks();
+        };
+
+        // Close modal on outside click
+        window.onclick = (e) => {
+            if (e.target == modal) closeModal();
+        };
+    </script>
+</body>
+</html>

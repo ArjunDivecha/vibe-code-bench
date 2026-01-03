@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 50%, #d63031 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 50px 60px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 350px;
+        }
+
+        .session-label {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .session-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #d63031;
+            margin-bottom: 20px;
+        }
+
+        .timer-display {
+            font-size: 6rem;
+            font-weight: 700;
+            color: #d63031;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer-display.break {
+            color: #27ae60;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn {
+            background: #d63031;
+            color: white;
+        }
+
+        .start-btn:hover {
+            background: #c02626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(214, 48, 49, 0.4);
+        }
+
+        .pause-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .pause-btn:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .reset-btn {
+            background: #636e72;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #2d3436;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 110, 114, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .status {
+            margin-top: 25px;
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .status.active {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Tomato icon decoration */
+        .tomato-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 30px 40px;
+                min-width: 280px;
+            }
+
+            .timer-display {
+                font-size: 4rem;
+            }
+
+            button {
+                padding: 12px 25px;
+                font-size: 0.9rem;
+            }
+
+            .buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tomato-icon">🍅</div>
+        <div class="session-label">Current Session</div>
+        <div class="session-number" id="sessionNumber">Work 1</div>
+        
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        
+        <div class="buttons">
+            <button class="start-btn" id="startBtn">Start</button>
+            <button class="pause-btn" id="pauseBtn" disabled>Pause</button>
+            <button class="reset-btn" id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="status" id="status">Ready to focus!</div>
+    </div>
+
+    <script>
+        // Timer configuration
+        const WORK_TIME = 25 * 60; // 25 minutes in seconds
+        const BREAK_TIME = 5 * 60; // 5 minutes in seconds
+
+        // State
+        let timeLeft = WORK_TIME;
+        let isRunning = false;
+        let isBreak = false;
+        let sessionCount = 1;
+        let timerInterval = null;
+        let audioContext = null;
+
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionNumber = document.getElementById('sessionNumber');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const status = document.getElementById('status');
+
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update display
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            
+            if (isBreak) {
+                timerDisplay.classList.add('break');
+                sessionNumber.textContent = `Break ${Math.floor(sessionCount / 2) + (sessionCount % 2)}`;
+                status.textContent = 'Time to take a break! 🎉';
+                status.classList.add('active');
+            } else {
+                timerDisplay.classList.remove('break');
+                sessionNumber.textContent = `Work ${Math.ceil(sessionCount / 2)}`;
+                status.textContent = isRunning ? 'Stay focused!' : 'Ready to focus!';
+                status.classList.toggle('active', isRunning);
+            }
+        }
+
+        // Play beep sound using Web Audio API
+        function playBeep() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+
+            // Play a second beep
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 1000;
+                osc2.type = 'sine';
+                gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                osc2.start(audioContext.currentTime);
+                osc2.stop(audioContext.currentTime + 0.5);
+            }, 200);
+        }
+
+        // Timer tick
+        function tick() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                // Timer finished
+                playBeep();
+                
+                if (isBreak) {
+                    // Break finished, start new work session
+                    isBreak = false;
+                    sessionCount++;
+                    timeLeft = WORK_TIME;
+                } else {
+                    // Work finished, start break
+                    isBreak = true;
+                    timeLeft = BREAK_TIME;
+                }
+                
+                updateDisplay();
+                
+                // Auto-start next session
+                startTimer();
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                timerInterval = setInterval(tick, 1000);
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                updateDisplay();
+            }
+        }
+
+        // Pause timer
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                timerInterval = null;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                updateDisplay();
+            }
+        }
+
+        // Reset timer
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = WORK_TIME;
+            isBreak = false;
+            sessionCount = 1;
+            updateDisplay();
+            status.textContent = 'Ready to focus!';
+            status.classList.remove('active');
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>

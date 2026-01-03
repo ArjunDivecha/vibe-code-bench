@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vibe-Law: Legal Case Search Workspace</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1e1e2f;
+      color: #f0f0f0;
+    }
+
+    header {
+      padding: 1rem;
+      background-color: #12121c;
+      border-bottom: 1px solid #333;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #66aaff;
+    }
+
+    #search-bar {
+      padding: 0.5rem 1rem;
+      background-color: #1e1e2f;
+      border-bottom: 1px solid #333;
+    }
+
+    #search-input {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+      background-color: #2a2a3d;
+      border: 1px solid #444;
+      color: #fff;
+    }
+
+    #results {
+      padding: 1rem;
+      max-height: 40vh;
+      overflow-y: auto;
+      background-color: #1e1e2f;
+    }
+
+    .case-item {
+      border: 1px solid #333;
+      background-color: #2a2a3d;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    .case-item:hover {
+      background-color: #3a3a5d;
+    }
+
+    .case-title {
+      font-weight: bold;
+      color: #66aaff;
+    }
+
+    .case-meta {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .case-snippet {
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    #detail-view {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 10%;
+      width: 80%;
+      height: 80%;
+      background-color: #12121c;
+      border: 2px solid #444;
+      z-index: 100;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+    }
+
+    #detail-main {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+
+    #detail-tabs {
+      display: flex;
+      border-bottom: 1px solid #333;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      background-color: #1e1e2f;
+      border-right: 1px solid #333;
+    }
+
+    .tab.active {
+      background-color: #2a2a3d;
+      font-weight: bold;
+    }
+
+    #tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background-color: #1e1e2f;
+    }
+
+    #detail-sidebar {
+      flex: 1;
+      border-left: 1px solid #333;
+      padding: 1rem;
+      background-color: #181828;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #notes {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 1rem;
+      background-color: #2a2a3d;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    button {
+      background-color: #66aaff;
+      color: #000;
+      border: none;
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #5599dd;
+    }
+
+    #close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #aa4444;
+      color: white;
+      padding: 0.4rem;
+    }
+
+    mark {
+      background-color: yellow;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vibe-Law: Legal Case Search</h1>
+  </header>
+  <div id="search-bar">
+    <input type="text" id="search-input" placeholder="Search case law...">
+  </div>
+  <div id="results"></div>
+
+  <div id="detail-view">
+    <div id="detail-main">
+      <div id="detail-tabs">
+        <div class="tab active" data-tab="summary">Summary</div>
+        <div class="tab" data-tab="fulltext">Full Text</div>
+      </div>
+      <div id="tab-content">
+        <!-- Content filled dynamically -->
+      </div>
+      <button id="extract-btn">Extract Entities</button>
+    </div>
+    <div id="detail-sidebar">
+      <h3>Notes</h3>
+      <button id="save-snippet-btn">Save Selected Text</button>
+      <div id="notes"></div>
+    </div>
+    <button id="close-btn">Close</button>
+  </div>
+
+  <script>
+    const mockCases = [
+      {
+        id: 1,
+        title: "Smith v. Jones",
+        court: "Supreme Court",
+        date: "2020-05-01",
+        snippet: "A landmark decision concerning contract disputes.",
+        summary: "The case of Smith v. Jones decided in 2020 established new precedent in contract law.",
+        fullText: "In the matter of Smith v. Jones, heard before the Supreme Court on May 1, 2020, the court deliberated on a contractual disagreement between Mr. John Smith and Ms. Jane Jones."
+      },
+      {
+        id: 2,
+        title: "State of California v. Doe",
+        court: "California Court of Appeals",
+        date: "2019-09-12",
+        snippet: "Discusses search and seizure rights.",
+        summary: "This case explores the boundaries of search and seizure under the Fourth Amendment.",
+        fullText: "The Court of Appeals of California ruled in State of California v. John Doe on September 12, 2019, that the warrantless search was unconstitutional."
+      },
+      {
+        id: 3,
+        title: "Brown v. Board of Education",
+        court: "U.S. Supreme Court",
+        date: "1954-05-17",
+        snippet: "Historic ruling on racial segregation in schools.",
+        summary: "Brown v. Board of Education overturned the 'separate but equal' doctrine in American schools.",
+        fullText: "On May 17, 1954, the U.S. Supreme Court ruled in Brown v. Board of Education that racial segregation in public schools violated the Constitution."
+      },
+      {
+        id: 4,
+        title: "Roe v. Wade",
+        court: "U.S. Supreme Court",
+        date: "1973-01-22",
+        snippet: "Landmark decision on abortion rights.",
+        summary: "Roe v. Wade established a woman's legal right to an abortion under the Constitution.",
+        fullText: "In Roe v. Wade, decided January 22, 1973, the U.S. Supreme Court held that the right to privacy extended to a woman's decision to have an abortion."
+      },
+      {
+        id: 5,
+        title: "Miranda v. Arizona",
+        court: "U.S. Supreme Court",
+        date: "1966-06-13",
+        snippet: "Origin of the Miranda rights.",
+        summary: "This case led to the requirement of informing suspects of their rights before interrogation.",
+        fullText: "The Miranda v. Arizona decision, rendered June 13, 1966, mandated that detained criminal suspects must be informed of their rights to an attorney and against self-incrimination."
+      },
+      {
+        id: 6,
+        title: "United States v. Nixon",
+        court: "U.S. Supreme Court",
+        date: "1974-07-24",
+        snippet: "Presidential privilege and Watergate.",
+        summary: "The Court limited the power of the U.S. President regarding executive privilege.",
+        fullText: "On July 24, 1974, the U.S. Supreme Court ruled in United States v. Nixon that the president must comply with subpoenas and produce tapes and documents."
+      },
+      {
+        id: 7,
+        title: "Obergefell v. Hodges",
+        court: "U.S. Supreme Court",
+        date: "2015-06-26",
+        snippet: "Same-sex marriage rights affirmed.",
+        summary: "This case legalized same-sex marriage across the United States.",
+        fullText: "The Supreme Court, in Obergefell v. Hodges on June 26, 2015, ruled that same-sex couples have a constitutional right to marry."
+      },
+      {
+        id: 8,
+        title: "Plessy v. Ferguson",
+        court: "U.S. Supreme Court",
+        date: "1896-05-18",
+        snippet: "Established 'separate but equal' doctrine.",
+        summary: "Upheld racial segregation laws for public facilities under the doctrine of 'separate but equal'.",
+        fullText: "In Plessy v. Ferguson, decided May 18, 1896, the Supreme Court upheld a Louisiana law requiring separate railway cars for blacks and whites."
+      },
+      {
+        id: 9,
+        title: "Marbury v. Madison",
+        court: "U.S. Supreme Court",
+        date: "1803-02-24",
+        snippet: "Established judicial review.",
+        summary: "This case established the principle of judicial review in the United States.",
+        fullText: "Marbury v. Madison, decided February 24, 1803, established the Supreme Court's power to declare laws unconstitutional."
+      },
+      {
+        id: 10,
+        title: "Gideon v. Wainwright",
+        court: "U.S. Supreme Court",
+        date: "1963-03-18",
+        snippet: "Right to legal counsel for defendants.",
+        summary: "Guaranteed the right to an attorney for criminal defendants in state courts.",
+        fullText: "On March 18, 1963, the Supreme Court ruled in Gideon v. Wainwright that criminal defendants have a right to legal counsel even if they cannot afford one."
+      }
+    ];
+
+    const resultsDiv = document.getElementById('results');
+    const searchInput = document.getElementById('search-input');
+    const detailView = document.getElementById('detail-view');
+    const tabContent = document.getElementById('tab-content');
+    const tabs = document.querySelectorAll('.tab');
+    const extractBtn = document.getElementById('extract-btn');
+    const closeBtn = document.getElementById('close-btn');
+    const saveSnippetBtn = document.getElementById('save-snippet-btn');
+    const notesDiv = document.getElementById('notes');
+
+    let currentCase = null;
+    let currentTab = 'summary';
+
+    function renderResults(query = '') {
+      resultsDiv.innerHTML = '';
+      const filtered = mockCases.filter(c =>
+        c.title.toLowerCase().includes(query.toLowerCase()) ||
+        c.snippet.toLowerCase().includes(query.toLowerCase())
+      );
+      filtered.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'case-item';
+        div.innerHTML = `
+          <div class="case-title">${c.title}</div>
+          <div class="case-meta">${c.court} | ${c.date}</div>
+          <div class="case-snippet">${c.snippet}</div>
+        `;
+        div.onclick = () => openDetailView(c);
+        resultsDiv.appendChild(div);
+      });
+    }
+
+    function openDetailView(c) {
+      currentCase = c;
+      currentTab = 'summary';
+      detailView.style.display = 'flex';
+      setActiveTab();
+      loadNotes();
+    }
+
+    function setActiveTab() {
+      tabs.forEach(tab => {
+        if (tab.dataset.tab === currentTab) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      tabContent.innerHTML = currentTab === 'summary'
+        ? `<p>${currentCase.summary}</p>`
+        : `<p>${currentCase.fullText}</p>`;
+    }
+
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        currentTab = tab.dataset.tab;
+        setActiveTab();
+      };
+    });
+
+    extractBtn.onclick = () => {
+      if (!currentCase) return;
+      const content = currentTab === 'summary' ? currentCase.summary : currentCase.fullText;
+      const highlighted = content
+        .replace(/\b([A-Z][a-z]+ [A-Z][a-z]+)\b/g, "<mark>$1</mark>")
+        .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b/g, "<mark>$&</mark>");
+      tabContent.innerHTML = `<p>${highlighted}</p>`;
+    };
+
+    closeBtn.onclick = () => {
+      detailView.style.display = 'none';
+    };
+
+    saveSnippetBtn.onclick = () => {
+      const selection = window.getSelection().toString();
+      if (selection) {
+        const notes = JSON.parse(localStorage.getItem('notes_' + currentCase.id) || '[]');
+        notes.push(selection);
+        localStorage.setItem('notes_' + currentCase.id, JSON.stringify(notes));
+        loadNotes();
+      }
+    };
+
+    function loadNotes() {
+      const notes = JSON.parse(localStorage.getItem('notes_' + currentCase.id) || '[]');
+      notesDiv.innerHTML = notes.map(n => `<div>• ${n}</div>`).join('');
+    }
+
+    searchInput.addEventListener('input', e => {
+      renderResults(e.target.value);
+    });
+
+    renderResults();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --dark: #0f172a;
+            --darker: #0b1120;
+            --light: #f1f5f9;
+            --gray: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px rgba(2, 12, 25, 0.2);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker), #1e293b);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(12px);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: var(--glass-bg);
+            border-right: 1px solid var(--glass-border);
+            padding: 24px 0;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--glass-shadow);
+            z-index: 10;
+        }
+
+        .logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 24px;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .nav-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--light);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.25);
+            color: var(--light);
+        }
+
+        .nav-item i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .user-profile {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: auto;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-info h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass-bg);
+        }
+
+        /* Widgets Grid */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .widget {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--glass-shadow);
+            transition: var(--transition);
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(2, 12, 25, 0.3);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .widget-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .widget-header .action {
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .widget-header .action:hover {
+            color: var(--light);
+        }
+
+        /* Active Projects */
+        .project-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+
+        .project-card:hover {
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .project-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .project-status {
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-completed {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .progress-container {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.active {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .progress-fill.completed {
+            background: linear-gradient(90deg, var(--success), #34d399);
+        }
+
+        /* Recent Activity */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+
+        .activity-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background: var(--glass-border);
+            z-index: 0;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .icon-primary {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+        }
+
+        .icon-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .icon-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .activity-desc {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        /* Quick Links */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .link-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .link-card:hover {
+            background: rgba(15, 23, 42, 0.7);
+            transform: translateY(-3px);
+        }
+
+        .link-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .link-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* Task List */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            transition: var(--transition);
+        }
+
+        .task-item:hover {
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            border: 2px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: var(--transition);
+        }
+
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-text {
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .task-text.completed {
+            text-decoration: line-through;
+            color: var(--gray);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .task-action {
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .task-action:hover {
+            color: var(--light);
+        }
+
+        .add-task {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .add-task input {
+            flex: 1;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            font-size: 1rem;
+        }
+
+        .add-task input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            padding: 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--glass-shadow);
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            color: var(--light);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 80px;
+            }
+            
+            .logo h1 span,
+            .nav-item span,
+            .user-info {
+                display: none;
+            }
+            
+            .logo {
+                justify-content: center;
+                padding: 0 0 24px;
+            }
+            
+            .logo h1 {
+                justify-content: center;
+            }
+            
+            .nav-item {
+                justify-content: center;
+            }
+            
+            .user-profile {
+                justify-content: center;
+                padding: 20px 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-chart-network"></i> <span>Control Center</span></h1>
+            </div>
+            
+            <div class="nav-items">
+                <div class="nav-item active" data-view="home">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-view="projects">
+                    <i class="fas fa-folder"></i>
+                    <span>Projects</span>
+                </div>
+                <div class="nav-item" data-view="analytics">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </div>
+                <div class="nav-item" data-view="calendar">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </div>
+                <div class="nav-item" data-view="team">
+                    <i class="fas fa-users"></i>
+                    <span>Team</span>
+                </div>
+            </div>
+            
+            <div class="spacer"></div>
+            
+            <div class="nav-item" data-view="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </div>
+            
+            <div class="user-profile">
+                <div class="avatar">JD</div>
+                <div class="user-info">
+                    <h3>John Doe</h3>
+                    <p>Administrator</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <h2>Project Dashboard</h2>
+                <div class="header-actions">
+                    <button class="btn btn-outline">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-primary" id="newProjectBtn">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                </div>
+            </div>
+            
+            <div class="widgets-grid">
+                <!-- Active Projects -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Active Projects</h3>
+                        <div class="action">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="project-list">
+                        <div class="project-card">
+                            <div class="project-header">
+                                <div class="project-title">Website Redesign</div>
+                                <div class="project-status status-active">Active</div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Progress</span>
+                                    <span>75%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill active" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="project-card">
+                            <div class="project-header">
+                                <div class="project-title">Mobile App</div>
+                                <div class="project-status status-pending">Pending</div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Progress</span>
+                                    <span>30%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill active" style="width: 30%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="project-card">
+                            <div class="project-header">
+                                <div class="project-title">Marketing Campaign</div>
+                                <div class="project-status status-completed">Completed</div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Progress</span>
+                                    <span>100%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill completed" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Recent Activity</h3>
+                        <div class="action">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon icon-primary">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Task Completed</div>
+                                <div class="activity-desc">"Design homepage mockup" was completed by Sarah</div>
+                                <div class="activity-time">2 hours ago</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon icon-success">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">New Document</div>
+                                <div class="activity-desc">"Project requirements" was uploaded</div>
+                                <div class="activity-time">5 hours ago</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon icon-warning">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">New Comment</div>
+                                <div class="activity-desc">Mike commented on "Task list"</div>
+                                <div class="activity-time">Yesterday</div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon icon-primary">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Team Member Added</div>
+                                <div class="activity-desc">Alex Johnson joined the team</div>
+                                <div class="activity-time">2 days ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Quick Links</h3>
+                        <div class="action">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="links-grid">
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="link-title">Documents</div>
+                        </div>
+                        
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="link-title">Messages</div>
+                        </div>
+                        
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-cloud"></i>
+                            </div>
+                            <div class="link-title">Storage</div>
+                        </div>
+                        
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                            <div class="link-title">Reports</div>
+                        </div>
+                        
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="link-title">Settings</div>
+                        </div>
+                        
+                        <div class="link-card">
+                            <div class="link-icon">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="link-title">Support</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Task List -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Task List</h3>
+                        <div class="action">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </div>
+                    </div>
+                    <div class="task-list">
+                        <div class="task-item">
+                            <div class="task-checkbox checked"></div>
+                            <div class="task-content">
+                                <div class="task-text completed">Complete project proposal</div>
+                            </div>
+                            <div class="task-actions">
+                                <div class="task-action">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="task-action">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <div class="task-text">Review design mockups</div>
+                            </div>
+                            <div class="task-actions">
+                                <div class="task-action">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="task-action">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <div class="task-text">Schedule team meeting</div>
+                            </div>
+                            <div class="task-actions">
+                                <div class="task-action">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="task-action">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="task-item">
+                            <div class="task-checkbox checked"></div>
+                            <div class="task-content">
+                                <div class="task-text completed">Update project timeline</div>
+                            </div>
+                            <div class="task-actions">
+                                <div class="task-action">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="task-action">
+                                    <i class="fas fa-trash"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="add-task">
+                            <input type="text" id="newTaskInput" placeholder="Add a new task...">
+                            <button class="btn btn-primary" id="addTaskBtn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Project Modal -->
+    <div class="modal" id="newProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Project</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="projectName">Project Name</label>
+                <input type="text" id="projectName" placeholder="Enter project name">
+            </div>
+            <div class="form-group">
+                <label for="projectDesc">Description</label>
+                <textarea id="projectDesc" rows="3" placeholder="Enter project description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="projectDeadline">Deadline</label>
+                <input type="date" id="projectDeadline">
+            </div>
+            <div class="form-group">
+                <label for="projectTeam">Team Members</label>
+                <select id="projectTeam" multiple>
+                    <option>John Doe</option>
+                    <option>Sarah Johnson</option>
+                    <option>Mike Williams</option>
+                    <option>Alex Brown</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-outline" id="cancelProjectBtn">Cancel</button>
+                <button class="btn btn-primary" id="createProjectBtn">Create Project</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const navItems = document.querySelectorAll('.nav-item');
+        const newProjectBtn = document.getElementById('newProjectBtn');
+        const newProjectModal = document.getElementById('newProjectModal');
+        const closeModal = document.querySelector('.close-modal');
+        const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+        const createProjectBtn = document.getElementById('createProjectBtn');
+        const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const newTaskInput = document.getElementById('newTaskInput');
+        const taskList = document.querySelector('.task-list');
+        
+        // Navigation switching
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // In a real app, this would load different content
+                // For this demo, we'll just change the header
+                const view = item.getAttribute('data-view');
+                document.querySelector('.header h2').textContent = 
+                    view.charAt(0).toUpperCase() + view.slice(1) + ' Dashboard';
+            });
+        });
+        
+        // Modal functionality
+        newProjectBtn.addEventListener('click', () => {
+            newProjectModal.classList.add('active');
+        });
+        
+        function closeProjectModal() {
+            newProjectModal.classList.remove('active');
+        }
+        
+        closeModal.addEventListener('click', closeProjectModal);
+        cancelProjectBtn.addEventListener('click', closeProjectModal);
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === newProjectModal) {
+                closeProjectModal();
+            }
+        });
+        
+        // Task functionality
+        taskCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('click', () => {
+                checkbox.classList.toggle('checked');
+                const taskText = checkbox.nextElementSibling.querySelector('.task-text');
+                taskText.classList.toggle('completed');
+                
+                // Save to localStorage
+                saveTasksToLocalStorage();
+            });
+        });
+        
+        // Add new task
+        addTaskBtn.addEventListener('click', () => {
+            const taskText = newTaskInput.value.trim();
+            if (taskText) {
+                addNewTask(taskText);
+                newTaskInput.value = '';
+                saveTasksToLocalStorage();
+            }
+        });
+        
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTaskBtn.click();
+            }
+        });
+        
+        function addNewTask(text) {
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.innerHTML = `
+                <div class="task-checkbox"></div>
+                <div class="task-content">
+                    <div class="task-text">${text}</div>
+                </div>
+                <div class="task-actions">
+                    <div class="task-action">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="task-action">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            `;
+            
+            // Insert before the add task row
+            taskList.insertBefore(taskItem, document.querySelector('.add-task').parentElement);
+            
+            // Add event listener to new checkbox
+            const newCheckbox = taskItem.querySelector('.task-checkbox');
+            newCheckbox.addEventListener('click', () => {
+                newCheckbox.classList.toggle('checked');
+                const taskText = newCheckbox.nextElementSibling.querySelector('.task-text');
+                taskText.classList.toggle('completed');
+                saveTasksToLocalStorage();
+            });
+            
+            // Add event listeners to action buttons
+            const editBtn = taskItem.querySelector('.fa-edit').parentElement;
+            const deleteBtn = taskItem.querySelector('.fa-trash').parentElement;
+            
+            editBtn.addEventListener('click', () => {
+                const taskText = taskItem.querySelector('.task-text');
+                const newText = prompt('Edit task:', taskText.textContent);
+                if (newText !== null) {
+                    taskText.textContent = newText;
+                    saveTasksToLocalStorage();
+                }
+            });
+            
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this task?')) {
+                    taskItem.remove();
+                    saveTasksToLocalStorage();
+                }
+            });
+        }
+        
+        // Save tasks to localStorage
+        function saveTasksToLocalStorage() {
+            const tasks = [];
+            document.querySelectorAll('.task-item').forEach(item => {
+                if (!item.querySelector('.add-task')) {
+                    const text = item.querySelector('.task-text').textContent;
+                    const completed = item.querySelector('.task-checkbox').classList.contains('checked');
+                    tasks.push({ text, completed });
+                }
+            });
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+        
+        // Load tasks from localStorage
+        function loadTasksFromLocalStorage() {
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            tasks.forEach(task => {
+                addNewTask(task.text);
+                if (task.completed) {
+                    const lastTask = document.querySelectorAll('.task-item:not(:last-child)')[document.querySelectorAll('.task-item:not(:last-child)').length - 1];
+                    if (lastTask) {
+                        const checkbox = lastTask.querySelector('.task-checkbox');
+                        checkbox.classList.add('checked');
+                        const taskText = lastTask.querySelector('.task-text');
+                        taskText.classList.add('completed');
+                    }
+                }
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTasksFromLocalStorage();
+            
+            // Add event listeners to existing task action buttons
+            document.querySelectorAll('.task-action .fa-edit').forEach(btn => {
+                btn.parentElement.addEventListener('click', () => {
+                    const taskItem = btn.closest('.task-item');
+                    const taskText = taskItem.querySelector('.task-text');
+                    const newText = prompt('Edit task:', taskText.textContent);
+                    if (newText !== null) {
+                        taskText.textContent = newText;
+                        saveTasksToLocalStorage();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.task-action .fa-trash').forEach(btn => {
+                btn.parentElement.addEventListener('click', () => {
+                    const taskItem = btn.closest('.task-item');
+                    if (confirm('Are you sure you want to delete this task?')) {
+                        taskItem.remove();
+                        saveTasksToLocalStorage();
+                    }
+                });
+            });
+        });
+        
+        // Create Project Button
+        createProjectBtn.addEventListener('click', () => {
+            const projectName = document.getElementById('projectName').value;
+            if (projectName) {
+                alert(`Project "${projectName}" created successfully!`);
+                closeProjectModal();
+                // Reset form
+                document.getElementById('projectName').value = '';
+                document.getElementById('projectDesc').value = '';
+                document.getElementById('projectDeadline').value = '';
+            } else {
+                alert('Please enter a project name');
+            }
+        });
+    </script>
+</body>
+</html>

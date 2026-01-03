@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a2e;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #333; }
+        .logo span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .controls { display: flex; gap: 12px; align-items: center; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-secondary:hover { background: #e0e0e0; transform: translateY(-1px); }
+        .palette-container { display: flex; flex: 1; height: calc(100vh - 70px); }
+        .color-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: pointer;
+        }
+        .color-column:hover { flex: 1.3; }
+        .color-column.generating { animation: pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1); }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.92); }
+            100% { transform: scale(1); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .color-info {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .color-column:hover .color-info, .color-info.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .color-info > * { animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .color-info > *:nth-child(1) { animation-delay: 0.05s; }
+        .color-info > *:nth-child(2) { animation-delay: 0.1s; }
+        .color-info > *:nth-child(3) { animation-delay: 0.15s; }
+        .color-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            letter-spacing: 0.5px;
+        }
+        .hex-code {
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.25);
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-bottom: 6px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .hex-code:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+        .rgb-code { font-size: 0.9rem; opacity: 0.85; font-weight: 500; }
+        .lock-btn {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.7) rotate(-20deg);
+            backdrop-filter: blur(5px);
+        }
+        .color-column:hover .lock-btn { opacity: 1; transform: scale(1) rotate(0deg); }
+        .lock-btn:hover { background: rgba(255,255,255,0.4); transform: scale(1.15) rotate(10deg) !important; }
+        .lock-btn.locked { background: rgba(255,255,255,0.5); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .lock-btn.locked:hover { background: rgba(255,255,255,0.6); }
+        .copy-toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .copy-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .favorites-panel {
+            position: fixed;
+            right: -420px;
+            top: 70px;
+            width: 400px;
+            height: calc(100vh - 70px);
+            background: white;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.15);
+            transition: right 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 99;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        .favorites-panel.open { right: 0; }
+        .favorites-panel h2 {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .close-fav {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            transition: all 0.3s ease;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-fav:hover { background: #f0f0f0; color: #333; }
+        .favorite-palette {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 18px;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+        }
+        .favorite-palette:hover {
+            transform: translateX(-8px);
+            box-shadow: 8px 8px 30px rgba(0,0,0,0.12);
+            border-color: #667eea;
+        }
+        .palette-preview {
+            display: flex;
+            height: 50px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .palette-preview span { flex: 1; transition: flex 0.3s ease; }
+        .favorite-palette:hover .palette-preview span { flex: 1.2; }
+        .palette-actions { display: flex; justify-content: space-between; align-items: center; }
+        .palette-date { font-size: 0.8rem; color: #888; font-weight: 500; }
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .delete-btn:hover { background: #ee5a5a; transform: scale(1.05); }
+        .empty-favorites { text-align: center; color: #aaa; padding: 50px 20px; font-size: 1rem; }
+        .empty-favorites span { font-size: 3rem; display: block; margin-bottom: 15px; opacity: 0.5; }
+        .hint {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .hint:hover { opacity: 1; background: rgba(255,255,255,0.25); }
+        .shortcut-hint { font-size: 0.75rem; opacity: 0.7; margin-top: 5px; }
+        @media (max-width: 768px) {
+            header { padding: 12px 15px; flex-wrap: wrap; gap: 12px; }
+            .logo { font-size: 1.2rem; }
+            .controls { gap: 8px; width: 100%; justify-content: center; }
+            .btn { padding: 8px 14px; font-size: 0.8rem; }
+            .palette-container { flex-direction: column; height: auto; min-height: calc(100vh - 70px); }
+            .color-column { min-height: 100px; padding: 12px; }
+            .color-name { font-size: 1rem; }
+            .hex-code { font-size: 0.9rem; padding: 6px 14px; }
+            .rgb-code { font-size: 0.75rem; }
+            .lock-btn { opacity: 1; top: 10px; right: 10px; width: 38px; height: 38px; font-size: 1rem; transform: scale(1); }
+            .favorites-panel { width: 100%; right: -100%; }
+            .hint { font-size: 0.75rem; padding: 10px 18px; bottom: 20px; }
+            .shortcut-hint { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Palette<span>Gen</span></div>
+        <div class="controls">
+            <button class="btn btn-secondary" id="favoritesBtn"><span>💾</span> Saved</button>
+            <button class="btn btn-primary" id="generateBtn"><span>🎨</span> Generate</button>
+            <button class="btn btn-secondary" id="saveBtn"><span>❤️</span> Save</button>
+        </div>
+    </header>
+    <div class="palette-container" id="paletteContainer"></div>
+    <div class="favorites-panel" id="favoritesPanel">
+        <h2>Saved Palettes<button class="close-fav" id="closeFavorites">✕</button></h2>
+        <div id="favoritesList"></div>
+    </div>
+    <div class="copy-toast" id="copyToast">Copied to clipboard!</div>
+    <div class="hint">
+        Press <strong>SPACE</strong> to generate • Click color to copy • 🔒 to lock
+        <div class="shortcut-hint">ESC to close panel</div>
+    </div>
+    <script>
+        const COLOR_NAMES = [
+            {name:"Crimson",hex:"#DC143C"},{name:"Fire Engine Red",hex:"#CE2029"},{name:"Scarlet",hex:"#FF2400"},
+            {name:"Ruby",hex:"#E0115F"},{name:"Carmine",hex:"#960018"},{name:"Maroon",hex:"#800000"},
+            {name:"Wine",hex:"#722F37"},{name:"Burgundy",hex:"#800020"},{name:"Cherry Blossom",hex:"#DE3163"},
+            {name:"Rose",hex:"#FF007F"},{name:"Bubblegum Pink",hex:"#FFC1CC"},{name:"Cotton Candy",hex:"#FFBCD9"},
+            {name:"Pastel Pink",hex:"#FFB7B2"},{name:"Hot Pink",hex:"#FF69B4"},{name:"Fuchsia",hex:"#FF00FF"},
+            {name:"Magenta",hex:"#FF0090"},{name:"Orchid",hex:"#DA70D6"},{name:"Plum",hex:"#DDA0DD"},
+            {name:"Violet",hex:"#EE82EE"},{name:"Lavender",hex:"#E6E6FA"},{name:"Thistle",hex:"#D8BFD8"},
+            {name:"Mauve",hex:"#E0B0FF"},{name:"Wisteria",hex:"#C9A0DC"},{name:"Lilac",hex:"#C8A2C8"},
+            {name:"Heather",hex:"#B7A9B8"},{name:"Indigo",hex:"#4B0082"},{name:"Purple",hex:"#800080"},
+            {name:"Rebecca Purple",hex:"#663399"},{name:"Blue Violet",hex:"#8A2BE2"},{name:"Dark Violet",hex:"#9400D3"},
+            {name:"Electric Violet",hex:"#8F00FF"},{name:"Grape",hex:"#6F2DA8"},{name:"Amethyst",hex:"#9966CC"},
+            {name:"Royal Blue",hex:"#4169E1"},{name:"True Blue",hex:"#002080"},{name:"Blue",hex:"#0000FF"},
+            {name:"Cornflower Blue",hex:"#6495ED"},{name:"Dodger Blue",hex:"#1E90FF"},{name:"Sky Blue",hex:"#87CEEB"},
+            {name:"Light Blue",hex:"#ADD8E6"},{name:"Powder Blue",hex:"#B0E0E6"},{name:"Baby Blue",hex:"#89CFF0"},
+            {name:"Periwinkle",hex:"#CCCCFF"},{name:"Cyan",hex:"#00FFFF"},{name:"Aqua",hex:"#00FFFF"},
+            {name:"Turquoise",hex:"#40E0D0"},{name:"Teal",hex:"#008080"},{name:"Dark Cyan",hex:"#008B8B"},
+            {name:"Seafoam",hex:"#9FE2BF"},{name:"Mint",hex:"#98FF98"},{name:"Sea Green",hex:"#2E8B57"},
+            {name:"Forest Green",hex:"#228B22"},{name:"Green",hex:"#008000"},{name:"Lime",hex:"#00FF00"},
+            {name:"Chartreuse",hex:"#7FFF00"},{name:"Lawn Green",hex:"#7CFC00"},{name:"Yellow Green",hex:"#9ACD32"},
+            {name:"Olive",hex:"#808000"},{name:"Olive Drab",hex:"#6B8E23"},{name:"Sage",hex:"#BCB88A"},
+            {name:"Moss",hex:"#8A9A5B"},{name:"Fern",hex:"#4F7942"},{name:"Juniper",hex:"#3A5F5F"},
+            {name:"Hunter Green",hex:"#355E3B"},{name:"Kelly Green",hex:"#4CBB17"},{name:"Emerald",hex:"#50C878"},
+            {name:"Jade",hex:"#00A86B"},{name:"Shamrock",hex:"#45CEA2"},{name:"Pine",hex:"#01796F"},
+            {name:"Khaki",hex:"#F0E68C"},{name:"Beige",hex:"#F5F5DC"},{name:"Sand",hex:"#C2B280"},
+            {name:"Tan",hex:"#D2B48C"},{name:"Wheat",hex:"#F5DEB3"},{name:"Cornsilk",hex:"#FFF8DC"},
+            {name:"Lemon Chiffon",hex:"#FFFACD"},{name:"Moccasin",hex:"#FFE4B5"},{name:"Peach",hex:"#FFDAB9"},
+            {name:"Papaya Whip",hex:"#FFEFD5"},{name:"Apricot",hex:"#FBCEB1"},{name:"Melon",hex:"#FEBAAD"},
+            {name:"Cantaloupe",hex:"#FFAA55"},{name:"Coral",hex:"#FF7F50"},{name:"Salmon",hex:"#FA8072"},
+            {name:"Tomato",hex:"#FF6347"},{name:"Orange Red",hex:"#FF4500"},{name:"Orange",hex:"#FFA500"},
+            {name:"Dark Orange",hex:"#FF8C00"},{name:"Tangerine",hex:"#F28500"},{name:"Amber",hex:"#FFBF00"},
+            {name:"Gold",hex:"#FFD700"},{name:"Goldenrod",hex:"#DAA520"},{name:"Saddle Brown",hex:"#8B4513"},
+            {name:"Sienna",hex:"#A0522D"},{name:"Chocolate",hex:"#D2691E"},{name:"Peru",hex:"#CD853F"},
+            {name:"Sandy Brown",hex:"#F4A460"},{name:"Burlywood",hex:"#DEB887"},{name:"Bisque",hex:"#FFE4C4"},
+            {name:"Antique White",hex:"#FAEBD7"},{name:"Navajo White",hex:"#FFDEAD"},{name:"Blanched Almond",hex:"#FFEBCD"},
+            {name:"Eggshell",hex:"#F0EAD6"},{name:"Ivory",hex:"#FFFFF0"},{name:"White",hex:"#FFFFFF"},
+            {name:"Snow",hex:"#FFFAFA"},{name:"Honeydew",hex:"#F0FFF0"},{name:"Mint Cream",hex:"#F5FFFA"},
+            {name:"Azure",hex:"#F0FFFF"},{name:"Alice Blue",hex:"#F0F8FF"},{name:"Ghost White",hex:"#F8F8FF"},
+            {name:"White Smoke",hex:"#F5F5F5"},{name:"Seashell",hex:"#FFF5EE"},{name:"Linen",hex:"#FAF0E6"},
+            {name:"Old Lace",hex:"#FDF5E6"},{name:"Floral White",hex:"#FFFAF0"},{name:"Cream",hex:"#FFFDD0"},
+            {name:"Vanilla",hex:"#F3E5AB"},{name:"Gray",hex:"#808080"},{name:"Silver",hex:"#C0C0C0"},
+            {name:"Dim Gray",hex:"#696969"},{name:"Charcoal",hex:"#36454F"},{name:"Slate Gray",hex:"#708090"},
+            {name:"Light Slate Gray",hex:"#778899"},{name:"Dark Slate Gray",hex:"#2F4F4F"},{name:"Black",hex:"#000000"},
+            {name:"Jet",hex:"#0A0A0A"},{name:"Onyx",hex:"#353839"},{name:"Taupe",hex:"#483C32"},
+            {name:"Slate",hex:"#6A5ACD"},{name:"Midnight Blue",hex:"#191970"},{name:"Navy",hex:"#000080"},
+            {name:"Cobalt",hex:"#0047AB"},{name:"Sapphire",hex:"#0F52BA"},{name:"Denim",hex:"#1560BD"},
+            {name:"Cerulean",hex:"#007BA7"},{name:"Steel Blue",hex:"#4682B4"},{name:"Sunset",hex:"#F7DC6F"},
+            {name:"Sunrise",hex:"#F5B041"},{name:"Aurora",hex:"#9FE2BF"},{name:"Ocean",hex:"#3498DB"},
+            {name:"Forest",hex:"#27AE60"},{name:"Desert",hex:"#E67E22"},{name:"Canyon",hex:"#A04000"},
+            {name:"Sun",hex:"#F1C40F"},{name:"Moon",hex:"#D5D8DC"},{name:"Star",hex:"#F9E79F"},
+            {name:"Cloud",hex:"#BDC3C7"},{name:"Storm",hex:"#5D6D7E"},{name:"Thunder",hex:"#2C3E50"},
+            {name:"Lightning",hex:"#F7DC6F"},{name:"Rain",hex:"#85C1E9"},{name:"Ice",hex:"#AED6F1"},
+            {name:"Frost",hex:"#D4E6F1"},{name:"Mist",hex:"#D6DBDF"},{name:"Fog",hex:"#99A3A4"},
+            {name:"Haze",hex:"#AEB6BF"},{name:"Dust",hex:"#C9B79C"},{name:"Ash",hex:"#7F8C8D"},
+            {name:"Ember",hex:"#E74C3C"},{name:"Flame",hex:"#E67E22"},{name:"Fire",hex:"#D35400"},
+            {name:"Burn",hex:"#C0392B"},{name:"Heat",hex:"#FF6B6B"},{name:"Warmth",hex:"#F5B041"},
+            {name:"Cool",hex:"#5DADE2"},{name:"Cold",hex:"#85C1E9"},{name:"Chill",hex:"#AED6F1"},
+            {name:"Freeze",hex:"#7FB3D5"},{name:"Breeze",hex:"#82E0AA"},{name:"Gale",hex:"#76D7C4"},
+            {name:"Wind",hex:"#A9DFBF"},{name:"Air",hex:"#D5F5E3"},{name:"Earth",hex:"#8B4513"},
+            {name:"Stone",hex:"#787878"},{name:"Rock",hex:"#5D5D5D"},{name:"Pebble",hex:"#A0A0A0"},
+            {name:"Boulder",hex:"#6E6E6E"},{name:"Mountain",hex:"#4A4A4A"},{name:"Peak",hex:"#3D3D3D"},
+            {name:"Valley",hex:"#7D6608"},{name:"Hill",hex:"#9C880D"},{name:"Cliff",hex:"#5B4C02"},
+            {name:"Cave",hex:"#2C2C2C"},{name:"Cavern",hex:"#1F1F1F"},{name:"Grotto",hex:"#3A3A3A"},
+            {name:"Water",hex:"#3498DB"},{name:"River",hex:"#2E86C1"},{name:"Lake",hex:"#1B4F72"},
+            {name:"Sea",hex:"#21618C"},{name:"Wave",hex:"#5DADE2"},{name:"Tide",hex:"#3498DB"},
+            {name:"Current",hex:"#2E86C1"},{name:"Stream",hex:"#85C1E9"},{name:"Brook",hex:"#AED6F1"},
+            {name:"Spring",hex:"#5DADE2"},{name:"Well",hex:"#1F618D"},{name:"Pool",hex:"#2E86C1"},
+            {name:"Pond",hex:"#2471A3"},{name:"Plant",hex:"#27AE60"},{name:"Leaf",hex:"#229954"},
+            {name:"Tree",hex:"#1E8449"},{name:"Flower",hex:"#E74C3C"},{name:"Garden",hex:"#28B463"},
+            {name:"Park",hex:"#58D68D"},{name:"Wood",hex:"#6E2C00"},{name:"Bark",hex:"#5D4037"},
+            {name:"Branch",hex:"#795548"},{name:"Root",hex:"#4E342E"},{name:"Seed",hex:"#8D6E63"},
+            {name:"Fruit",hex:"#E74C3C"},{name:"Berry",hex:"#C0392B"},{name:"Nut",hex:"#A0522D"},
+            {name:"Shell",hex:"#F5EEF8"},{name:"Pearl",hex:"#FDFEFE"},{name:"Coral",hex:"#FF6F61"},
+            {name:"Sand",hex:"#F4D03F"},{name:"Seahorse",hex:"#FFCCBC"},{name:"Dolphin",hex:"#B3E5FC"},
+            {name:"Whale",hex:"#90CAF9"},{name:"Fish",hex:"#81D4FA"},{name:"Coral Reef",hex:"#FF8A65"},
+            {name:"Jellyfish",hex:"#F8BBD9"},{name:"Octopus",hex:"#F48FB1"},{name:"Crab",hex:"#EF9A9A"},
+            {name:"Lobster",hex:"#E57373"},{name:"Shrimp",hex:"#EF5350"},{name:"Oyster",hex:"#FFCDD2"},
+            {name:"Clam",hex:"#E1BEE7"},{name:"Snail",hex:"#D1C4E9"},{name:"Butterfly",hex:"#B39DDB"},
+            {name:"Moth",hex:"#9FA8DA"},{name:"Bee",hex:"#FFD54F"},{name:"Wasp",hex:"#FFCA28"},
+            {name:"Ant",hex:"#8D6E63"},{name:"Beetle",hex:"#5D4037"},{name:"Dragonfly",hex:"#4DD0E1"},
+            {name:"Damselfly",hex:"#80DEEA"},{name:"Grasshopper",hex:"#9CCC65"},{name:"Cricket",hex:"#8BC34A"},
+            {name:"Ladybug",hex:"#E53935"},{name:"Firefly",hex:"#FFEB3B"},{name:"Mosquito",hex:"#9E9E9E"},
+            {name:"Fly",hex:"#616161"},{name:"Spider",hex:"#424242"},{name:"Scorpion",hex:"#212121"},
+            {name:"Worm",hex:"#8D6E63"},{name:"Snake",hex:"#43A047"},{name:"Lizard",hex:"#66BB6A"},
+            {name:"Frog",hex:"#7CB342"},{name:"Toad",hex:"#689F38"},{name:"Turtle",hex:"#009688"},
+            {name:"Tortoise",hex:"#00897B"},{name:"Crocodile",hex:"#00695C"},{name:"Alligator",hex:"#004D40"},
+            {name:"Bird",hex:"#E3F2FD"},{name:"Eagle",hex:"#5D4037"},{name:"Falcon",hex:"#795548"},
+            {name:"Hawk",hex:"#8D6E63"},{name:"Owl",hex:"#6D4C41"},{name:"Robin",hex:"#D84315"},
+            {name:"Sparrow",hex:"#A1887F"},{name:"Cardinal",hex:"#C62828"},{name:"Bluebird",hex:"#1E88E5"},
+            {name:"Jay",hex:"#1565C0"},{name:"Crow",hex:"#212121"},{name:"Raven",hex:"#000000"},
+            {name:"Peacock",hex:"#00ACC1"},{name:"Parrot",hex:"#D81B60"},{name:"Flamingo",hex:"#F48FB1"},
+            {name:"Swan",hex:"#F5F5F5"},{name:"Duck",hex:"#FFB74D"},{name:"Goose",hex:"#FFA726"},
+            {name:"Chicken",hex:"#FFB74D"},{name:"Rooster",hex:"#FF8A65"},{name:"Turkey",hex:"#8D6E63"},
+            {name:"Quail",hex:"#A1887F"},{name:"Pheasant",hex:"#6D4C41"},{name:"Peafowl",hex:"#4CAF50"},
+            {name:"Ostrich",hex:"#424242"},{name:"Emu",hex:"#616161"},{name:"Penguin",hex:"#212121"},
+            {name:"Puffin",hex:"#212121"},{name:"Albatross",hex:"#F5F5F5"},{name:"Pelican",hex:"#F5F5F5"},
+            {name:"Heron",hex:"#78909C"},{name:"Stork",hex:"#90A4AE"},{name:"Crane",hex:"#B0BEC5"},
+            {name:"Ibex",hex:"#795548"},{name:"Goat",hex:"#A1887F"},{name:"Sheep",hex:"#F5F5F5"},
+            {name:"Lamb",hex:"#FFFAF0"},{name:"Ram",hex:"#8D6E63"},{name:"Cow",hex:"#F5F5F5"},
+            {name:"Bull",hex:"#424242"},{name:"Ox",hex:"#616161"},{name:"Horse",hex:"#8D6E63"},
+            {name:"Stallion",hex:"#6D4C41"},{name:"Mare",hex:"#A1887F"},{name:"Foal",hex:"#D7CCC8"},
+            {name:"Donkey",hex:"#9E9E9E"},{name:"Mule",hex:"#757575"},{name:"Zebra",hex:"#212121"},
+            {name:"Giraffe",hex:"#FFB74D"},{name:"Camel",hex:"#BCAAA4"},{name:"Dromedary",hex:"#D7CCC8"},
+            {name:"Llama",hex:"#F5F5F5"},{name:"Alpaca",hex:"#EFEBE9"},{name:"Deer",hex:"#8D6E63"},
+            {name:"Elk",hex:"#6D4C41"},{name:"Moose",hex:"#5D4037"},{name:"Caribou",hex:"#795548"},
+            {name:"Reindeer",hex:"#8D6E63"},{name:"Antelope",hex:"#A1887F"},{name:"Gazelle",hex:"#D7CCC8"},
+            {name:"Impala",hex:"#BCAAA4"},{name:"Wildebeest",hex:"#6D4C41"},{name:"Bison",hex:"#5D4037"},
+            {name:"Buffalo",hex:"#4E342E"},{name:"Muskox",hex:"#3E2723"},{name:"Yak",hex:"#6D4C41"},
+            {name:"Bactrian",hex:"#5D4037"},{name:"Hedgehog",hex:"#8D6E63"},{name:"Porcupine",hex:"#6D4C41"},
+            {name:"Badger",hex:"#424242"},{name:"Bear",hex:"#5D4037"},{name:"Panda",hex:"#F5F5F5"},
+            {name:"Koala",hex:"#757575"},{name:"Kangaroo",hex:"#9E9E9E"},{name:"Wallaby",hex:"#BDBDBD"},
+            {name:"Wombat",hex:"#9E9E9E"},{name:"Possum",hex:"#616161"},{name:"Mouse",hex:"#BCAAA4"},
+            {name:"Rat",hex:"#9E9E9E"},{name:"Hamster",hex:"#D7CCC8"},{name:"Guinea Pig",hex:"#FFAB91"},
+            {name:"Rabbit",hex:"#EFEBE9"},{name:"Hare",hex:"#D7CCC8"},{name:"Bunny",hex:"#FFFAF0"},
+            {name:"Squirrel",hex:"#8D6E63"},{name:"Chipmunk",hex:"#A1887F"},{name:"Prairie Dog",hex:"#BCAAA4"},
+            {name:"Marmot",hex:"#8D6E63"},{name:"Beaver",hex:"#5D4037"},{name:"Otter",hex:"#6D4C41"},
+            {name:"Seal",hex:"#616161"},{name:"Sea Lion",hex:"#757575"},{name:"Walrus",hex:"#9E9E9E"},
+            {name:"Manatee",hex:"#78909C"},{name:"Elephant",hex:"#9E9E9E"},{name:"Rhino",hex:"#757575"},
+            {name:"Hippo",hex:"#78909C"},{name:"Pig",hex:"#FFAB91"},{name:"Hog",hex:"#FF8A65"},
+            {name:"Boar",hex:"#6D4C41"},{name:"Wild Boar",hex:"#5D4037"},{name:"Tapir",hex:"#424242"},
+            {name:"Aardvark",hex:"#FFAB91"},{name:"Hyena",hex:"#9E9E9E"},{name:"Jackal",hex:"#BCAAA4"},
+            {name:"Fox",hex:"#FF7043"},{name:"Wolf",hex:"#616161"},{name:"Coyote",hex:"#8D6E63"},
+            {name:"Dog",hex:"#A1887F"},{name:"Dingo",hex:"#D7CCC8"},{name:"Cheetah",hex:"#FFB74D"},
+            {name:"Leopard",hex:"#FFA726"},{name:"Jaguar",hex:"#FF9800"},{name:"Tiger",hex:"#FF6D00"},
+            {name:"Lion",hex:"#F57C00"},{name:"Panther",hex:"#212121"},{name:"Cougar",hex:"#FF8A65"},
+            {name:"Puma",hex:"#FF7043"},{name:"Lynx",hex:"#BCAAA4"},{name:"Bobcat",hex:"#A1887F"},
+            {name:"Cat",hex:"#9E9E9E"},{name:"Kitten",hex:"#BDBDBD"},{name:"Tabby",hex:"#FFAB91"},
+            {name:"Calico",hex:"#FF8A65"},{name:"Tuxedo",hex:"#212121"},{name:"Neon Pink",hex:"#FF10F0"},
+            {name:"Neon Blue",hex:"#00F0FF"},{name:"Neon Green",hex:"#39FF14"},{name:"Neon Orange",hex:"#FF5E00"},
+            {name:"Neon Yellow",hex:"#CCFF00"},{name:"Neon Purple",hex:"#BF00FF"},{name:"Neon Red",hex:"#FF073A"},
+            {name:"Neon Cyan",hex:"#00FFFF"},{name:"Holographic",hex:"#FF81C0"},{name:"Iridescent",hex:"#A0E7E5"},
+            {name:"Pearlescent",hex:"#FBE7C6"},{name:"Metallic Gold",hex:"#D4AF37"},{name:"Metallic Silver",hex:"#C0C0C0"},
+            {name:"Metallic Bronze",hex:"#CD7F32"},{name:"Metallic Copper",hex:"#B87333"},{name:"Metallic Steel",hex:"#71797E"},
+            {name:"Brushed Metal",hex:"#A9A9A9"},{name:"Chrome",hex:"#DBE9F4"},{name:"Matte Black",hex:"#28282B"},
+            {name:"Matte White",hex:"#F5F5F5"},{name:"Matte Gray",hex:"#808080"},{name:"Glossy",hex:"#FFFFFF"},
+            {name:"Satin",hex:"#E8E8E8"},{name:"Velvet",hex:"#8B008B"},{name:"Silk",hex:"#E6E6FA"},
+            {name:"Denim",hex:"#1560BD"},{name:"Corduroy",hex:"#8B4513"},{name:"Leather",hex:"#8B4513"},
+            {name:"Suede",hex:"#8B4513"},{name:"Velour",hex:"#C850C0"},{name:"Fleece",hex:"#D3D3D3"},
+            {name:"Wool",hex:"#F5F5DC"},{name:"Cotton",hex:"#FCFDFE"},{name:"Linen",hex:"#FAF0E6"},
+            {name:"Chiffon",hex:"#FFF0F5"},{name:"Tulle",hex:"#FFE4E1"},{name:"Organza",hex:"#FFE4E1"},
+            {name:"Lace",hex:"#FFF5EE"},{name:"Tartan",hex:"#800000"},{name:"Plaid",hex:"#006400"},
+            {name:"Stripes",hex:"#FFFFFF"},{name:"Polka Dots",hex:"#FF69B4"},{name:"Checkered",hex:"#FFFFFF"},
+            {name:"Herringbone",hex:"#808080"},{name:"Houndstooth",hex:"#000000"},{name:"Chevron",hex:"#808080"},
+            {name:"Zigzag",hex:"#FF0000"},{name:"Paisley",hex:"#800000"},{name:"Floral",hex:"#FFB6C1"},
+            {name:"Botanical",hex:"#228B22"},{name:"Geometric",hex:"#4169E1"},{name:"Abstract",hex:"#FF6347"},
+            {name:"Watercolor",hex:"#FFB6C1"},{name:"Oil Paint",hex:"#DAA520"},{name:"Acrylic",hex:"#FF4500"},
+            {name:"Pastel",hex:"#FFB7B2"},{name:"Vintage",hex:"#C4A484"},{name:"Retro",hex:"#E97132"},
+            {name:"Modern",hex:"#2C3E50"},{name:"Minimalist",hex:"#F5F5F5"},{name:"Bohemian",hex:"#D4A574"},
+            {name:"Industrial",hex:"#708090"},{name:"Rustic",hex:"#8B4513"},{name:"Elegant",hex:"#2F2F2F"},
+            {name:"Luxurious",hex:"#FFD700"},{name:"Earthy",hex:"#8B4513"},{name:"Natural",hex:"#228B22"},
+            {name:"Organic",hex:"#9ACD32"},{name:"Sustainable",hex:"#556B2F"},{name:"Eco Friendly",hex:"#7CFC00"},
+            {name:"Fresh",hex:"#98FB98"},{name:"Clean",hex:"#E0FFFF"},{name:"Pure",hex:"#F0FFF0"},
+            {name:"Clear",hex:"#E0FFFF"},{name:"Bright",hex:"#FFFF00"},{name:"Vibrant",hex:"#FF1493"},
+            {name:"Bold",hex:"#FF0000"},{name:"Daring",hex:"#FF4500"},{name:"Edgy",hex:"#1C1C1C"},
+            {name:"Gritty",hex:"#696969"},{name:"Raw",hex:"#808080"},{name:"Refined",hex:"#C0C0C0"},
+            {name:"Polished",hex:"#D3D3D3"},{name:"Smooth",hex:"#E8E8E8"},{name:"Soft",hex:"#FFFAFA"},
+            {name:"Gentle",hex:"#FFF5EE"},{name:"Delicate",hex:"#FFF0F5"},{name:"Subtle",hex:"#E6E6FA"},
+            {name:"Muted",hex:"#B8B8B8"},{name:"Understated",hex:"#D3D3D3"},{name:"Sophisticated",hex:"#4A4A4A"},
+            {name:"Chic",hex:"#2F2F2F"},{name:"Trendy",hex:"#FF69B4"},{name:"Hip",hex:"#FF1493"},
+            {name:"Cool",hex:"#00CED1"},{name:"Youthful",hex:"#FF7F50"},{name:"Playful",hex:"#FF69B4"},
+            {name:"Fun",hex:"#FF6347"},{name:"Joyful",hex:"#FFD700"},{name:"Happy",hex:"#FFFF00"},
+            {name:"Cheerful",hex:"#FFB6C1"},{name:"Optimistic",hex:"#FFD700"},{name:"Positive",hex:"#7CFC00"},
+            {name:"Energetic",hex:"#FF4500"},{name:"Active",hex:"#00FF00"},{name:"Dynamic",hex:"#FF0000"},
+            {name:"Powerful",hex:"#FF0000"},{name:"Strong",hex:"#800000"},{name:"Confident",hex:"#000080"},
+            {name:"Courageous",hex:"#FF4500"},{name:"Fearless",hex:"#000000"},{name:"Brave",hex:"#FF6347"},
+            {name:"Resilient",hex:"#228B22"},{name:"Determined",hex:"#8B0000"},{name:"Passionate",hex:"#DC143C"},
+            {name:"Intense",hex:"#FF0000"},{name:"Fierce",hex:"#FF4500"},{name:"Fiery",hex:"#FF4500"},
+            {name:"Burning",hex:"#FF0000"},{name:"Glowing",hex:"#FFA500"},{name:"Shining",hex:"#FFD700"},
+            {name:"Radiant",hex:"#FFFF00"},{name:"Gleaming",hex:"#FFFFFF"},{name:"Sparkling",hex:"#FFFACD"},
+            {name:"Twinkling",hex:"#FFFF00"},{name:"Dazzling",hex:"#FFFFFF"},{name:"Brilliant",hex:"#00BFFF"},
+            {name:"Vivid",hex:"#FF1493"},{name:"Luminous",hex:"#FFD700"}
+        ];
+        let palette = [];
+        let locked = [false, false, false, false, false];
+        let favorites = JSON.parse(localStorage.getItem('paletteFavorites') || '[]');
+        const paletteContainer = document.getElementById('paletteContainer');
+        const copyToast = document.getElementById('copyToast');
+        const favoritesPanel = document.getElementById('favoritesPanel');
+        const favoritesList = document.getElementById('favoritesList');
+        function randomColor() {
+            const chars = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) { color += chars[Math.floor(Math.random() * 16)]; }
+            return color;
+        }
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (result) { return { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }; }
+            return null;
+        }
+        function getLuminance(hex) {
+            const rgb = hexToRgb(hex);
+            const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+        function getTextColor(hex) { return getLuminance(hex) > 0.5 ? '#000000' : '#FFFFFF'; }
+        function findClosestColorName(hex) {
+            const rgb = hexToRgb(hex);
+            let closest = null;
+            let minDistance = Infinity;
+            for (const color of COLOR_NAMES) {
+                const colorRgb = hexToRgb(color.hex);
+                const distance = Math.sqrt(Math.pow(rgb.r - colorRgb.r, 2) + Math.pow(rgb.g - colorRgb.g, 2) + Math.pow(rgb.b - colorRgb.b, 2));
+                if (distance < minDistance) { minDistance = distance; closest = color; }
+            }
+            return closest ? closest.name : 'Unknown';
+        }
+        function createColorColumn(index, color) {
+            const rgb = hexToRgb(color);
+            const textColor = getTextColor(color);
+            const colorName = findClosestColorName(color);
+            const column = document.createElement('div');
+            column.className = 'color-column';
+            column.style.backgroundColor = color;
+            column.style.color = textColor;
+            column.dataset.index = index;
+            column.innerHTML = `
+                <button class="lock-btn ${locked[index] ? 'locked' : ''}" data-index="${index}" title="${locked[index] ? 'Unlock' : 'Lock'} color">${locked[index] ? '🔒' : '🔓'}</button>
+                <div class="color-info ${locked[index] ? 'visible' : ''}">
+                    <div class="color-name">${colorName}</div>
+                    <div class="hex-code">${color}</div>
+                    <div class="rgb-code">rgb(${rgb.r}, ${rgb.g}, ${rgb.b})</div>
+                </div>`;
+            column.addEventListener('click', (e) => { if (!e.target.classList.contains('lock-btn')) { copyToClipboard(color); } });
+            const lockBtn = column.querySelector('.lock-btn');
+            lockBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleLock(index); });
+            return column;
+        }
+        function toggleLock(index) { locked[index] = !locked[index]; renderPalette(); }
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => { showToast(`Copied ${text} to clipboard!`); }).catch(() => { showToast('Failed to copy'); });
+        }
+        function showToast(message) {
+            copyToast.textContent = message;
+            copyToast.classList.add('show');
+            setTimeout(() => { copyToast.classList.remove('show'); }, 2200);
+        }
+        function generatePalette() {
+            const columns = paletteContainer.querySelectorAll('.color-column');
+            let updated = false;
+            columns.forEach((col, index) => {
+                if (!locked[index]) {
+                    updated = true;
+                    col.classList.add('generating');
+                    setTimeout(() => { palette[index] = randomColor(); col.classList.remove('generating'); renderPalette(); }, 400);
+                }
+            });
+            if (!updated) { showToast('All colors are locked!'); }
+        }
+        function renderPalette() {
+            paletteContainer.innerHTML = '';
+            palette.forEach((color, index) => { const column = createColorColumn(index, color); paletteContainer.appendChild(column); });
+        }
+        function initPalette() { palette = []; for (let i = 0; i < 5; i++) { palette.push(randomColor()); } renderPalette(); }
+        function savePalette() {
+            const newPalette = { id: Date.now(), colors: [...palette], locked: [...locked], date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };
+            favorites.unshift(newPalette);
+            localStorage.setItem('paletteFavorites', JSON.stringify(favorites));
+            showToast('Palette saved!');
+            renderFavorites();
+        }
+        function renderFavorites() {
+            if (favorites.length === 0) { favoritesList.innerHTML = '<div class="empty-favorites"><span>🎨</span>No saved palettes yet.<br>Generate and save some!</div>'; return; }
+            favoritesList.innerHTML = favorites.map(palette => `
+                <div class="favorite-palette" data-id="${palette.id}" title="Click to restore">
+                    <div class="palette-preview">${palette.colors.map(color => `<span style="background: ${color}"></span>`).join('')}</div>
+                    <div class="palette-actions"><span class="palette-date">${palette.date}</span><button class="delete-btn" data-id="${palette.id}" title="Delete">Delete</button></div>
+                </div>`).join('');
+            favoritesList.querySelectorAll('.favorite-palette').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('delete-btn')) {
+                        const id = parseInt(el.dataset.id);
+                        const saved = favorites.find(p => p.id === id);
+                        if (saved) { palette = [...saved.colors]; locked = [...saved.locked]; renderPalette(); favoritesPanel.classList.remove('open'); showToast('Palette restored!'); }
+                    }
+                });
+            });
+            favoritesList.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    favorites = favorites.filter(p => p.id !== id);
+                    localStorage.setItem('paletteFavorites', JSON.stringify(favorites));
+                    renderFavorites();
+                    showToast('Palette deleted');
+                });
+            });
+        }
+        document.getElementById('generateBtn').addEventListener('click', generatePalette);
+        document.getElementById('saveBtn').addEventListener('click', savePalette);
+        document.getElementById('favoritesBtn').addEventListener('click', () => { favoritesPanel.classList.toggle('open'); });
+        document.getElementById('closeFavorites').addEventListener('click', () => { favoritesPanel.classList.remove('open'); });
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.target.matches('input, textarea, button')) { e.preventDefault(); generatePalette(); }
+            if (e.code === 'Escape') { favoritesPanel.classList.remove('open'); }
+        });
+        document.addEventListener('click', (e) => {
+            if (!favoritesPanel.contains(e.target) && !e.target.closest('#favoritesBtn') && favoritesPanel.classList.contains('open')) { favoritesPanel.classList.remove('open'); }
+        });
+        initPalette();
+        renderFavorites();
+    </script>
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law Legal Case Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252b3a;
+            --text-primary: #e1e8ed;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #334155;
+            --highlight: #fbbf24;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Search Panel */
+        .search-panel {
+            width: 400px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 24px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 48px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .result-item {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .result-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .result-item.active {
+            border-color: var(--accent-blue);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .result-snippet {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Detail View */
+        .detail-view {
+            flex: 1;
+            background-color: var(--bg-primary);
+            display: none;
+        }
+
+        .detail-view.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-header {
+            background-color: var(--bg-secondary);
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .extract-button {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .extract-button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .text-content {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .highlighted {
+            background-color: rgba(251, 191, 36, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .entity-name {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .entity-date {
+            background-color: rgba(16, 185, 129, 0.2);
+        }
+
+        /* Notes Sidebar */
+        .notes-sidebar {
+            width: 320px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .notes-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .add-note-button {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-note-button:hover {
+            background-color: #059669;
+        }
+
+        .note-item {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .note-text {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .note-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .delete-note {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            margin-left: 8px;
+        }
+
+        .delete-note:hover {
+            color: #ef4444;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .search-panel {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            .notes-sidebar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Search Panel -->
+        <div class="search-panel">
+            <div class="header">
+                <div class="logo">Vibe-Law</div>
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search case law..." id="searchInput">
+                </div>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="detail-view" id="detailView">
+            <div class="detail-header">
+                <div class="detail-title" id="detailTitle"></div>
+                <div class="detail-meta" id="detailMeta"></div>
+            </div>
+            <div class="detail-content">
+                <div class="main-content">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="summary">Summary</div>
+                        <div class="tab" data-tab="fulltext">Full Text</div>
+                    </div>
+                    <div class="tab-content active" id="summaryTab">
+                        <button class="extract-button" onclick="extractEntities()">Extract Entities</button>
+                        <div class="text-content" id="summaryContent"></div>
+                    </div>
+                    <div class="tab-content" id="fulltextTab">
+                        <button class="extract-button" onclick="extractEntities()">Extract Entities</button>
+                        <div class="text-content" id="fulltextContent"></div>
+                    </div>
+                </div>
+                <div class="notes-sidebar">
+                    <div class="notes-header">
+                        <div class="notes-title">Notes</div>
+                        <button class="add-note-button" onclick="addNote()">Add Note</button>
+                    </div>
+                    <div id="notesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock legal cases data
+        const legalCases = [
+            {
+                id: 1,
+                title: "Smith v. Johnson Manufacturing Corp.",
+                court: "Supreme Court of New York",
+                date: "March 15, 2023",
+                citation: "2023 NY Slip Op 12345",
+                summary: "Plaintiff alleged negligence in product design leading to personal injury. The court found sufficient evidence of design defect and failure to warn, reversing summary judgment for defendant.",
+                fullText: "This case addresses the fundamental question of product liability in the context of industrial machinery design. Plaintiff, John Smith, suffered severe injuries while operating a hydraulic press manufactured by Johnson Manufacturing Corp. The incident occurred on June 12, 2021, at the defendant's facility in Buffalo, New York. Smith alleged that the machine lacked adequate safety guards and warning systems. The trial court granted defendant's motion for summary judgment, but the appellate division reversed. Writing for the majority, Judge Anderson held that reasonable minds could differ on whether the product's design was defective and whether adequate warnings were provided. The court emphasized that manufacturers have a duty to design products that are reasonably safe for their intended use and to provide adequate warnings of non-obvious dangers. The decision reinforces New York's commitment to protecting workers from defective industrial equipment.",
+                entities: {
+                    names: ["John Smith", "Johnson Manufacturing Corp", "Judge Anderson"],
+                    dates: ["June 12, 2021", "March 15, 2023"],
+                    places: ["Buffalo, New York"]
+                }
+            },
+            {
+                id: 2,
+                title: "Digital Privacy Rights Coalition v. TechGiant Inc.",
+                court: "9th Circuit Court of Appeals",
+                date: "February 28, 2023",
+                citation: "2023 US App Lexis 8765",
+                summary: "Class action suit alleging violations of federal privacy statutes. Court certified class and denied motion to dismiss, finding plaintiffs stated valid claims under ECPA and CCPA.",
+                fullText: "The Digital Privacy Rights Coalition brought this action on behalf of millions of users whose personal data was allegedly collected without proper consent. TechGiant Inc., a social media platform with over 500 million users worldwide, was accused of tracking user activity across third-party websites even after users explicitly opted out of data collection. The complaint, filed in August 2022, alleged violations of the Electronic Communications Privacy Act (ECPA) and the California Consumer Privacy Act (CCPA). Judge Martinez, writing for a unanimous three-judge panel, found that the plaintiffs had adequately alleged injury-in-fact for Article III standing purposes. The court noted that privacy violations need not result in monetary damages to be actionable. The decision sends a strong message to technology companies about the importance of transparent data practices and meaningful user consent. TechGiant's argument that users implicitly consented to tracking by using their service was rejected as circular reasoning.",
+                entities: {
+                    names: ["Digital Privacy Rights Coalition", "TechGiant Inc", "Judge Martinez"],
+                    dates: ["August 2022", "February 28, 2023"],
+                    places: ["California"]
+                }
+            },
+            {
+                id: 3,
+                title: "Environmental Defense Fund v. PetroChem Industries",
+                court: "District Court for the Northern District of California",
+                date: "January 10, 2023",
+                citation: "2023 WL 123456",
+                summary: "Environmental group sued chemical manufacturer for Clean Water Act violations. Court granted preliminary injunction requiring immediate cessation of discharge activities.",
+                fullText: "This environmental protection case arose from PetroChem Industries' alleged discharge of toxic chemicals into San Francisco Bay. The Environmental Defense Fund, a nonprofit organization dedicated to protecting environmental rights, filed suit after documenting numerous violations of the Clean Water Act between March and December 2022. The complaint detailed how PetroChem's Richmond facility released mercury, lead, and other heavy metals in excess of permitted levels. District Judge Chen found that the plaintiffs demonstrated a likelihood of success on the merits and irreparable harm to the marine ecosystem. The court's 45-page opinion carefully analyzed the complex regulatory framework governing industrial discharge permits. Notably, the court rejected PetroChem's argument that economic hardship justified continued violations, stating that environmental protection cannot be sacrificed for corporate profit. The injunction requires PetroChem to cease all discharge activities within 30 days and implement comprehensive remediation measures.",
+                entities: {
+                    names: ["Environmental Defense Fund", "PetroChem Industries", "Judge Chen"],
+                    dates: ["March 2022", "December 2022", "January 10, 2023"],
+                    places: ["San Francisco Bay", "Richmond"]
+                }
+            },
+            {
+                id: 4,
+                title: "Martinez v. City Police Department",
+                court: "2nd Circuit Court of Appeals",
+                date: "April 5, 2023",
+                citation: "2023 US App Lexis 9876",
+                summary: "Excessive force civil rights claim. Court affirmed denial of qualified immunity, finding officers violated clearly established Fourth Amendment rights.",
+                fullText: "Maria Martinez brought this 42 U.S.C. § 1983 action against the City Police Department and individual officers after her son, Carlos Martinez, was fatally shot during a traffic stop. The incident occurred on September 3, 2021, when officers pulled over Martinez's vehicle for an alleged broken taillight. Body camera footage revealed that Carlos, who was unarmed, was shot multiple times while attempting to comply with conflicting commands from two officers. The district court denied the officers' motion for summary judgment based on qualified immunity, and the Second Circuit affirmed. Writing for the court, Judge Thompson emphasized that the law was clearly established that officers cannot use deadly force against an unarmed suspect who poses no immediate threat. The court distinguished this case from precedents involving armed suspects or active threats. The opinion carefully analyzed the evolving standards for qualified immunity in excessive force cases, noting that body camera evidence has made it easier for courts to assess the objective reasonableness of police conduct.",
+                entities: {
+                    names: ["Maria Martinez", "Carlos Martinez", "Judge Thompson"],
+                    dates: ["September 3, 2021", "April 5, 2023"],
+                    places: ["Second Circuit"]
+                }
+            },
+            {
+                id: 5,
+                title: "United Workers Union v. National Retail Chain",
+                court: "NLRB",
+                date: "March 20, 2023",
+                citation: "2023 NLRB Lexis 234",
+                summary: "Unfair labor practice complaint alleging termination for union organizing. Board found violation and ordered reinstatement with back pay.",
+                fullText: "This significant labor relations decision involved a national retail chain's alleged retaliation against employees for protected union activities. Jennifer Walsh, a department manager at the company's flagship store in Chicago, was terminated shortly after discussing wage concerns with coworkers. The United Workers Union filed charges with the NLRB, alleging that Walsh's termination violated Section 8(a)(1) of the National Labor Relations Act. Administrative Law Judge Roberts conducted a seven-day hearing, reviewing extensive evidence including employee testimony, company emails, and surveillance footage. The judge found that the company's stated reason for termination—poor performance—was pretextual. The Board adopted the judge's findings and ordered Walsh's immediate reinstatement with full back pay and benefits. The decision reinforces the principle that employers cannot disguise anti-union animus with false performance criticisms. The retail chain was also required to post notices informing employees of their rights under federal labor law.",
+                entities: {
+                    names: ["Jennifer Walsh", "United Workers Union", "Judge Roberts"],
+                    dates: ["March 20, 2023"],
+                    places: ["Chicago"]
+                }
+            },
+            {
+                id: 6,
+                title: "Tech Startup Inc. v. Venture Capital Partners",
+                court: "Delaware Court of Chancery",
+                date: "May 2, 2023",
+                citation: "2023 Del Ch Lexis 456",
+                summary: "Breach of fiduciary duty claim against board members. Court denied dismissal, finding sufficient allegations of self-dealing and conflict of interest.",
+                fullText: "This corporate governance dispute arose from allegations that Venture Capital Partners, which controlled Tech Startup Inc.'s board, engaged in self-dealing transactions that benefited their other portfolio companies at Tech Startup's expense. The complaint, filed by Tech Startup shareholders, alleged that VCP directors approved a merger that undervalued Tech Startup while overvaluing their affiliated entities. Vice Chancellor Montgomery denied the motion to dismiss, finding that the plaintiffs adequately alleged breaches of the duty of loyalty. The court's analysis focused on Delaware's well-established precedents regarding controller fiduciary duties. The opinion noted that controllers owe the highest duty of loyalty to minority shareholders and cannot use their position to benefit themselves at the company's expense. The court rejected VCP's argument that business judgment rule protections applied, finding that the transactions bore indicia of unfair dealing. The decision emphasizes Delaware courts' vigilance in protecting minority shareholder rights in controlled company situations.",
+                entities: {
+                    names: ["Tech Startup Inc", "Venture Capital Partners", "Vice Chancellor Montgomery"],
+                    dates: ["May 2, 2023"],
+                    places: ["Delaware"]
+                }
+            },
+            {
+                id: 7,
+                title: "Consumer Protection Agency v. Financial Services Corp",
+                court: "Consumer Financial Protection Bureau",
+                date: "April 18, 2023",
+                citation: "2023 CFPB Lexis 789",
+                summary: "Enforcement action for deceptive lending practices. Administrative law judge imposed $50 million civil penalty and restitution order.",
+                fullText: "This major enforcement action involved allegations that Financial Services Corp engaged in widespread deceptive practices in its auto lending division. The CFPB's complaint detailed how the company misrepresented loan terms, inflated interest rates for minority borrowers, and sold unnecessary insurance products without proper disclosure. The administrative proceeding revealed that over 100,000 consumers were harmed between 2019 and 2022. Administrative Law Judge Chen found that the company violated the Consumer Financial Protection Act's prohibition against deceptive acts and practices. The $50 million civil penalty represents one of the largest fines imposed by the Bureau for auto lending violations. The restitution order requires the company to identify and compensate all affected consumers, with estimated payments totaling $75 million. The decision includes comprehensive compliance requirements, including mandatory third-party auditing of lending practices and enhanced disclosure protocols. Company executives were also required to certify compliance with federal consumer protection laws.",
+                entities: {
+                    names: ["Financial Services Corp", "Administrative Law Judge Chen", "Consumer Financial Protection Bureau"],
+                    dates: ["2019-2022", "April 18, 2023"],
+                    places: ["United States"]
+                }
+            },
+            {
+                id: 8,
+                title: "Estate of Williams v. Regional Medical Center",
+                court: "State Supreme Court",
+                date: "February 14, 2023",
+                citation: "2023 Wash Lexis 345",
+                summary: "Medical malpractice wrongful death action. Jury verdict for plaintiffs affirmed on appeal, with damages increased to $12.5 million.",
+                fullText: "This tragic medical malpractice case involved the death of Robert Williams, a 45-year-old father of three, following routine gallbladder surgery. The Estate alleged that Regional Medical Center and its surgical staff failed to recognize signs of internal bleeding post-operation. Despite multiple complaints of severe pain and visible symptoms of distress, hospital staff delayed intervention for over eight hours. By the time emergency surgery was performed, Williams had suffered irreversible organ damage and died the following day. The jury awarded $5 million in economic damages and $7.5 million in non-economic damages to Williams' widow and children. The Supreme Court affirmed the verdict, rejecting the hospital's argument that the damage award was excessive. Writing for a unanimous court, Chief Justice Thompson emphasized that Washington law allows substantial non-economic damages in wrongful death cases, particularly when young children lose a parent. The court also upheld the trial court's finding of institutional negligence, noting that the hospital's post-operative care protocols were inadequate.",
+                entities: {
+                    names: ["Robert Williams", "Chief Justice Thompson", "Regional Medical Center"],
+                    dates: ["February 14, 2023"],
+                    places: ["Washington"]
+                }
+            },
+            {
+                id: 9,
+                title: "Software Developers Alliance v. Big Tech Company",
+                court: "Federal Circuit",
+                date: "March 29, 2023",
+                citation: "2023 US App Lexis 6543",
+                summary: "Patent infringement dispute. Court reversed district court claim construction, finding infringement of software architecture patents.",
+                fullText: "This complex patent litigation involved three patents covering distributed computing architectures for mobile applications. The Software Developers Alliance, representing independent app developers, alleged that Big Tech Company's mobile operating system infringed patents related to background processing and memory management. The district court had granted summary judgment of non-infringement based on narrow claim construction. The Federal Circuit reversed, adopting a broader interpretation of key claim terms. Judge Chen's opinion emphasized that patent claims should be interpreted in light of the specification and prosecution history, not limited by the accused infringer's preferred construction. The court found that the district court erred by importing limitations from the specification into the claims. The decision revives the patent holders' infringement claims, potentially exposing Big Tech Company to hundreds of millions in damages. The case highlights ongoing tensions between established technology companies and smaller developers over fundamental software architecture patents. The matter has been remanded for trial on damages and willful infringement allegations.",
+                entities: {
+                    names: ["Software Developers Alliance", "Big Tech Company", "Judge Chen"],
+                    dates: ["March 29, 2023"],
+                    places: ["Federal Circuit"]
+                }
+            },
+            {
+                id: 10,
+                title: "Immigrant Rights Project v. Department of Homeland Security",
+                court: "District Court for the District of Columbia",
+                date: "January 25, 2023",
+                citation: "2023 US Dist Lexis 4321",
+                summary: "Challenge to asylum processing delays. Court granted preliminary injunction requiring DHS to process backlog within 180 days.",
+                fullText: "This significant immigration law decision addressed systemic delays in asylum case processing. The Immigrant Rights Project filed a class action on behalf of over 50,000 asylum seekers who have waited more than two years for initial hearings. The complaint alleged that DHS violated both the Immigration and Nationality Act and the Administrative Procedure Act by failing to provide timely adjudications. District Judge Martinez found that the plaintiffs demonstrated a likelihood of success on their statutory claims. The court's analysis revealed that the average wait time for asylum hearings had increased from 6 months in 2019 to over 30 months by 2022. The preliminary injunction requires DHS to process all backlog cases within 180 days and implement measures to prevent future delays exceeding 180 days. The decision noted that prolonged uncertainty causes severe hardship to asylum seekers, many of whom face dangerous conditions in their home countries. DHS was ordered to provide monthly progress reports and expand hearing capacity through temporary immigration courts.",
+                entities: {
+                    names: ["Immigrant Rights Project", "Department of Homeland Security", "Judge Martinez"],
+                    dates: ["2019-2022", "January 25, 2023"],
+                    places: ["District of Columbia"]
+                }
+            },
+            {
+                id: 11,
+                title: "Competition Commission v. MegaCorp Merger",
+                court: "District Court for the Southern District of New York",
+                date: "April 10, 2023",
+                citation: "2023 US Dist Lexis 8765",
+                summary: "Antitrust challenge to $50 billion merger. Court granted preliminary injunction blocking merger pending administrative trial.",
+                fullText: "This major antitrust enforcement action challenged the proposed merger between MegaCorp's two largest competitors in the telecommunications industry. The Competition Commission alleged that the merger would create a monopoly controlling 75% of the national market. The complaint detailed how the merged entity would eliminate head-to-head competition that has driven innovation and consumer benefits for decades. District Judge Kaplan found that the Commission demonstrated a likelihood of success on its Sherman Act and Clayton Act claims. The court's analysis focused on market concentration metrics, finding that the merger would increase the HHI (Herfindahl-Hirschman Index) by over 2,000 points to more than 4,500. The opinion rejected the defendants' argument that the merger would generate efficiencies benefiting consumers, noting that claimed cost savings were speculative and would likely result from reduced competition rather than genuine efficiencies. The preliminary injunction maintains the status quo while the Commission's administrative proceeding proceeds. The decision sends a strong signal about enforcement priorities in concentrated industries.",
+                entities: {
+                    names: ["MegaCorp", "Judge Kaplan", "Competition Commission"],
+                    dates: ["April 10, 2023"],
+                    places: ["Southern District of New York"]
+                }
+            },
+            {
+                id: 12,
+                title: "Taxpayers Union v. State Revenue Department",
+                court: "State Supreme Court",
+                date: "May 15, 2023",
+                citation: "2023 State Tax Lexis 567",
+                summary: "Challenge to retroactive tax assessment. Court invalidated $200 million assessment for violating due process requirements.",
+                fullText: "This significant tax law decision arose from the State Revenue Department's retroactive application of new corporate tax regulations. The Taxpayers Union, representing 150 affected businesses, challenged assessments totaling over $200 million covering tax years 2018-2021. The Department had applied new regulations interpreting existing statutes to require additional payments based on international transfer pricing arrangements. Chief Justice Rodriguez, writing for a divided court, found that the retroactive application violated both state and federal due process protections. The majority opinion emphasized that taxpayers must have fair notice of tax obligations and cannot be subjected to retroactive liability based on new interpretations of existing law. The court distinguished this case from precedents permitting retroactive application in limited circumstances, finding no compelling state interest justified the surprise assessments. The decision requires the Department to refund all collected amounts with interest and establishes important limits on administrative agencies' power to apply new interpretations retroactively. The dissent argued that the Department merely clarified existing requirements rather than creating new obligations.",
+                entities: {
+                    names: ["Taxpayers Union", "State Revenue Department", "Chief Justice Rodriguez"],
+                    dates: ["2018-2021", "May 15, 2023"],
+                    places: ["State Supreme Court"]
+                }
+            }
+        ];
+
+        let currentCase = null;
+        let currentNotes = [];
+        let entitiesHighlighted = false;
+
+        // Initialize the application
+        function init() {
+            displayResults(legalCases);
+            loadNotes();
+            setupEventListeners();
+        }
+
+        // Display search results
+        function displayResults(cases) {
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            cases.forEach(case_ => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.onclick = () => showCaseDetail(case_);
+                
+                resultItem.innerHTML = `
+                    <div class="result-title">${case_.title}</div>
+                    <div class="result-meta">
+                        <span>${case_.court}</span>
+                        <span>${case_.date}</span>
+                    </div>
+                    <div class="result-snippet">${case_.summary.substring(0, 150)}...</div>
+                `;
+                
+                resultsList.appendChild(resultItem);
+            });
+        }
+
+        // Show case detail view
+        function showCaseDetail(case_) {
+            currentCase = case_;
+            entitiesHighlighted = false;
+            
+            // Update active state
+            document.querySelectorAll('.result-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Show detail view
+            document.getElementById('detailView').classList.add('active');
+            
+            // Update detail header
+            document.getElementById('detailTitle').textContent = case_.title;
+            document.getElementById('detailMeta').innerHTML = `
+                <span>${case_.court}</span>
+                <span>${case_.date}</span>
+                <span>${case_.citation}</span>
+            `;
+            
+            // Update content
+            document.getElementById('summaryContent').textContent = case_.summary;
+            document.getElementById('fulltextContent').textContent = case_.fullText;
+            
+            // Switch to summary tab
+            showTab('summary');
+            
+            // Load notes for this case
+            displayNotes();
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+
+        // Extract entities (simulate)
+        function extractEntities() {
+            if (!currentCase || entitiesHighlighted) return;
+            
+            entitiesHighlighted = true;
+            const activeTab = document.querySelector('.tab-content.active');
+            const textContent = activeTab.querySelector('.text-content');
+            
+            let text = textContent.textContent;
+            
+            // Highlight names
+            currentCase.entities.names.forEach(name => {
+                const regex = new RegExp(`\\b${name}\\b`, 'g');
+                text = text.replace(regex, `<span class="highlighted entity-name">${name}</span>`);
+            });
+            
+            // Highlight dates
+            currentCase.entities.dates.forEach(date => {
+                const regex = new RegExp(`\\b${date}\\b`, 'g');
+                text = text.replace(regex, `<span class="highlighted entity-date">${date}</span>`);
+            });
+            
+            textContent.innerHTML = text;
+        }
+
+        // Notes functionality
+        function addNote() {
+            if (!currentCase) return;
+            
+            const selectedText = window.getSelection().toString().trim();
+            if (!selectedText) {
+                alert('Please select text to save as a note');
+                return;
+            }
+            
+            const note = {
+                id: Date.now(),
+                caseId: currentCase.id,
+                text: selectedText,
+                timestamp: new Date().toLocaleString()
+            };
+            
+            currentNotes.push(note);
+            saveNotes();
+            displayNotes();
+        }
+
+        function displayNotes() {
+            const notesList = document.getElementById('notesList');
+            const caseNotes = currentNotes.filter(note => note.caseId === currentCase.id);
+            
+            notesList.innerHTML = '';
+            
+            caseNotes.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = 'note-item';
+                noteItem.innerHTML = `
+                    <button class="delete-note" onclick="deleteNote(${note.id})">×</button>
+                    <div class="note-text">${note.text}</div>
+                    <div class="note-meta">${note.timestamp}</div>
+                `;
+                notesList.appendChild(noteItem);
+            });
+        }
+
+        function deleteNote(noteId) {
+            currentNotes = currentNotes.filter(note => note.id !== noteId);
+            saveNotes();
+            displayNotes();
+        }
+
+        function saveNotes() {
+            localStorage.setItem('vibeLawNotes', JSON.stringify(currentNotes));
+        }
+
+        function loadNotes() {
+            const saved = localStorage.getItem('vibeLawNotes');
+            if (saved) {
+                currentNotes = JSON.parse(saved);
+            }
+        }
+
+        // Search functionality
+        function searchCases(query) {
+            if (!query.trim()) {
+                displayResults(legalCases);
+                return;
+            }
+            
+            const filtered = legalCases.filter(case_ => {
+                const searchText = `${case_.title} ${case_.summary} ${case_.court} ${case_.fullText}`.toLowerCase();
+                return searchText.includes(query.toLowerCase());
+            });
+            
+            displayResults(filtered);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchCases(e.target.value);
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    showTab(tab.dataset.tab);
+                });
+            });
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

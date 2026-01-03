@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Weather Dashboard</title>
+    <style>
+        :root {
+            --bg-sunny: linear-gradient(135deg, #fceabb 0%, #f8b500 100%);
+            --bg-cloudy: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+            --bg-rainy: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+            --text-color: #333;
+            --card-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: var(--text-color);
+            transition: background 0.5s ease;
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* Dynamic Body Background classes */
+        body.theme-sunny { background: #ffe259; background: -webkit-linear-gradient(to right, #ffa751, #ffe259); background: linear-gradient(to right, #ffa751, #ffe259); }
+        body.theme-cloudy { background: #D3CCE3; background: -webkit-linear-gradient(to right, #E9E4F0, #D3CCE3); background: linear-gradient(to right, #E9E4F0, #D3CCE3); }
+        body.theme-rainy { background: #00416A; background: -webkit-linear-gradient(to right, #E4E5E6, #00416A); background: linear-gradient(to right, #E4E5E6, #00416A); }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* City Cards Grid */
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .city-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .city-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .city-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+        }
+
+        .city-card.sunny::before { background: #f8b500; }
+        .city-card.cloudy::before { background: #7f8c8d; }
+        .city-card.rainy::before { background: #3498db; }
+
+        .city-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            margin: 1rem 0;
+        }
+
+        .temp {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .condition {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+            text-transform: capitalize;
+        }
+
+        .details-mini {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.9rem;
+            color: #555;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        /* Chart Section */
+        .chart-section {
+            background: rgba(255,255,255,0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 3rem;
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #2c3e50;
+        }
+
+        .bar-chart {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 300px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 10%;
+            position: relative;
+        }
+
+        .bar {
+            width: 100%;
+            background: #3498db;
+            border-radius: 5px 5px 0 0;
+            transition: height 1s ease;
+            position: relative;
+            min-height: 5px; /* ensure visibility even if 0 */
+            cursor: pointer;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .modal-city-name {
+            font-size: 2rem;
+            color: #2c3e50;
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-item {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .modal-item h4 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-item p {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .forecast-list {
+            list-style: none;
+        }
+
+        .forecast-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .forecast-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Color utilities */
+        .color-sunny { color: #f39c12; }
+        .color-cloudy { color: #7f8c8d; }
+        .color-rainy { color: #2980b9; }
+
+        @media (max-width: 600px) {
+            .bar-chart {
+                height: 200px;
+            }
+            .bar-label {
+                font-size: 0.7rem;
+                transform: rotate(-45deg);
+                margin-top: 15px;
+            }
+            .city-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Global Weather</h1>
+        <p class="subtitle">Live Dashboard Mockup</p>
+    </header>
+
+    <div class="container">
+        <!-- City Cards -->
+        <div id="city-grid" class="city-grid">
+            <!-- Cities injected here -->
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-section">
+            <h2 class="chart-title">Temperature Comparison (°C)</h2>
+            <div id="temp-chart" class="bar-chart">
+                <!-- Bars injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 id="modal-city" class="modal-city-name">City Name</h2>
+                <div id="modal-icon" class="weather-icon">☀️</div>
+                <p id="modal-condition" class="condition">Condition</p>
+            </div>
+            
+            <div class="modal-grid">
+                <div class="modal-item">
+                    <h4>Temperature</h4>
+                    <p id="modal-temp">0°C</p>
+                </div>
+                <div class="modal-item">
+                    <h4>Humidity</h4>
+                    <p id="modal-humidity">0%</p>
+                </div>
+                <div class="modal-item">
+                    <h4>Wind</h4>
+                    <p id="modal-wind">0 km/h</p>
+                </div>
+                <div class="modal-item">
+                    <h4>Feels Like</h4>
+                    <p id="modal-feels">0°C</p>
+                </div>
+            </div>
+
+            <h3>3-Day Forecast</h3>
+            <ul id="modal-forecast" class="forecast-list">
+                <!-- Forecast items -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const weatherData = [
+            {
+                id: 1,
+                city: "New York",
+                temp: 22,
+                condition: "sunny",
+                humidity: 45,
+                wind: 12,
+                feelsLike: 24,
+                forecast: [
+                    { day: "Tomorrow", temp: 23, icon: "☀️" },
+                    { day: "Wed", temp: 20, icon: "⛅" },
+                    { day: "Thu", temp: 18, icon: "☁️" }
+                ]
+            },
+            {
+                id: 2,
+                city: "London",
+                temp: 15,
+                condition: "cloudy",
+                humidity: 78,
+                wind: 18,
+                feelsLike: 13,
+                forecast: [
+                    { day: "Tomorrow", temp: 14, icon: "☁️" },
+                    { day: "Wed", temp: 13, icon: "🌧️" },
+                    { day: "Thu", temp: 15, icon: "⛅" }
+                ]
+            },
+            {
+                id: 3,
+                city: "Tokyo",
+                temp: 26,
+                condition: "rainy",
+                humidity: 85,
+                wind: 10,
+                feelsLike: 29,
+                forecast: [
+                    { day: "Tomorrow", temp: 24, icon: "🌧️" },
+                    { day: "Wed", temp: 25, icon: "☁️" },
+                    { day: "Thu", temp: 27, icon: "☀️" }
+                ]
+            },
+            {
+                id: 4,
+                city: "Sydney",
+                temp: 28,
+                condition: "sunny",
+                humidity: 50,
+                wind: 22,
+                feelsLike: 30,
+                forecast: [
+                    { day: "Tomorrow", temp: 29, icon: "☀️" },
+                    { day: "Wed", temp: 31, icon: "☀️" },
+                    { day: "Thu", temp: 25, icon: "⛅" }
+                ]
+            },
+            {
+                id: 5,
+                city: "Paris",
+                temp: 18,
+                condition: "cloudy",
+                humidity: 65,
+                wind: 15,
+                feelsLike: 18,
+                forecast: [
+                    { day: "Tomorrow", temp: 19, icon: "⛅" },
+                    { day: "Wed", temp: 17, icon: "☁️" },
+                    { day: "Thu", temp: 16, icon: "🌧️" }
+                ]
+            }
+        ];
+
+        // Icons map
+        const icons = {
+            sunny: "☀️",
+            cloudy: "☁️",
+            rainy: "🌧️"
+        };
+
+        // Colors map for charts
+        const colors = {
+            sunny: "#f1c40f",
+            cloudy: "#95a5a6",
+            rainy: "#3498db"
+        };
+
+        // DOM Elements
+        const cityGrid = document.getElementById('city-grid');
+        const tempChart = document.getElementById('temp-chart');
+        const modal = document.getElementById('modal');
+
+        // Initialize
+        function init() {
+            renderCities();
+            renderChart();
+            // Set initial theme based on first city or neutral
+            document.body.className = 'theme-cloudy'; 
+        }
+
+        // Render City Cards
+        function renderCities() {
+            cityGrid.innerHTML = '';
+            weatherData.forEach(data => {
+                const card = document.createElement('div');
+                card.className = `city-card ${data.condition}`;
+                card.onclick = () => openModal(data);
+
+                const icon = icons[data.condition] || "❓";
+
+                card.innerHTML = `
+                    <div class="city-name">${data.city}</div>
+                    <div class="weather-icon">${icon}</div>
+                    <div class="temp">${data.temp}°</div>
+                    <div class="condition">${data.condition}</div>
+                    <div class="details-mini">
+                        <span>💧 ${data.humidity}%</span>
+                        <span>💨 ${data.wind} km/h</span>
+                    </div>
+                `;
+                cityGrid.appendChild(card);
+            });
+        }
+
+        // Render Chart
+        function renderChart() {
+            tempChart.innerHTML = '';
+            
+            // Find max temp for scaling
+            const maxTemp = Math.max(...weatherData.map(d => d.temp)) + 5;
+
+            weatherData.forEach(data => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+
+                const heightPercent = (data.temp / maxTemp) * 100;
+                const barColor = colors[data.condition];
+
+                barContainer.innerHTML = `
+                    <div class="bar" style="height: ${heightPercent}%; background-color: ${barColor};" title="${data.city}: ${data.temp}°C">
+                        <span class="bar-value">${data.temp}°</span>
+                    </div>
+                    <div class="bar-label">${data.city}</div>
+                `;
+                
+                // Add click listener to bar too
+                barContainer.onclick = () => openModal(data);
+
+                tempChart.appendChild(barContainer);
+            });
+        }
+
+        // Open Modal
+        function openModal(data) {
+            // Update Modal Content
+            document.getElementById('modal-city').innerText = data.city;
+            document.getElementById('modal-icon').innerText = icons[data.condition];
+            document.getElementById('modal-condition').innerText = data.condition;
+            document.getElementById('modal-temp').innerText = `${data.temp}°C`;
+            document.getElementById('modal-humidity').innerText = `${data.humidity}%`;
+            document.getElementById('modal-wind').innerText = `${data.wind} km/h`;
+            document.getElementById('modal-feels').innerText = `${data.feelsLike}°C`;
+
+            // Update forecast
+            const forecastList = document.getElementById('modal-forecast');
+            forecastList.innerHTML = '';
+            data.forecast.forEach(day => {
+                const li = document.createElement('li');
+                li.className = 'forecast-item';
+                li.innerHTML = `
+                    <span>${day.day}</span>
+                    <span>${day.icon} ${day.temp}°C</span>
+                `;
+                forecastList.appendChild(li);
+            });
+
+            // Change Body Theme
+            document.body.className = `theme-${data.condition}`;
+
+            // Show Modal
+            modal.classList.add('active');
+        }
+
+        // Close Modal
+        function closeModal() {
+            modal.classList.remove('active');
+            // Optional: Reset theme or keep last selected
+        }
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>

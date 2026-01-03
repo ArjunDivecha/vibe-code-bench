@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        :root {
+            --bg-color: #0079bf;
+            --column-bg: #ebecf0;
+            --card-bg: #ffffff;
+            --text-color: #172b4d;
+            --priority-urgent: #eb5a46;
+            --priority-medium: #f2d600;
+            --priority-low: #61bd4f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.15);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        #add-btn {
+            background-color: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #add-btn:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        .board {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px;
+            gap: 20px;
+            height: 100%;
+            align-items: flex-start;
+        }
+
+        .column {
+            background-color: var(--column-bg);
+            border-radius: 3px;
+            width: 300px;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+
+        .column-header {
+            padding: 10px 10px 0;
+            margin-bottom: 10px;
+        }
+
+        .column-header h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            padding-left: 8px;
+        }
+
+        .card-list {
+            padding: 0 8px 8px;
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 50px; /* Drop target area */
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(9,30,66,0.25);
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: grab;
+            position: relative;
+            border-left: 5px solid transparent;
+            transition: background-color 0.2s;
+        }
+
+        .card:hover {
+            background-color: #f4f5f7;
+        }
+
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card.priority-urgent { border-left-color: var(--priority-urgent); }
+        .card.priority-medium { border-left-color: var(--priority-medium); }
+        .card.priority-low { border-left-color: var(--priority-low); }
+
+        .card-title {
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background-color: #f4f5f7;
+            padding: 20px;
+            border-radius: 3px;
+            width: 300px;
+            box-shadow: 0 8px 16px -4px rgba(9,30,66,0.25);
+        }
+
+        .modal h3 {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #dfe1e6;
+            border-radius: 3px;
+            background-color: #fafbfc;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #0079bf;
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        button.btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary { background-color: #5aac44; color: white; }
+        .btn-primary:hover { background-color: #519839; }
+
+        .btn-danger { background-color: #eb5a46; color: white; }
+        .btn-danger:hover { background-color: #cf513d; }
+
+        .btn-secondary { background-color: transparent; color: #172b4d; }
+        .btn-secondary:hover { background-color: rgba(9,30,66,0.08); }
+
+        /* Drag over effect */
+        .card-list.drag-over {
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>My Kanban Board</h1>
+    <button id="add-btn">+ Add Card</button>
+</header>
+
+<div class="board">
+    <div class="column">
+        <div class="column-header"><h2>To Do</h2></div>
+        <div class="card-list" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+            <!-- Cards go here -->
+        </div>
+    </div>
+    <div class="column">
+        <div class="column-header"><h2>In Progress</h2></div>
+        <div class="card-list" id="inprogress" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+            <!-- Cards go here -->
+        </div>
+    </div>
+    <div class="column">
+        <div class="column-header"><h2>Done</h2></div>
+        <div class="card-list" id="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)">
+            <!-- Cards go here -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="card-modal">
+    <div class="modal">
+        <h3 id="modal-title">Add Card</h3>
+        <div class="form-group">
+            <label for="card-text">Title</label>
+            <input type="text" id="card-text" placeholder="Enter card title...">
+        </div>
+        <div class="form-group">
+            <label for="card-priority">Priority</label>
+            <select id="card-priority">
+                <option value="low">Low (Green)</option>
+                <option value="medium">Medium (Yellow)</option>
+                <option value="urgent">Urgent (Red)</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" id="delete-btn" style="display: none;">Delete</button>
+            <button class="btn btn-secondary" id="cancel-btn">Cancel</button>
+            <button class="btn btn-primary" id="save-btn">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State management
+    let cards = [];
+    let currentEditId = null;
+
+    // DOM Elements
+    const modal = document.getElementById('card-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const cardTextInput = document.getElementById('card-text');
+    const cardPriorityInput = document.getElementById('card-priority');
+    const deleteBtn = document.getElementById('delete-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const addBtn = document.getElementById('add-btn');
+
+    // Initialize
+    function init() {
+        const storedCards = localStorage.getItem('kanbanCards');
+        if (storedCards) {
+            cards = JSON.parse(storedCards);
+        }
+        renderBoard();
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('kanbanCards', JSON.stringify(cards));
+    }
+
+    function renderBoard() {
+        // Clear all columns
+        ['todo', 'inprogress', 'done'].forEach(colId => {
+            document.getElementById(colId).innerHTML = '';
+        });
+
+        // Render cards
+        cards.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card priority-${card.priority}`;
+            cardEl.draggable = true;
+            cardEl.innerHTML = `<div class="card-title">${escapeHtml(card.title)}</div>`;
+            
+            // Drag events
+            cardEl.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', card.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => cardEl.style.opacity = '0.5', 0);
+            });
+
+            cardEl.addEventListener('dragend', () => {
+                cardEl.style.opacity = '1';
+                // Remove drag-over styling from all lists
+                document.querySelectorAll('.card-list').forEach(el => el.classList.remove('drag-over'));
+            });
+
+            // Click to edit
+            cardEl.addEventListener('click', () => openEditModal(card.id));
+
+            const container = document.getElementById(card.column);
+            if (container) {
+                container.appendChild(cardEl);
+            }
+        });
+    }
+
+    // Modal Logic
+    function openAddModal() {
+        currentEditId = null;
+        modalTitle.textContent = 'Add Card';
+        cardTextInput.value = '';
+        cardPriorityInput.value = 'low';
+        deleteBtn.style.display = 'none';
+        modal.style.display = 'flex';
+        cardTextInput.focus();
+    }
+
+    function openEditModal(id) {
+        const card = cards.find(c => c.id === id);
+        if (!card) return;
+
+        currentEditId = id;
+        modalTitle.textContent = 'Edit Card';
+        cardTextInput.value = card.title;
+        cardPriorityInput.value = card.priority;
+        deleteBtn.style.display = 'block';
+        modal.style.display = 'flex';
+        cardTextInput.focus();
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        currentEditId = null;
+    }
+
+    function saveCard() {
+        const title = cardTextInput.value.trim();
+        const priority = cardPriorityInput.value;
+
+        if (!title) {
+            alert('Please enter a title');
+            return;
+        }
+
+        if (currentEditId) {
+            // Edit existing
+            const cardIndex = cards.findIndex(c => c.id === currentEditId);
+            if (cardIndex > -1) {
+                cards[cardIndex].title = title;
+                cards[cardIndex].priority = priority;
+            }
+        } else {
+            // Add new
+            const newCard = {
+                id: Date.now().toString(),
+                title: title,
+                priority: priority,
+                column: 'todo' // Default column
+            };
+            cards.push(newCard);
+        }
+
+        saveToLocalStorage();
+        renderBoard();
+        closeModal();
+    }
+
+    function deleteCard() {
+        if (currentEditId) {
+            if(confirm('Are you sure you want to delete this card?')) {
+                cards = cards.filter(c => c.id !== currentEditId);
+                saveToLocalStorage();
+                renderBoard();
+                closeModal();
+            }
+        }
+    }
+
+    // Drag and Drop Global Functions
+    window.allowDrop = function(ev) {
+        ev.preventDefault();
+        const list = ev.target.closest('.card-list');
+        if (list) {
+            list.classList.add('drag-over');
+        }
+    }
+
+    window.leaveDrop = function(ev) {
+        const list = ev.target.closest('.card-list');
+        if (list) {
+            list.classList.remove('drag-over');
+        }
+    }
+
+    window.drop = function(ev) {
+        ev.preventDefault();
+        const list = ev.target.closest('.card-list');
+        if (list) {
+            list.classList.remove('drag-over');
+            const cardId = ev.dataTransfer.getData('text/plain');
+            const targetColumnId = list.id;
+
+            const cardIndex = cards.findIndex(c => c.id === cardId);
+            if (cardIndex > -1) {
+                // Only update if column changed or reordering (reordering not implemented for simplicity, just appending)
+                if (cards[cardIndex].column !== targetColumnId) {
+                    cards[cardIndex].column = targetColumnId;
+                    saveToLocalStorage();
+                    renderBoard();
+                }
+            }
+        }
+    }
+
+    // Helper
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Event Listeners
+    addBtn.addEventListener('click', openAddModal);
+    cancelBtn.addEventListener('click', closeModal);
+    saveBtn.addEventListener('click', saveCard);
+    deleteBtn.addEventListener('click', deleteCard);
+    
+    // Close modal if clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Run
+    init();
+
+</script>
+
+</body>
+</html>

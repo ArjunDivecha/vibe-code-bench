@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Markdown Editor</title>
+<style>
+:root {
+    --bg: #f6f7fb;
+    --fg: #222;
+    --panel: #ffffff;
+    --border: #dcdfe6;
+    --accent: #4a90e2;
+}
+body.dark {
+    --bg: #121212;
+    --fg: #e2e2e2;
+    --panel: #1e1e1e;
+    --border: #2c2c2c;
+    --accent: #7ab7ff;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Segoe UI", Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+header h1 {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+.toolbar {
+    display: flex;
+    gap: 8px;
+}
+button, .toggle {
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s, border 0.2s, transform 0.1s;
+}
+button:hover, .toggle:hover {
+    background: var(--accent);
+    color: #fff;
+}
+button:active, .toggle:active { transform: translateY(1px); }
+#container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+.pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+}
+.pane:last-child { border-right: none; }
+.pane-title {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    background: rgba(0,0,0,0.02);
+}
+body.dark .pane-title { background: rgba(255,255,255,0.04); }
+#markdown-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 12px;
+    resize: none;
+    background: transparent;
+    color: var(--fg);
+    font-size: 14px;
+    font-family: "Fira Code", "Consolas", monospace;
+}
+#preview {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+#preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { margin-top: 0.8em; margin-bottom: 0.4em; }
+#preview p { margin: 0.4em 0; line-height: 1.6; }
+#preview ul, #preview ol { padding-left: 1.2em; margin: 0.4em 0; }
+#preview li { margin: 0.2em 0; line-height: 1.5; }
+#preview blockquote {
+    border-left: 4px solid var(--accent);
+    margin: 0.8em 0;
+    padding: 0.6em 0.8em;
+    background: rgba(0,0,0,0.03);
+}
+body.dark #preview blockquote { background: rgba(255,255,255,0.04); }
+#preview code {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: "Fira Code","Consolas", monospace;
+}
+#preview pre {
+    background: rgba(0,0,0,0.06);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+body.dark #preview code, body.dark #preview pre { background: rgba(255,255,255,0.05); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+    <h1>Markdown Editor</h1>
+    <div class="toolbar">
+        <button id="export-btn" title="Download HTML">Export HTML</button>
+        <button id="clear-btn" title="Clear all text">Clear</button>
+        <button id="toggle-theme">Dark Mode</button>
+    </div>
+</header>
+<div id="container">
+    <div class="pane">
+        <div class="pane-title">Markdown</div>
+        <textarea id="markdown-input" spellcheck="false" placeholder="# Welcome!&#10;&#10>Start typing markdown..."></textarea>
+    </div>
+    <div class="pane">
+        <div class="pane-title">Preview</div>
+        <div id="preview"></div>
+    </div>
+</div>
+<script>
+(function() {
+    const input = document.getElementById('markdown-input');
+    const preview = document.getElementById('preview');
+    const exportBtn = document.getElementById('export-btn');
+    const toggleBtn = document.getElementById('toggle-theme');
+    const clearBtn = document.getElementById('clear-btn');
+    const STORAGE_KEY = 'markdown-editor-content';
+    const THEME_KEY = 'markdown-editor-theme';
+
+    function escapeHTML(str) {
+        return str.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;");
+    }
+
+    function parseInline(str) {
+        let s = escapeHTML(str);
+        s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        return s;
+    }
+
+    function parseMarkdown(md) {
+        const codeBlocks = [];
+        const placeholderPrefix = "{{CODE_BLOCK_";
+        md = md.replace(/```([\s\S]*?)```/g, function(match, p1) {
+            const idx = codeBlocks.length;
+            codeBlocks.push(`<pre><code>${escapeHTML(p1)}</code></pre>`);
+            return placeholderPrefix + idx + "}}";
+        });
+
+        const lines = md.split(/\r?\n/);
+        let html = [];
+        let inList = false;
+        let listType = '';
+
+        function closeList() {
+            if (inList) {
+                html.push(listType === 'ol' ? '</ol>' : '</ul>');
+                inList = false;
+                listType = '';
+            }
+        }
+
+        for (let line of lines) {
+            if (line.indexOf(placeholderPrefix) !== -1) {
+                closeList();
+                html.push(line.trim());
+                continue;
+            }
+            if (/^\s*$/.test(line)) { closeList(); continue; }
+
+            const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+            if (headerMatch) {
+                closeList();
+                const level = headerMatch[1].length;
+                html.push(`<h${level}>${parseInline(headerMatch[2])}</h${level}>`);
+                continue;
+            }
+
+            const quoteMatch = line.match(/^\s*>\s?(.*)/);
+            if (quoteMatch) {
+                closeList();
+                html.push(`<blockquote>${parseInline(quoteMatch[1])}</blockquote>`);
+                continue;
+            }
+
+            const olMatch = line.match(/^\s*\d+\.\s+(.*)/);
+            if (olMatch) {
+                if (!inList || listType !== 'ol') {
+                    closeList();
+                    html.push('<ol>');
+                    inList = true; listType = 'ol';
+                }
+                html.push(`<li>${parseInline(olMatch[1])}</li>`);
+                continue;
+            }
+
+            const ulMatch = line.match(/^\s*[-*]\s+(.*)/);
+            if (ulMatch) {
+                if (!inList || listType !== 'ul') {
+                    closeList();
+                    html.push('<ul>');
+                    inList = true; listType = 'ul';
+                }
+                html.push(`<li>${parseInline(ulMatch[1])}</li>`);
+                continue;
+            }
+
+            closeList();
+            html.push(`<p>${parseInline(line)}</p>`);
+        }
+        closeList();
+
+        let result = html.join('\n');
+        result = result.replace(new RegExp(placeholderPrefix + "(\\d+)}}", "g"), (match, num) => {
+            const idx = parseInt(num, 10);
+            return codeBlocks[idx] || '';
+        });
+        return result;
+    }
+
+    function updatePreview() {
+        const md = input.value;
+        localStorage.setItem(STORAGE_KEY, md);
+        preview.innerHTML = parseMarkdown(md);
+    }
+
+    function loadSaved() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved !== null) {
+            input.value = saved;
+        } else {
+            input.value = "# Welcome to the Markdown Editor\n\n" +
+                "Start typing on the left. The preview will update live!\n\n" +
+                "## Features\n" +
+                "- Headers (#, ##, ###)\n" +
+                "- **Bold** and *italic*\n" +
+                "- Ordered and unordered lists\n" +
+                "- Links like [OpenAI](https://openai.com)\n" +
+                "- Code blocks:\n" +
+                "```\nconsole.log('Hello');\n```\n" +
+                "> Blockquotes too.";
+        }
+    }
+
+    function applyTheme(saved) {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const dark = saved === 'dark' || (saved === null && prefersDark);
+        document.body.classList.toggle('dark', dark);
+        toggleBtn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    }
+
+    input.addEventListener('input', updatePreview);
+
+    exportBtn.addEventListener('click', function() {
+        const content = preview.innerHTML;
+        const doc = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Exported Markdown</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+pre { background: #f2f4f5; padding: 12px; border-radius: 8px; overflow-x: auto; }
+code { background: #f2f4f5; padding: 2px 4px; border-radius: 4px; }
+blockquote { border-left: 4px solid #4a90e2; padding-left: 10px; color: #444; }
+</style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+        const blob = new Blob([doc], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'markdown.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    toggleBtn.addEventListener('click', function() {
+        const currentlyDark = document.body.classList.toggle('dark');
+        toggleBtn.textContent = currentlyDark ? 'Light Mode' : 'Dark Mode';
+        localStorage.setItem(THEME_KEY, currentlyDark ? 'dark' : 'light');
+    });
+
+    clearBtn.addEventListener('click', function() {
+        if (confirm("Clear all markdown?")) {
+            input.value = '';
+            updatePreview();
+        }
+    });
+
+    loadSaved();
+    applyTheme(localStorage.getItem(THEME_KEY));
+    updatePreview();
+})();
+</script>
+</body>
+</html>

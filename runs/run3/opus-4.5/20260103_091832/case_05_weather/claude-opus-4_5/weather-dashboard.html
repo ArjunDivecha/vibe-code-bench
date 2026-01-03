@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            padding: 20px;
+        }
+
+        .bg-sunny {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .bg-cloudy {
+            background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+        }
+
+        .bg-rainy {
+            background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        }
+
+        .bg-stormy {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .bg-snowy {
+            background: linear-gradient(135deg, #e6e9f0 0%, #eef1f5 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .weather-card.active {
+            border: 3px solid #667eea;
+        }
+
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+        }
+
+        .weather-card.sunny::before {
+            background: linear-gradient(90deg, #f6d365, #fda085);
+        }
+
+        .weather-card.cloudy::before {
+            background: linear-gradient(90deg, #bdc3c7, #95a5a6);
+        }
+
+        .weather-card.rainy::before {
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+        }
+
+        .weather-card.stormy::before {
+            background: linear-gradient(90deg, #1a1a2e, #4a4a6a);
+        }
+
+        .weather-card.snowy::before {
+            background: linear-gradient(90deg, #a8edea, #fed6e3);
+        }
+
+        .city-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .country {
+            font-size: 0.9rem;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .temperature {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+        }
+
+        .condition {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #555;
+            text-transform: capitalize;
+            margin: 10px 0;
+        }
+
+        .weather-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .detail-item {
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+            background: none;
+            border: none;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header .weather-icon {
+            font-size: 5rem;
+        }
+
+        .modal-header .city-name {
+            font-size: 2rem;
+        }
+
+        .modal-header .temperature {
+            font-size: 3.5rem;
+        }
+
+        .modal-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .modal-detail-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .modal-detail-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .modal-detail-label {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .modal-detail-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .forecast {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .forecast h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .forecast-days {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .forecast-day {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .forecast-day .day {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .forecast-day .icon {
+            font-size: 1.5rem;
+            margin: 5px 0;
+        }
+
+        .forecast-day .temp {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Chart Section */
+        .chart-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .chart-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-container {
+            height: 250px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 20px 10px;
+            border-bottom: 2px solid #eee;
+            position: relative;
+        }
+
+        .chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 100px;
+        }
+
+        .chart-bar {
+            width: 50px;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+            transform: scaleX(1.1);
+        }
+
+        .chart-bar.sunny {
+            background: linear-gradient(180deg, #f6d365, #fda085);
+        }
+
+        .chart-bar.cloudy {
+            background: linear-gradient(180deg, #bdc3c7, #95a5a6);
+        }
+
+        .chart-bar.rainy {
+            background: linear-gradient(180deg, #4b6cb7, #6b8dd6);
+        }
+
+        .chart-bar.stormy {
+            background: linear-gradient(180deg, #2c3e50, #4a6572);
+        }
+
+        .chart-bar.snowy {
+            background: linear-gradient(180deg, #a8edea, #c5f0ed);
+        }
+
+        .chart-temp {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .chart-city {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .chart-grid {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 20px;
+            bottom: 20px;
+            pointer-events: none;
+        }
+
+        .grid-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed #ddd;
+        }
+
+        .grid-label {
+            position: absolute;
+            left: -35px;
+            font-size: 0.7rem;
+            color: #888;
+            transform: translateY(-50%);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .weather-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-bar {
+                width: 35px;
+            }
+
+            .chart-city {
+                font-size: 0.7rem;
+            }
+
+            .modal-details {
+                grid-template-columns: 1fr;
+            }
+
+            .forecast-days {
+                flex-wrap: wrap;
+            }
+
+            .forecast-day {
+                min-width: calc(33% - 10px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chart-container {
+                height: 200px;
+            }
+
+            .chart-bar {
+                width: 30px;
+            }
+
+            .legend {
+                gap: 10px;
+            }
+
+            .legend-item {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .weather-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Time display */
+        .time-display {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body class="bg-sunny">
+    <div class="container">
+        <header>
+            <h1>🌍 Weather Dashboard</h1>
+            <p>Click on a city card to see detailed weather information</p>
+            <p class="time-display" id="currentTime"></p>
+        </header>
+
+        <div class="weather-grid" id="weatherGrid">
+            <!-- Weather cards will be generated here -->
+        </div>
+
+        <div class="chart-section">
+            <h2>📊 Temperature Comparison</h2>
+            <div class="chart-container" id="chartContainer">
+                <div class="chart-grid" id="chartGrid"></div>
+                <!-- Chart bars will be generated here -->
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(180deg, #f6d365, #fda085);"></div>
+                    <span>Sunny</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(180deg, #bdc3c7, #95a5a6);"></div>
+                    <span>Cloudy</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(180deg, #4b6cb7, #6b8dd6);"></div>
+                    <span>Rainy</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(180deg, #2c3e50, #4a6572);"></div>
+                    <span>Stormy</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(180deg, #a8edea, #c5f0ed);"></div>
+                    <span>Snowy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div class="modal-header" id="modalHeader">
+                <!-- Modal content will be generated here -->
+            </div>
+            <div class="modal-details" id="modalDetails">
+                <!-- Modal details will be generated here -->
+            </div>
+            <div class="forecast" id="forecast">
+                <!-- Forecast will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock weather data
+        const weatherData = [
+            {
+                city: "New York",
+                country: "USA",
+                temp: 22,
+                tempUnit: "°C",
+                condition: "sunny",
+                humidity: 45,
+                wind: 12,
+                windUnit: "km/h",
+                feelsLike: 24,
+                pressure: 1015,
+                visibility: 10,
+                uvIndex: 7,
+                forecast: [
+                    { day: "Mon", condition: "sunny", temp: 23 },
+                    { day: "Tue", condition: "cloudy", temp: 20 },
+                    { day: "Wed", condition: "rainy", temp: 18 },
+                    { day: "Thu", condition: "sunny", temp: 22 },
+                    { day: "Fri", condition: "sunny", temp: 25 }
+                ]
+            },
+            {
+                city: "London",
+                country: "UK",
+                temp: 15,
+                tempUnit: "°C",
+                condition: "rainy",
+                humidity: 78,
+                wind: 18,
+                windUnit: "km/h",
+                feelsLike: 13,
+                pressure: 1008,
+                visibility: 6,
+                uvIndex: 2,
+                forecast: [
+                    { day: "Mon", condition: "rainy", temp: 14 },
+                    { day: "Tue", condition: "rainy", temp: 13 },
+                    { day: "Wed", condition: "cloudy", temp: 15 },
+                    { day: "Thu", condition: "cloudy", temp: 16 },
+                    { day: "Fri", condition: "sunny", temp: 18 }
+                ]
+            },
+            {
+                city: "Tokyo",
+                country: "Japan",
+                temp: 28,
+                tempUnit: "°C",
+                condition: "cloudy",
+                humidity: 65,
+                wind: 8,
+                windUnit: "km/h",
+                feelsLike: 30,
+                pressure: 1012,
+                visibility: 8,
+                uvIndex: 5,
+                forecast: [
+                    { day: "Mon", condition: "cloudy", temp: 27 },
+                    { day: "Tue", condition: "sunny", temp: 29 },
+                    { day: "Wed", condition: "sunny", temp: 30 },
+                    { day: "Thu", condition: "stormy", temp: 25 },
+                    { day: "Fri", condition: "rainy", temp: 23 }
+                ]
+            },
+            {
+                city: "Sydney",
+                country: "Australia",
+                temp: 18,
+                tempUnit: "°C",
+                condition: "sunny",
+                humidity: 52,
+                wind: 22,
+                windUnit: "km/h",
+                feelsLike: 17,
+                pressure: 1020,
+                visibility: 12,
+                uvIndex: 8,
+                forecast: [
+                    { day: "Mon", condition: "sunny", temp: 19 },
+                    { day: "Tue", condition: "sunny", temp: 21 },
+                    { day: "Wed", condition: "cloudy", temp: 18 },
+                    { day: "Thu", condition: "rainy", temp: 16 },
+                    { day: "Fri", condition: "sunny", temp: 20 }
+                ]
+            },
+            {
+                city: "Paris",
+                country: "France",
+                temp: 12,
+                tempUnit: "°C",
+                condition: "snowy",
+                humidity: 82,
+                wind: 15,
+                windUnit: "km/h",
+                feelsLike: 8,
+                pressure: 1005,
+                visibility: 4,
+                uvIndex: 1,
+                forecast: [
+                    { day: "Mon", condition: "snowy", temp: 10 },
+                    { day: "Tue", condition: "snowy", temp: 8 },
+                    { day: "Wed", condition: "cloudy", temp: 11 },
+                    { day: "Thu", condition: "cloudy", temp: 13 },
+                    { day: "Fri", condition: "sunny", temp: 15 }
+                ]
+            }
+        ];
+
+        // Weather icons mapping
+        const weatherIcons = {
+            sunny: "☀️",
+            cloudy: "☁️",
+            rainy: "🌧️",
+            stormy: "⛈️",
+            snowy: "❄️"
+        };
+
+        // DOM Elements
+        const weatherGrid = document.getElementById('weatherGrid');
+        const chartContainer = document.getElementById('chartContainer');
+        const chartGrid = document.getElementById('chartGrid');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modal = document.getElementById('modal');
+        const modalClose = document.getElementById('modalClose');
+        const modalHeader = document.getElementById('modalHeader');
+        const modalDetails = document.getElementById('modalDetails');
+        const forecast = document.getElementById('forecast');
+
+        let selectedCity = null;
+
+        // Initialize dashboard
+        function init() {
+            renderWeatherCards();
+            renderChart();
+            setupEventListeners();
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Set initial background based on first city
+            updateBackground(weatherData[0].condition);
+        }
+
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentTime').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        // Render weather cards
+        function renderWeatherCards() {
+            weatherGrid.innerHTML = weatherData.map((data, index) => `
+                <div class="weather-card ${data.condition}" data-index="${index}">
+                    <div class="city-name">${data.city}</div>
+                    <div class="country">${data.country}</div>
+                    <div class="weather-icon">${weatherIcons[data.condition]}</div>
+                    <div class="temperature">${data.temp}${data.tempUnit}</div>
+                    <div class="condition">${data.condition}</div>
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Humidity</div>
+                            <div class="detail-value">${data.humidity}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Wind</div>
+                            <div class="detail-value">${data.wind} ${data.windUnit}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render temperature chart
+        function renderChart() {
+            const temps = weatherData.map(d => d.temp);
+            const maxTemp = Math.max(...temps);
+            const minTemp = Math.min(...temps);
+            const range = maxTemp - minTemp || 1;
+            
+            // Add grid lines
+            const gridLines = 5;
+            let gridHTML = '';
+            for (let i = 0; i <= gridLines; i++) {
+                const percentage = (i / gridLines) * 100;
+                const temp = Math.round(minTemp + (range * (gridLines - i) / gridLines));
+                gridHTML += `
+                    <div class="grid-line" style="top: ${percentage}%">
+                        <span class="grid-label">${temp}°</span>
+                    </div>
+                `;
+            }
+            chartGrid.innerHTML = gridHTML;
+
+            // Add bars
+            const barsHTML = weatherData.map((data, index) => {
+                const height = ((data.temp - minTemp) / range) * 180 + 20;
+                return `
+                    <div class="chart-bar-wrapper" data-index="${index}">
+                        <div class="chart-temp">${data.temp}°</div>
+                        <div class="chart-bar ${data.condition}" style="height: ${height}px"></div>
+                        <div class="chart-city">${data.city}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Remove old bars but keep grid
+            const existingBars = chartContainer.querySelectorAll('.chart-bar-wrapper');
+            existingBars.forEach(bar => bar.remove());
+            chartContainer.insertAdjacentHTML('beforeend', barsHTML);
+        }
+
+        // Update background based on condition
+        function updateBackground(condition) {
+            document.body.className = `bg-${condition}`;
+        }
+
+        // Show modal with city details
+        function showModal(index) {
+            const data = weatherData[index];
+            selectedCity = index;
+
+            // Update active card
+            document.querySelectorAll('.weather-card').forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+
+            // Update background
+            updateBackground(data.condition);
+
+            modalHeader.innerHTML = `
+                <div class="weather-icon">${weatherIcons[data.condition]}</div>
+                <div class="city-name">${data.city}, ${data.country}</div>
+                <div class="temperature">${data.temp}${data.tempUnit}</div>
+                <div class="condition">${data.condition}</div>
+            `;
+
+            modalDetails.innerHTML = `
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">💧</div>
+                    <div class="modal-detail-label">Humidity</div>
+                    <div class="modal-detail-value">${data.humidity}%</div>
+                </div>
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">💨</div>
+                    <div class="modal-detail-label">Wind Speed</div>
+                    <div class="modal-detail-value">${data.wind} ${data.windUnit}</div>
+                </div>
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">🌡️</div>
+                    <div class="modal-detail-label">Feels Like</div>
+                    <div class="modal-detail-value">${data.feelsLike}${data.tempUnit}</div>
+                </div>
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">📊</div>
+                    <div class="modal-detail-label">Pressure</div>
+                    <div class="modal-detail-value">${data.pressure} hPa</div>
+                </div>
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">👁️</div>
+                    <div class="modal-detail-label">Visibility</div>
+                    <div class="modal-detail-value">${data.visibility} km</div>
+                </div>
+                <div class="modal-detail-item">
+                    <div class="modal-detail-icon">☀️</div>
+                    <div class="modal-detail-label">UV Index</div>
+                    <div class="modal-detail-value">${data.uvIndex}</div>
+                </div>
+            `;
+
+            forecast.innerHTML = `
+                <h3>📅 5-Day Forecast</h3>
+                <div class="forecast-days">
+                    ${data.forecast.map(day => `
+                        <div class="forecast-day">
+                            <div class="day">${day.day}</div>
+                            <div class="icon">${weatherIcons[day.condition]}</div>
+                            <div class="temp">${day.temp}°</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            modalOverlay.classList.add('active');
+        }
+
+        // Hide modal
+        function hideModal() {
+            modalOverlay.classList.remove('active');
+            document.querySelectorAll('.weather-card').forEach(card => {
+                card.classList.remove('active');
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Weather card clicks
+            weatherGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.weather-card');
+                if (card) {
+                    const index = parseInt(card.dataset.index);
+                    showModal(index);
+                }
+            });
+
+            // Chart bar clicks
+            chartContainer.addEventListener('click', (e) => {
+                const barWrapper = e.target.closest('.chart-bar-wrapper');
+                if (barWrapper) {
+                    const index = parseInt(barWrapper.dataset.index);
+                    showModal(index);
+                }
+            });
+
+            // Modal close
+            modalClose.addEventListener('click', hideModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    hideModal();
+                }
+            });
+
+            // Escape key to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideModal();
+                }
+            });
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

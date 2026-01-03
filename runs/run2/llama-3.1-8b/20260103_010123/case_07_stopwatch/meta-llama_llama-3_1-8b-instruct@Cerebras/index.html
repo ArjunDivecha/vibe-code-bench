@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stopwatch & Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #clock {
+            font-size: 64px;
+            font-weight: bold;
+            margin: 20px;
+        }
+        #lap-list {
+            margin: 20px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ccc;
+        }
+        #toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="clock"></div>
+    <div id="lap-list"></div>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+    <button id="lap">Lap</button>
+    <button id="reset">Reset</button>
+    <button id="toggle">Toggle Mode</button>
+    <input id="hours" type="number" value="0">
+    <input id="minutes" type="number" value="0">
+    <input id="seconds" type="number" value="0">
+    <script>
+        let mode = "stopwatch";
+        let startTime = 0;
+        let lapTimes = [];
+        let intervalId = null;
+
+        function updateClock() {
+            const date = new Date();
+            const hours = String(date.getHours()).padStart(2, "0");
+            const minutes = String(date.getMinutes()).padStart(2, "0");
+            const seconds = String(date.getSeconds()).padStart(2, "0");
+            const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
+            document.getElementById("clock").innerText = `${hours}:${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        function lap() {
+            lapTimes.push(`${new Date().toLocaleTimeString()}`);
+            document.getElementById("lap-list").innerText = lapTimes.join("\n");
+        }
+
+        function start() {
+            startTime = new Date().getTime();
+            intervalId = setInterval(updateClock, 10);
+        }
+
+        function stop() {
+            clearInterval(intervalId);
+        }
+
+        function reset() {
+            stop();
+            document.getElementById("clock").innerText = "00:00:00.000";
+            lapTimes = [];
+            document.getElementById("lap-list").innerText = "";
+        }
+
+        function countdown() {
+            const hours = parseInt(document.getElementById("hours").value);
+            const minutes = parseInt(document.getElementById("minutes").value);
+            const seconds = parseInt(document.getElementById("seconds").value);
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+            const countdownIntervalId = setInterval(() => {
+                const remainingSeconds = totalSeconds - Math.floor(new Date().getTime() / 1000);
+                if (remainingSeconds <= 0) {
+                    alert("Time's up!");
+                    clearInterval(countdownIntervalId);
+                    document.getElementById("clock").innerText = "00:00:00.000";
+                } else {
+                    const hoursRemaining = Math.floor(remainingSeconds / 3600);
+                    const minutesRemaining = Math.floor((remainingSeconds % 3600) / 60);
+                    const secondsRemaining = Math.floor(remainingSeconds % 60);
+                    document.getElementById("clock").innerText = `${hoursRemaining.toString().padStart(2, "0")}:${minutesRemaining.toString().padStart(2, "0")}:${secondsRemaining.toString().padStart(2, "0")}`;
+                }
+            }, 1000);
+        }
+
+        function toggleMode() {
+            if (mode === "stopwatch") {
+                mode = "timer";
+                document.getElementById("hours").style.display = "inline";
+                document.getElementById("minutes").style.display = "inline";
+                document.getElementById("seconds").style.display = "inline";
+                document.getElementById("start").style.display = "none";
+                document.getElementById("stop").style.display = "none";
+                document.getElementById("lap").style.display = "none";
+                document.getElementById("reset").style.display = "none";
+                countdown();
+            } else {
+                mode = "stopwatch";
+                document.getElementById("hours").style.display = "none";
+                document.getElementById("minutes").style.display = "none";
+                document.getElementById("seconds").style.display = "none";
+                document.getElementById("start").style.display = "inline";
+                document.getElementById("stop").style.display = "inline";
+                document.getElementById("lap").style.display = "inline";
+                document.getElementById("reset").style.display = "inline";
+                stop();
+            }
+        }
+
+        document.getElementById("start").addEventListener("click", start);
+        document.getElementById("stop").addEventListener("click", stop);
+        document.getElementById("lap").addEventListener("click", lap);
+        document.getElementById("reset").addEventListener("click", reset);
+        document.getElementById("toggle").addEventListener("click", toggleMode);
+        updateClock();
+    </script>
+</body>
+</html>

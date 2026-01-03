@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --sunny-bg: #ffe066;
+            --cloudy-bg: #d3d3d3;
+            --rainy-bg: #a0c4ff;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+            width: 100%;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .city-card {
+            flex: 1 1 200px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .city-card:hover {
+            transform: scale(1.05);
+        }
+
+        .city-name {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .weather-icon {
+            font-size: 2em;
+        }
+
+        .details {
+            display: none;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .chart-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 200px;
+            border-left: 2px solid #333;
+            border-bottom: 2px solid #333;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bar-rect {
+            width: 30px;
+            background-color: #4a90e2;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌤️ Weather Dashboard</h1>
+</header>
+
+<div class="dashboard" id="dashboard">
+    <!-- City cards will be inserted here -->
+</div>
+
+<div class="chart-container">
+    <h3 style="text-align:center;">Temperature Comparison (°C)</h3>
+    <div class="bar-chart" id="barChart">
+        <!-- Chart bars -->
+    </div>
+</div>
+
+<script>
+    const weatherData = [
+        {
+            city: "New York",
+            temperature: 22,
+            condition: "Sunny",
+            humidity: 50
+        },
+        {
+            city: "London",
+            temperature: 16,
+            condition: "Cloudy",
+            humidity: 65
+        },
+        {
+            city: "Tokyo",
+            temperature: 28,
+            condition: "Sunny",
+            humidity: 55
+        },
+        {
+            city: "Sydney",
+            temperature: 18,
+            condition: "Rainy",
+            humidity: 70
+        },
+        {
+            city: "Paris",
+            temperature: 20,
+            condition: "Cloudy",
+            humidity: 60
+        }
+    ];
+
+    const conditionIcons = {
+        "Sunny": "☀️",
+        "Cloudy": "☁️",
+        "Rainy": "🌧️"
+    };
+
+    const conditionBackgrounds = {
+        "Sunny": "var(--sunny-bg)",
+        "Cloudy": "var(--cloudy-bg)",
+        "Rainy": "var(--rainy-bg)"
+    };
+
+    const dashboard = document.getElementById('dashboard');
+
+    weatherData.forEach((data, index) => {
+        const card = document.createElement('div');
+        card.className = 'city-card';
+        card.style.backgroundColor = conditionBackgrounds[data.condition] || 'white';
+
+        card.innerHTML = `
+            <div class="city-name">${data.city}</div>
+            <div class="weather-icon">${conditionIcons[data.condition] || ''}</div>
+            <div>${data.temperature}°C</div>
+            <div>Humidity: ${data.humidity}%</div>
+            <div class="details" id="details-${index}">
+                <hr>
+                <p><strong>More details:</strong></p>
+                <p>Condition: ${data.condition}</p>
+                <p>Humidity: ${data.humidity}%</p>
+                <p>Feels Like: ${(data.temperature - 2)}°C</p>
+            </div>
+        `;
+
+        card.addEventListener('click', () => {
+            const detail = document.getElementById(`details-${index}`);
+            detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
+        });
+
+        dashboard.appendChild(card);
+    });
+
+    // Render bar chart
+    const chart = document.getElementById('barChart');
+    const maxTemp = Math.max(...weatherData.map(d => d.temperature));
+
+    weatherData.forEach(data => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const height = (data.temperature / maxTemp) * 150;
+
+        bar.innerHTML = `
+            <div class="bar-rect" style="height:${height}px"></div>
+            <div style="font-size: 0.9em;">${data.city}</div>
+        `;
+
+        chart.appendChild(bar);
+    });
+</script>
+
+</body>
+</html>

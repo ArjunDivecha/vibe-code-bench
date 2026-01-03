@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Calculator</title>
+  <style>
+    body {
+      background: #1e1e2f;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .calculator {
+      background: #2c2c3e;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      padding: 20px;
+      width: 320px;
+    }
+
+    .display {
+      background: #1a1a2e;
+      color: #00ffcc;
+      font-size: 2.5em;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: right;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    button {
+      font-size: 1.4em;
+      padding: 20px;
+      border: none;
+      border-radius: 10px;
+      background: #3a3a4f;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.operator {
+      background: #ff6b6b;
+    }
+
+    button.equal {
+      background: #00b894;
+      grid-column: span 2;
+    }
+
+    button.clear {
+      background: #fdcb6e;
+    }
+
+    button:hover {
+      background: #4e4e63;
+    }
+
+    button.operator:hover {
+      background: #ff8787;
+    }
+
+    button.equal:hover {
+      background: #00d8a6;
+    }
+
+    button.clear:hover {
+      background: #ffeaa7;
+    }
+
+    @media (max-width: 400px) {
+      .calculator {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="clear" onclick="clearDisplay()">C</button>
+      <button class="operator" onclick="inputOperator('/')">÷</button>
+      <button class="operator" onclick="inputOperator('*')">×</button>
+      <button class="operator" onclick="inputOperator('-')">−</button>
+
+      <button onclick="inputDigit('7')">7</button>
+      <button onclick="inputDigit('8')">8</button>
+      <button onclick="inputDigit('9')">9</button>
+      <button class="operator" onclick="inputOperator('+')">+</button>
+
+      <button onclick="inputDigit('4')">4</button>
+      <button onclick="inputDigit('5')">5</button>
+      <button onclick="inputDigit('6')">6</button>
+      <button class="equal" onclick="calculateResult()">=</button>
+
+      <button onclick="inputDigit('1')">1</button>
+      <button onclick="inputDigit('2')">2</button>
+      <button onclick="inputDigit('3')">3</button>
+      <button onclick="inputDigit('0')" style="grid-column: span 2">0</button>
+      <button onclick="inputDecimal('.')">.</button>
+    </div>
+  </div>
+
+  <script>
+    let currentInput = '';
+    let lastResult = null;
+
+    const display = document.getElementById('display');
+
+    function updateDisplay() {
+      display.textContent = currentInput || '0';
+    }
+
+    function inputDigit(digit) {
+      if (currentInput === 'Error') currentInput = '';
+      currentInput += digit;
+      updateDisplay();
+    }
+
+    function inputDecimal(dot) {
+      if (currentInput === 'Error') currentInput = '';
+      const parts = currentInput.split(/[\+\-\*\/]/);
+      const lastPart = parts[parts.length - 1];
+      if (!lastPart.includes('.')) {
+        currentInput += dot;
+        updateDisplay();
+      }
+    }
+
+    function inputOperator(op) {
+      if (currentInput === 'Error') currentInput = '';
+      if (currentInput === '') return;
+      const lastChar = currentInput.slice(-1);
+      if ('+-*/'.includes(lastChar)) {
+        currentInput = currentInput.slice(0, -1) + op;
+      } else {
+        currentInput += op;
+      }
+      updateDisplay();
+    }
+
+    function clearDisplay() {
+      currentInput = '';
+      updateDisplay();
+    }
+
+    function calculateResult() {
+      try {
+        let result = eval(currentInput);
+        if (!isFinite(result)) throw 'Error';
+        currentInput = result.toString();
+      } catch (e) {
+        currentInput = 'Error';
+      }
+      updateDisplay();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      const key = e.key;
+      if (/\d/.test(key)) {
+        inputDigit(key);
+      } else if (['+', '-', '*', '/'].includes(key)) {
+        inputOperator(key);
+      } else if (key === 'Enter' || key === '=') {
+        e.preventDefault();
+        calculateResult();
+      } else if (key === 'Backspace') {
+        currentInput = currentInput.slice(0, -1);
+        updateDisplay();
+      } else if (key === '.') {
+        inputDecimal('.');
+      } else if (key.toLowerCase() === 'c') {
+        clearDisplay();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Minimal Notes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1f2933;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --border: #e5e7eb;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
+}
+aside {
+  border-right: 1px solid var(--border);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+h1 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+}
+#search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+button {
+  border: none;
+  background: var(--accent);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform .08s ease, box-shadow .08s ease, opacity .2s;
+}
+button:active { transform: scale(0.98); }
+button.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+button.danger {
+  background: #ef4444;
+}
+#newNoteBtn { width: 100%; margin-top: 12px; }
+.note-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.note-card {
+  padding: 12px;
+  margin: 8px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.note-card:hover { border-color: var(--accent); box-shadow: 0 6px 18px rgba(0,0,0,0.04); }
+.note-card.active { border: 2px solid var(--accent); }
+.note-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+}
+.note-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  max-height: 40px;
+  overflow: hidden;
+}
+main {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+.editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+}
+#title {
+  width: 100%;
+  font-size: 22px;
+  border: none;
+  outline: none;
+  padding: 8px 0 4px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.toolbar button {
+  padding: 8px 10px;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid var(--border);
+}
+.toolbar button.active {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+  color: #111827;
+}
+#content {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f9fafb;
+  overflow-y: auto;
+}
+#content:focus {
+  outline: 2px solid #c7d2fe;
+  background: #fff;
+}
+.actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+@media (max-width: 900px) {
+  body { grid-template-columns: 1fr; }
+  aside { height: 40vh; }
+  main { height: 60vh; }
+  .editor { height: calc(60vh - 48px); }
+}
+</style>
+</head>
+<body>
+<aside>
+  <header>
+    <h1>My Notes</h1>
+    <input id="search" type="search" placeholder="Search notes...">
+    <button id="newNoteBtn">+ New Note</button>
+  </header>
+  <div id="noteList" class="note-list"></div>
+</aside>
+
+<main>
+  <div class="editor">
+    <input id="title" placeholder="Note title" aria-label="Title">
+    <div class="toolbar">
+      <button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+      <button type="button" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+    </div>
+    <div id="content" contenteditable="true" aria-label="Content"></div>
+    <div class="actions">
+      <div class="muted" id="status"></div>
+      <span style="flex:1"></span>
+      <button class="secondary" id="deleteBtn">Delete</button>
+      <button id="saveBtn">Save</button>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'notesAppNotes';
+  let notes = [];
+  let selectedId = null;
+
+  const noteListEl = document.getElementById('noteList');
+  const searchEl = document.getElementById('search');
+  const titleEl = document.getElementById('title');
+  const contentEl = document.getElementById('content');
+  const statusEl = document.getElementById('status');
+  const saveBtn = document.getElementById('saveBtn');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const newNoteBtn = document.getElementById('newNoteBtn');
+  const toolbarBtns = document.querySelectorAll('.toolbar button');
+
+  function loadNotes() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      notes = data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.warn('Could not load notes:', e);
+      notes = [];
+    }
+  }
+
+  function saveNotes() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  }
+
+  function formatDate(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  function renderList() {
+    const query = searchEl.value.toLowerCase();
+    noteListEl.innerHTML = '';
+    const filtered = notes
+      .filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query))
+      .sort((a,b) => b.updatedAt - a.updatedAt);
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.style.padding = '12px';
+      empty.textContent = 'No notes yet.';
+      noteListEl.appendChild(empty);
+      return;
+    }
+    filtered.forEach(n => {
+      const card = document.createElement('div');
+      card.className = 'note-card' + (n.id === selectedId ? ' active' : '');
+      card.dataset.id = n.id;
+      const h = document.createElement('h3');
+      h.textContent = n.title || 'Untitled';
+      const p = document.createElement('p');
+      p.innerHTML = n.content || '';
+      card.appendChild(h);
+      card.appendChild(p);
+      card.addEventListener('click', () => selectNote(n.id));
+      noteListEl.appendChild(card);
+    });
+  }
+
+  function clearEditor() {
+    selectedId = null;
+    titleEl.value = '';
+    contentEl.innerHTML = '';
+    statusEl.textContent = 'New note';
+    deleteBtn.disabled = true;
+    highlightSelectionButtons();
+  }
+
+  function selectNote(id) {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    selectedId = id;
+    titleEl.value = note.title;
+    contentEl.innerHTML = note.content;
+    statusEl.textContent = 'Last edited ' + formatDate(note.updatedAt);
+    deleteBtn.disabled = false;
+    renderList();
+  }
+
+  function saveCurrent() {
+    const title = titleEl.value.trim();
+    const content = contentEl.innerHTML.trim();
+    const now = Date.now();
+    if (!selectedId) {
+      const id = 'note-' + now + '-' + Math.random().toString(16).slice(2);
+      notes.push({id, title, content, updatedAt: now});
+      selectedId = id;
+    } else {
+      const note = notes.find(n => n.id === selectedId);
+      if (note) {
+        note.title = title;
+        note.content = content;
+        note.updatedAt = now;
+      }
+    }
+    saveNotes();
+    statusEl.textContent = 'Saved ' + formatDate(now);
+    renderList();
+  }
+
+  function deleteCurrent() {
+    if (!selectedId) return;
+    if (!confirm('Delete this note?')) return;
+    notes = notes.filter(n => n.id !== selectedId);
+    saveNotes();
+    clearEditor();
+    renderList();
+  }
+
+  function highlightSelectionButtons() {
+    document.queryCommandState && toolbarBtns.forEach(btn => {
+      const cmd = btn.dataset.cmd;
+      if (cmd && document.queryCommandState(cmd)) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  // Event listeners
+  searchEl.addEventListener('input', renderList);
+  newNoteBtn.addEventListener('click', () => {
+    clearEditor();
+    titleEl.focus();
+  });
+  saveBtn.addEventListener('click', saveCurrent);
+  deleteBtn.addEventListener('click', deleteCurrent);
+
+  toolbarBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      contentEl.focus();
+      const cmd = btn.dataset.cmd;
+      document.execCommand(cmd, false, null);
+      highlightSelectionButtons();
+    });
+  });
+
+  contentEl.addEventListener('keyup', highlightSelectionButtons);
+  contentEl.addEventListener('mouseup', highlightSelectionButtons);
+
+  // keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      saveCurrent();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      document.execCommand('bold');
+      highlightSelectionButtons();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      document.execCommand('italic');
+      highlightSelectionButtons();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
+      e.preventDefault();
+      document.execCommand('underline');
+      highlightSelectionButtons();
+    }
+  });
+
+  // Init
+  loadNotes();
+  renderList();
+  clearEditor();
+})();
+</script>
+</body>
+</html>

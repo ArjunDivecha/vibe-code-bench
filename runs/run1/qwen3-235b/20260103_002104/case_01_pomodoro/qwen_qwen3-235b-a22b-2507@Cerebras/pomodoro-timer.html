@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #fff5f5;
+            color: #333;
+        }
+        
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(224, 64, 64, 0.2);
+            width: 400px;
+        }
+        
+        h1 {
+            color: #e63946;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+        
+        .timer-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #d90429;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .session-info {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: #e63946;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        button {
+            background-color: #e63946;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            background-color: #d90429;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .tomato-icon {
+            font-size: 3rem;
+            color: #d90429;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tomato-icon">🍅</div>
+        <h1>Pomodoro Timer</h1>
+        <div class="session-info" id="sessionInfo">Work 1</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Timer settings
+        const WORK_DURATION = 25 * 60; // 25 minutes in seconds
+        const BREAK_DURATION = 5 * 60;  // 5 minutes in seconds
+        
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionInfo = document.getElementById('sessionInfo');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // Timer variables
+        let timer;
+        let timeLeft = WORK_DURATION;
+        let isRunning = false;
+        let isWorkTime = true;
+        let sessionCount = 1;
+        
+        // Create audio element for beep sound
+        const beepSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodHCm3FeZ3SPlI+KZVhjd5eyqJBtY2Z3kq+0n3RpZ3mUsLqfdWZoeZi2wqN3a2h5l7nGp3lqZniavMWpe2tpeZi7x6x7bGp6mL3IsHxsaXqYvsixfG1qe5m/ybJ9bmt7mr7Ks35va3ybv8u0f3Brepy/zLR/cG58nb/MtX9xbn2ev822gHFvfp+/zraBcm9+n//NuIFzb4CA/825gnRwgej/zbmDdHGB6v/NuoN1coLr/827hHZzgu3/8P////////////////////////////////8=');
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Update the display
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            sessionInfo.textContent = `${isWorkTime ? 'Work' : 'Break'} ${sessionCount}`;
+        }
+        
+        // Start the timer
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                
+                if (timeLeft <= 0) {
+                    // Time's up! Play beep sound
+                    beepSound.play();
+                    
+                    // Switch mode
+                    isWorkTime = !isWorkTime;
+                    
+                    // If we're starting work again, increment session count
+                    if (isWorkTime) {
+                        sessionCount++;
+                    }
+                    
+                    // Set new time based on current mode
+                    timeLeft = isWorkTime ? WORK_DURATION : BREAK_DURATION;
+                    updateDisplay();
+                }
+            }, 1000);
+        }
+        
+        // Pause the timer
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+        }
+        
+        // Reset the timer
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = WORK_DURATION;
+            isWorkTime = true;
+            sessionCount = 1;
+            updateDisplay();
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>

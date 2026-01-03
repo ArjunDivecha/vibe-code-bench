@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.5s;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1em;
+            text-align: center;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1em;
+            gap: 1em;
+        }
+
+        .city-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1em;
+            width: 200px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .city-card:hover {
+            transform: scale(1.05);
+        }
+
+        .emoji {
+            font-size: 2em;
+        }
+
+        .details {
+            display: none;
+            padding: 1em;
+            background-color: #f4f4f4;
+            margin: 1em;
+            border-radius: 10px;
+        }
+
+        .chart {
+            max-width: 600px;
+            margin: 2em auto;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            margin: 0.5em 0;
+        }
+
+        .bar-label {
+            width: 100px;
+        }
+
+        .bar-fill {
+            height: 20px;
+            background-color: #4CAF50;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .chart {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Weather Dashboard</h1>
+</header>
+
+<div class="dashboard" id="dashboard"></div>
+
+<div class="details" id="details"></div>
+
+<div class="chart" id="chart"></div>
+
+<script>
+    const weatherData = [
+        {
+            city: "New York",
+            temp: 22,
+            condition: "Sunny",
+            humidity: 55
+        },
+        {
+            city: "London",
+            temp: 18,
+            condition: "Cloudy",
+            humidity: 65
+        },
+        {
+            city: "Tokyo",
+            temp: 26,
+            condition: "Rainy",
+            humidity: 70
+        },
+        {
+            city: "Sydney",
+            temp: 24,
+            condition: "Sunny",
+            humidity: 50
+        },
+        {
+            city: "Paris",
+            temp: 20,
+            condition: "Cloudy",
+            humidity: 60
+        }
+    ];
+
+    const conditionEmojis = {
+        "Sunny": "☀️",
+        "Cloudy": "☁️",
+        "Rainy": "🌧️"
+    };
+
+    const conditionColors = {
+        "Sunny": "#FFD700",
+        "Cloudy": "#CCCCCC",
+        "Rainy": "#87CEFA"
+    };
+
+    const dashboard = document.getElementById('dashboard');
+    const details = document.getElementById('details');
+    const chart = document.getElementById('chart');
+
+    function renderDashboard() {
+        weatherData.forEach((data, index) => {
+            const card = document.createElement('div');
+            card.className = 'city-card';
+            card.innerHTML = `
+                <div class="emoji">${conditionEmojis[data.condition]}</div>
+                <h3>${data.city}</h3>
+                <p>${data.temp}°C</p>
+                <p>${data.condition}</p>
+                <p>Humidity: ${data.humidity}%</p>
+            `;
+            card.addEventListener('click', () => showDetails(index));
+            dashboard.appendChild(card);
+        });
+    }
+
+    function showDetails(index) {
+        const data = weatherData[index];
+        details.style.display = 'block';
+        details.innerHTML = `
+            <h2>${data.city} Details</h2>
+            <p><strong>Temperature:</strong> ${data.temp}°C</p>
+            <p><strong>Condition:</strong> ${data.condition} ${conditionEmojis[data.condition]}</p>
+            <p><strong>Humidity:</strong> ${data.humidity}%</p>
+        `;
+        document.body.style.backgroundColor = conditionColors[data.condition];
+    }
+
+    function renderChart() {
+        chart.innerHTML = '<h2>Temperature Chart</h2>';
+        weatherData.forEach(data => {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            const label = document.createElement('div');
+            label.className = 'bar-label';
+            label.textContent = data.city;
+            const fill = document.createElement('div');
+            fill.className = 'bar-fill';
+            fill.style.width = `${data.temp * 4}px`;
+            fill.textContent = `${data.temp}°C`;
+            bar.appendChild(label);
+            bar.appendChild(fill);
+            chart.appendChild(bar);
+        });
+    }
+
+    renderDashboard();
+    renderChart();
+</script>
+
+</body>
+</html>

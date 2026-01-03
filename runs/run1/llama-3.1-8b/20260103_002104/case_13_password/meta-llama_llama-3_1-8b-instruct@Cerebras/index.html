@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 80%;
+            max-width: 400px;
+            background-color: #f0f0f0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider {
+            width: 100%;
+        }
+        
+        .toggle {
+            margin-right: 10px;
+        }
+        
+        .toggle-button {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .toggle-button::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #fff;
+            transform: translateX(0);
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .toggle-button:checked::before {
+            transform: translateX(10px);
+        }
+        
+        .password-input {
+            width: 100%;
+            height: 30px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .password-strength-meter {
+            width: 100%;
+            height: 30px;
+            background-color: #ccc;
+            border-radius: 10px;
+            text-align: center;
+            padding: 5px;
+        }
+        
+        .password-strength-meter span {
+            display: inline-block;
+            width: 0;
+            height: 100%;
+            background-color: #00ff00;
+            border-radius: 10px 0 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Password Generator</h2>
+        <div class="slider-container">
+            <label for="length">Length:</label>
+            <input type="range" id="length" min="8" max="32" value="12">
+            <span id="length-value">12</span>
+        </div>
+        <div class="toggle-slider">
+            <label for="uppercase">Uppercase:</label>
+            <input type="checkbox" id="uppercase" class="toggle">
+            <label for="uppercase">Lowercase:</label>
+            <input type="checkbox" id="lowercase" class="toggle">
+            <label for="numbers">Numbers:</label>
+            <input type="checkbox" id="numbers" class="toggle">
+            <label for="symbols">Symbols:</label>
+            <input type="checkbox" id="symbols" class="toggle">
+        </div>
+        <div class="password-input-container">
+            <input type="text" id="password" class="password-input" readonly>
+            <button id="copy-button">Copy to Clipboard</button>
+        </div>
+        <div class="password-strength-meter-container">
+            <div class="password-strength-meter">
+                <span id="strength-meter"></span>
+            </div>
+            <div id="password-history"></div>
+        </div>
+    </div>
+    
+    <script>
+        const lengthInput = document.getElementById('length');
+        const lengthValueDisplay = document.getElementById('length-value');
+        const uppercaseToggle = document.getElementById('uppercase');
+        const lowercaseToggle = document.getElementById('lowercase');
+        const numbersToggle = document.getElementById('numbers');
+        const symbolsToggle = document.getElementById('symbols');
+        const passwordInput = document.getElementById('password');
+        const copyButton = document.getElementById('copy-button');
+        const strengthMeter = document.getElementById('strength-meter');
+        const passwordHistory = document.getElementById('password-history');
+        
+        lengthInput.addEventListener('input', () => {
+            lengthValueDisplay.textContent = lengthInput.value;
+        });
+        
+        const toggleButtons = [uppercaseToggle, lowercaseToggle, numbersToggle, symbolsToggle];
+        toggleButtons.forEach(button => {
+            button.addEventListener('change', () => {
+                passwordInput.readOnly = !passwordInput.readOnly;
+            });
+        });
+        
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(passwordInput.value);
+        });
+        
+        function generatePassword(length, useUppercase, useLowercase, useNumbers, useSymbols) {
+            const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            if (useSymbols) characters += '!@#$%^&*()_+-={}:<>?/';
+            const password = Array(length).fill(0).map(() => {
+                const charType = Math.random() < 0.5 ? 'lower' : 'upper';
+                if (charType === 'lower') {
+                    if (useLowercase) {
+                        return String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+                    }
+                } else {
+                    if (useUppercase) {
+                        return String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+                    }
+                }
+                if (useNumbers) {
+                    return String.fromCharCode(Math.floor(Math.random() * 10) + 48);
+                }
+                if (useSymbols) {
+                    return characters[Math.floor(Math.random() * (characters.length - 32)) + 32];
+                }
+                return '';
+            }).join('');
+            return password;
+        }
+        
+        function updateStrengthMeter(password) {
+            const strength = password.match(/[a-z]/) ? 1 : 0;
+            strength += password.match(/[A-Z]/) ? 1 : 0;
+            strength += password.match(/[0-9]/) ? 1 : 0;
+            strength += password.match(/[^a-zA-Z0-9]/) ? 1 : 0;
+            strengthMeter.style.width = `${strength * 25}px`;
+            strengthMeter.textContent = `Strength: ${strength * 25}%`;
+        }
+        
+        function generatePasswords() {
+            const passwordCount = parseInt(prompt('Enter the number of passwords to generate:'));
+            if (passwordCount > 0) {
+                const passwords = Array(passwordCount).fill(0).map(() => generatePassword(lengthInput.value, uppercaseToggle.checked, lowercaseToggle.checked, numbersToggle.checked, symbolsToggle.checked));
+                passwordHistory.innerHTML = '';
+                passwords.forEach((password, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.textContent = password;
+                    historyItem.addEventListener('click', () => {
+                        passwordInput.value = password;
+                        updateStrengthMeter(password);
+                    });
+                    passwordHistory.appendChild(historyItem);
+                });
+            }
+        }
+        
+        generatePasswords();
+        
+        document.getElementById('generate-passwords').addEventListener('click', generatePasswords);
+        
+        passwordInput.addEventListener('input', () => {
+            updateStrengthMeter(passwordInput.value);
+        });
+    </script>
+</body>
+</html>

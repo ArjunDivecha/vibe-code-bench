@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Workspace</title>
+    <style>
+        :root {
+            --bg-app: #0f1115;
+            --bg-panel: #161b22;
+            --bg-element: #21262d;
+            --bg-hover: #30363d;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent-dim: rgba(88, 166, 255, 0.15);
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-header: #f0f6fc;
+            --highlight-entity: #d29922; /* Gold/Amber */
+            --highlight-date: #3fb950;   /* Green */
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-legal: "Georgia", "Times New Roman", serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            height: 60px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-header);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand span {
+            color: var(--accent);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px 8px 35px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar: Results List */
+        .results-pane {
+            width: 350px;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-panel);
+        }
+
+        .results-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .case-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .case-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .case-item:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .case-item.active {
+            background-color: var(--accent-dim);
+            border-left: 3px solid var(--accent);
+        }
+
+        .case-title {
+            font-weight: 600;
+            color: var(--text-header);
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .case-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .case-snippet {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-muted);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Detail View */
+        .detail-pane {
+            flex: 1;
+            display: flex;
+            background-color: var(--bg-app);
+            overflow: hidden;
+        }
+
+        .empty-state {
+            margin: auto;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .case-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .detail-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg-app);
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-header);
+            margin-bottom: 5px;
+            font-family: var(--font-legal);
+        }
+
+        .detail-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding-bottom: 10px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .document-viewer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            font-family: var(--font-legal);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .action-bar {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+        }
+
+        .btn {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: var(--font-ui);
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #4a90e2;
+        }
+
+        /* Entities Highlighting */
+        .entity-name {
+            background-color: rgba(210, 153, 34, 0.2);
+            border-bottom: 2px solid var(--highlight-entity);
+            color: #eac54f;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .entity-date {
+            background-color: rgba(63, 185, 80, 0.2);
+            border-bottom: 2px solid var(--highlight-date);
+            color: #7ee787;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Notes Sidebar */
+        .notes-pane {
+            width: 300px;
+            background-color: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .notes-header {
+            font-weight: 600;
+            color: var(--text-header);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .note-input-area {
+            margin-bottom: 20px;
+        }
+
+        #note-text {
+            width: 100%;
+            background-color: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 10px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+
+        #note-text:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .saved-notes {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .note-card {
+            background-color: var(--bg-element);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .note-card .note-content {
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+        }
+
+        .note-card .note-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .delete-note {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 0.5;
+        }
+
+        .delete-note:hover {
+            color: #f85149;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-app);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <span>⚖️</span> Vibe-Law
+    </div>
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="search-input" placeholder="Search precedents, citations, or keywords...">
+    </div>
+    <div style="font-size: 0.9rem; color: var(--text-muted);">
+        User: <strong>Associate</strong>
+    </div>
+</header>
+
+<main>
+    <!-- Results List -->
+    <div class="results-pane">
+        <div class="results-header">
+            <span id="result-count">0 Cases Found</span>
+            <span>Sort: Relevance</span>
+        </div>
+        <div class="case-list" id="case-list">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <!-- Detail View -->
+    <div class="detail-pane" id="detail-pane">
+        <div class="empty-state">
+            <h3>Select a case to view details</h3>
+            <p>Search results appear on the left.</p>
+        </div>
+    </div>
+</main>
+
+<script>
+    // --- Mock Data ---
+    const cases = [
+        {
+            id: 1,
+            title: "Global Tech Inc. v. Data Privacy Commission",
+            court: "Supreme Court of Vibe",
+            date: "2023-11-15",
+            citation: "554 V.S. 102",
+            snippet: "Held that algorithmic transparency is required when automated decisions significantly impact user rights under the Digital Safety Act.",
+            summary: "This landmark ruling establishes that corporations using AI for decision-making processes affecting employment or credit must provide explainable outputs. The court rejected the argument that trade secrets protect 'black box' algorithms when fundamental rights are at stake.",
+            fullText: "JUSTICE MERRICK delivered the opinion of the Court.\n\nThe question presented is whether the Digital Safety Act of 2021 mandates full algorithmic disclosure. We hold that it does in specific contexts.\n\nI. BACKGROUND\nGlobal Tech Inc. ('Petitioner') operates a platform utilizing 'NeuralRank', a proprietary algorithm. On June 4, 2022, the Data Privacy Commission ('Respondent') issued a subpoena for the source code following complaints of bias.\n\nII. ANALYSIS\nUnder Section 4(b) of the Act, entities must ensure 'fair and equitable treatment'. Petitioner argues that Section 4(b) is precatory. We disagree. The legislative history clearly indicates an intent to regulate automated bias.\n\nIII. CONCLUSION\nThe judgment of the Court of Appeals is affirmed. The case is remanded for further proceedings consistent with this opinion. It is so ordered."
+        },
+        {
+            id: 2,
+            title: "State of New Columbia v. Henderson",
+            court: "2nd Circuit Court of Appeals",
+            date: "2023-09-22",
+            citation: "982 F.3d 441",
+            snippet: "Criminal procedure regarding warrantless searches of digital smart devices found in public spaces.",
+            summary: "The court reversed the conviction of the defendant, ruling that a smart watch left on a park bench does not constitute 'abandoned property' for the purposes of a warrantless search if the device is locked and passcode protected.",
+            fullText: "CIRCUIT JUDGE ALVAREZ for the panel.\n\nDefendant Henderson appeals his conviction for wire fraud. The evidence was obtained from an Apple Watch found in Central Park.\n\nPolice argued the device was abandoned. However, the device was locked. We apply the standard from United States v. Smith (2019). A passcode creates a reasonable expectation of privacy.\n\nThe Fourth Amendment protects people, not places. The digital contents of the watch were not exposed to the public. Therefore, the search required a warrant.\n\nConviction VACATED."
+        },
+        {
+            id: 3,
+            title: "Rivera v. Omegacorp Logistics",
+            court: "District Court, S.D.N.Y.",
+            date: "2023-05-10",
+            citation: "2023 WL 44120",
+            snippet: "Class action certification regarding independent contractor status of drone delivery pilots.",
+            summary: "Plaintiffs, a group of drone operators, sought class status. The court granted certification, finding commonality in the 'Pilot Agreement' contracts signed by all operators, despite differences in hours worked.",
+            fullText: "JUDGE STONE. \n\nPlaintiffs move for class certification under Rule 23(b)(3). The central issue is whether Omegacorp's control over the pilots' flight paths constitutes an employer-employee relationship.\n\nOmegacorp argues that pilots choose their own hours. However, the 'Pilot Agreement' dictates the exact route, speed, and altitude. This level of control suggests an employment relationship.\n\nThe Court finds that common questions of law and fact predominate. Motion for Class Certification GRANTED."
+        },
+        {
+            id: 4,
+            title: "In re Solar Flare Energy Bankruptcy",
+            court: "Bankruptcy Court, D. Del.",
+            date: "2023-02-14",
+            citation: "Bk. No. 22-10554",
+            snippet: "Determining priority of secured creditors in renewable energy assets liquidation.",
+            summary: "The court determined that GreenBank's lien on the solar panel inventory was perfected prior to the debtor's filing, granting them priority over the unsecured creditors committee.",
+            fullText: "MEMORANDUM OPINION.\n\nThe Debtor, Solar Flare Energy, filed for Chapter 11 protection on January 3, 2023. The dispute concerns the validity of GreenBank's UCC-1 financing statement.\n\nThe Creditors Committee argues the description 'all energy assets' was too vague. Under UCC 9-108, a description is sufficient if it reasonably identifies what is described.\n\nGiven the specialized nature of the debtor's business, 'energy assets' is sufficiently descriptive. GreenBank's claim is secured."
+        },
+        {
+            id: 5,
+            title: "Wei v. University of Science",
+            court: "1st Circuit Court of Appeals",
+            date: "2022-12-05",
+            citation: "889 F.2d 112",
+            snippet: "Intellectual property dispute over ownership of patents developed by graduate students.",
+            summary: "The court upheld the University's policy that inventions created using university resources belong to the institution, despite the student's claim that the work was done outside lab hours.",
+            fullText: "PER CURIAM.\n\nPlaintiff Wei sued for patent infringement. The District Court granted summary judgment for the University. We affirm.\n\nThe University's IP Handbook, signed by Wei, states: 'All inventions developed with significant use of University funds or facilities are University property.'\n\nWei admits using the supercomputer cluster for his simulations. This constitutes 'significant use'. The time of day the work was performed is irrelevant under the contract terms."
+        },
+        {
+            id: 6,
+            title: "City of Metropolis v. Luthor Real Estate",
+            court: "State Superior Court",
+            date: "2022-11-30",
+            citation: "Civ. No. 44-992",
+            snippet: "Zoning violation enforcement and the interpretation of 'mixed-use' in historic districts.",
+            summary: "The city successfully enjoined the developer from building a 40-story tower. The court found that the definition of 'mixed-use' in the historic preservation ordinance implies a balance of residential and commercial that the proposed tower violated.",
+            fullText: "JUDGE LANE.\n\nThe City seeks an injunction. Luthor Real Estate proposes a tower with 95% luxury condos and 5% retail. \n\nThe Historic District Ordinance requires 'balanced mixed-use'. While not numerically defined, legislative intent suggests a functional integration of commerce and living.\n\nA 95/5 split is effectively residential. It violates the spirit and letter of the zoning laws. Injunction GRANTED."
+        },
+        {
+            id: 7,
+            title: "Doe v. SocialMediaPlatform",
+            court: "9th Circuit Court of Appeals",
+            date: "2022-08-18",
+            citation: "990 F.3d 210",
+            snippet: "Section 230 immunity regarding algorithmic recommendation of harmful content.",
+            summary: "The court narrowed the scope of Section 230 immunity, stating that while platforms are not liable for user content, they may be liable for the 'affirmative promotion' of content known to cause harm to minors.",
+            fullText: "OPINION.\n\nDoes Section 230 of the Communications Decency Act protect a platform that actively pushes harmful challenges to children? \n\nTraditionally, Section 230 is a broad shield. However, the algorithm itself is the platform's creation. When the algorithm prioritizes engagement over safety to an extent that it creates a foreseeable risk, the platform is acting as a content creator.\n\nWe reverse the dismissal and remand for trial on the negligence claim."
+        },
+        {
+            id: 8,
+            title: "Estate of Johnson v. MediCare Plus",
+            court: "Supreme Court of Vibe",
+            date: "2022-06-12",
+            citation: "552 V.S. 88",
+            snippet: "Insurance bad faith claim for denial of experimental treatment coverage.",
+            summary: "The court ruled in favor of the insurer, finding that the policy clearly excluded treatments not approved by the FDA, and the denial was not made in bad faith.",
+            fullText: "JUSTICE REYNOLDS.\n\nThe plaintiff alleges bad faith denial of coverage. The policy excludes 'experimental procedures'. \n\nThe treatment in question, gene therapy for Condition X, is currently in Phase II trials. It is not FDA approved.\n\nContracts must be enforced as written. While the result is tragic, the insurer is not liable for benefits not bargained for. Affirmed."
+        },
+        {
+            id: 9,
+            title: "United States v. CryptoDao",
+            court: "District Court, N.D. Cal.",
+            date: "2022-04-01",
+            citation: "CR 22-004",
+            snippet: "Securities regulation application to Decentralized Autonomous Organizations.",
+            summary: "The court held that governance tokens issued by the DAO were investment contracts under the Howey Test, and the DAO's founders could be held liable for selling unregistered securities.",
+            fullText: "ORDER DENYING MOTION TO DISMISS.\n\nDefendants argue that a DAO cannot be sued. We disagree. An unincorporated association can be sued under federal law.\n\nThe 'Governance Tokens' were sold to raise capital. Buyers expected profits from the efforts of the developers. This satisfies the Howey Test.\n\nThe argument that the code is decentralized does not exempt the promoters from securities laws."
+        },
+        {
+            id: 10,
+            title: "Green v. Eco-Friendly Motors",
+            court: "State Civil Court",
+            date: "2022-02-20",
+            citation: "Civ 102-33",
+            snippet: "False advertising claim regarding electric vehicle range estimates.",
+            summary: "Plaintiffs settled for $10M after evidence showed the manufacturer manipulated software to show inflated range estimates during test drives.",
+            fullText: "SETTLEMENT APPROVAL.\n\nThe Court has reviewed the proposed settlement. The class consists of 5,000 vehicle owners.\n\nDiscovery revealed internal emails discussing 'range optimism' adjustments in the software. \n\nThe settlement provides each owner with $2,000 and a software patch. The Court finds this fair, reasonable, and adequate."
+        }
+    ];
+
+    // --- State Management ---
+    const state = {
+        searchQuery: "",
+        selectedCaseId: null,
+        activeTab: "summary", // 'summary' or 'fullText'
+        entitiesExtracted: false
+    };
+
+    // --- DOM Elements ---
+    const searchInput = document.getElementById('search-input');
+    const caseListEl = document.getElementById('case-list');
+    const resultCountEl = document.getElementById('result-count');
+    const detailPaneEl = document.getElementById('detail-pane');
+
+    // --- Initialization ---
+    function init() {
+        renderResults();
+        
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value.toLowerCase();
+            renderResults();
+        });
+    }
+
+    // --- Rendering ---
+    function renderResults() {
+        caseListEl.innerHTML = '';
+        
+        const filtered = cases.filter(c => {
+            const q = state.searchQuery;
+            return c.title.toLowerCase().includes(q) || 
+                   c.snippet.toLowerCase().includes(q) ||
+                   c.court.toLowerCase().includes(q);
+        });
+
+        resultCountEl.textContent = `${filtered.length} Cases Found`;
+
+        filtered.forEach(c => {
+            const item = document.createElement('div');
+            item.className = `case-item ${state.selectedCaseId === c.id ? 'active' : ''}`;
+            item.onclick = () => selectCase(c.id);
+
+            item.innerHTML = `
+                <div class="case-title">${highlightText(c.title, state.searchQuery)}</div>
+                <div class="case-meta">
+                    <span>${c.court}</span>
+                    <span>${c.date}</span>
+                </div>
+                <div class="case-snippet">${highlightText(c.snippet, state.searchQuery)}</div>
+            `;
+            caseListEl.appendChild(item);
+        });
+    }
+
+    function selectCase(id) {
+        state.selectedCaseId = id;
+        state.activeTab = "summary";
+        state.entitiesExtracted = false;
+        renderResults(); // Re-render list to update active state
+        renderDetail();
+    }
+
+    function renderDetail() {
+        const c = cases.find(x => x.id === state.selectedCaseId);
+        
+        if (!c) {
+            detailPaneEl.innerHTML = `
+                <div class="empty-state">
+                    <h3>Select a case to view details</h3>
+                    <p>Search results appear on the left.</p>
+                </div>`;
+            return;
+        }
+
+        // Prepare content based on active tab
+        let contentText = state.activeTab === 'summary' ? c.summary : c.fullText;
+        
+        // If entities extracted, process text
+        if (state.entitiesExtracted) {
+            contentText = processEntities(contentText);
+        } else {
+            // Just basic line break handling for display
+            contentText = contentText.replace(/\n/g, '<br>');
+        }
+
+        detailPaneEl.innerHTML = `
+            <div class="case-content">
+                <div class="detail-header">
+                    <div class="action-bar">
+                        <button class="btn ${state.entitiesExtracted ? 'btn-primary' : ''}" onclick="toggleEntities()">
+                            ${state.entitiesExtracted ? 'Entities Active' : 'Extract Entities'}
+                        </button>
+                    </div>
+                    <div class="detail-title">${c.title}</div>
+                    <div class="detail-subtitle">${c.court} • ${c.date} • ${c.citation}</div>
+                    
+                    <div class="tabs">
+                        <div class="tab ${state.activeTab === 'summary' ? 'active' : ''}" onclick="switchTab('summary')">Summary</div>
+                        <div class="tab ${state.activeTab === 'fullText' ? 'active' : ''}" onclick="switchTab('fullText')">Full Text</div>
+                    </div>
+                </div>
+                
+                <div class="document-viewer" id="doc-viewer">
+                    ${contentText}
+                </div>
+            </div>
+            
+            <div class="notes-pane">
+                <div class="notes-header">
+                    <span>Case Notes</span>
+                    <span style="font-size:0.8rem; color:var(--text-muted)">${c.citation}</span>
+                </div>
+                <div class="note-input-area">
+                    <textarea id="note-text" placeholder="Type a note or select text from the document to add..."></textarea>
+                    <button class="btn btn-primary" style="width:100%" onclick="addNote()">Add Note</button>
+                </div>
+                <div class="saved-notes" id="saved-notes-list">
+                    <!-- Notes loaded here -->
+                </div>
+            </div>
+        `;
+
+        renderNotesList(c.id);
+
+        // Add selection listener to document viewer to auto-fill note
+        const docViewer = document.getElementById('doc-viewer');
+        docViewer.addEventListener('mouseup', () => {
+            const selection = window.getSelection().toString();
+            if (selection.length > 0) {
+                document.getElementById('note-text').value = `"${selection}"\n\n`;
+            }
+        });
+    }
+
+    // --- Tab & Feature Logic ---
+
+    function switchTab(tab) {
+        state.activeTab = tab;
+        renderDetail();
+    }
+
+    function toggleEntities() {
+        state.entitiesExtracted = !state.entitiesExtracted;
+        renderDetail();
+    }
+
+    function highlightText(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<span style="color: var(--accent); font-weight:bold;">$1</span>');
+    }
+
+    function processEntities(text) {
+        // Simple heuristic regex for demo purposes
+        
+        // 1. Dates (YYYY-MM-DD, or Month DD, YYYY)
+        // This is a simplified regex
+        const dateRegex = /\b(\d{4}-\d{2}-\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4})\b/g;
+        
+        // 2. Names (Capitalized words that look like names, excluding start of sentence ideally, but simplified here)
+        // We'll look for pattern: Capitalized Capitalized (e.g. John Doe, Justice Smith)
+        // Exclude common words to reduce noise
+        const nameRegex = /\b([A-Z][a-z]+ [A-Z][a-z]+)\b/g;
+
+        // Replace newlines first to preserve formatting
+        let processed = text.replace(/\n/g, '<br>');
+
+        // Apply highlights
+        processed = processed.replace(dateRegex, '<span class="entity-date" title="Date Entity">$1</span>');
+        processed = processed.replace(nameRegex, '<span class="entity-name" title="Person/Entity">$1</span>');
+
+        return processed;
+    }
+
+    // --- Notes Logic (LocalStorage) ---
+
+    function getNotes(caseId) {
+        const key = `vibe_law_notes_${caseId}`;
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
+    }
+
+    function saveNotes(caseId, notes) {
+        const key = `vibe_law_notes_${caseId}`;
+        localStorage.setItem(key, JSON.stringify(notes));
+    }
+
+    function addNote() {
+        const textEl = document.getElementById('note-text');
+        const text = textEl.value.trim();
+        if (!text) return;
+
+        const caseId = state.selectedCaseId;
+        const notes = getNotes(caseId);
+        
+        const newNote = {
+            id: Date.now(),
+            text: text,
+            date: new Date().toLocaleString()
+        };
+
+        notes.unshift(newNote); // Add to top
+        saveNotes(caseId, notes);
+        
+        textEl.value = ''; // Clear input
+        renderNotesList(caseId);
+    }
+
+    function deleteNote(noteId) {
+        const caseId = state.selectedCaseId;
+        let notes = getNotes(caseId);
+        notes = notes.filter(n => n.id !== noteId);
+        saveNotes(caseId, notes);
+        renderNotesList(caseId);
+    }
+
+    function renderNotesList(caseId) {
+        const listEl = document.getElementById('saved-notes-list');
+        const notes = getNotes(caseId);
+
+        if (notes.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:0.8rem; margin-top:20px;">No notes yet.</div>';
+            return;
+        }
+
+        listEl.innerHTML = notes.map(note => `
+            <div class="note-card">
+                <div class="delete-note" onclick="deleteNote(${note.id})">&times;</div>
+                <div class="note-content">${escapeHtml(note.text)}</div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Start App
+    init();
+
+</script>
+</body>
+</html>

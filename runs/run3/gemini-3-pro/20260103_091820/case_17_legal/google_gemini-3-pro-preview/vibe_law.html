@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Workspace</title>
+    <style>
+        :root {
+            --bg-app: #121418;
+            --bg-panel: #1b1f26;
+            --bg-element: #252a33;
+            --border: #2d3542;
+            --accent: #4a9eff;
+            --accent-hover: #3b7ecf;
+            --text-main: #e0e6ed;
+            --text-muted: #94a3b8;
+            --highlight: rgba(74, 158, 255, 0.2);
+            --entity-person: #ff6b6b;
+            --entity-date: #ffd700;
+            --entity-org: #4ecdc4;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-legal: "Georgia", "Times New Roman", serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            height: 50px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .brand span { color: var(--accent); }
+
+        /* Layout */
+        .workspace {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 50px);
+        }
+
+        /* Left Panel: Search & List */
+        .search-pane {
+            width: 350px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-container {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-app);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .case-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .case-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .case-item:hover {
+            background-color: var(--bg-element);
+        }
+
+        .case-item.active {
+            background-color: rgba(74, 158, 255, 0.1);
+            border-left: 3px solid var(--accent);
+        }
+
+        .case-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .case-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .case-snippet {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Right Panel: Detail View */
+        .detail-pane {
+            flex: 1;
+            display: flex;
+            background-color: var(--bg-app);
+        }
+
+        .doc-viewer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            min-width: 0; /* Fix flex overflow */
+        }
+
+        .notes-sidebar {
+            width: 300px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+
+        /* Doc Viewer Header */
+        .doc-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg-panel);
+        }
+
+        .doc-title {
+            font-size: 1.4rem;
+            font-family: var(--font-legal);
+            margin: 0 0 10px 0;
+        }
+
+        .doc-tags {
+            display: flex;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .tag {
+            background-color: var(--bg-element);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover { color: var(--text-main); }
+        .tab.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .toolbar {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            background-color: var(--bg-app);
+        }
+
+        .btn {
+            background: var(--bg-element);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { border-color: var(--text-muted); }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        /* Content Area */
+        .doc-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            font-family: var(--font-legal);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #d1d5db;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Entity Highlighting */
+        mark.entity-person { background: transparent; color: var(--entity-person); border-bottom: 1px dashed var(--entity-person); }
+        mark.entity-date { background: transparent; color: var(--entity-date); border-bottom: 1px dashed var(--entity-date); }
+        mark.entity-org { background: transparent; color: var(--entity-org); border-bottom: 1px dashed var(--entity-org); }
+
+        /* Notes Sidebar */
+        .notes-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .note-card {
+            background-color: var(--bg-element);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .note-card .delete-note {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 0.8rem;
+        }
+        .note-card .delete-note:hover { opacity: 1; color: #ff6b6b; }
+
+        .note-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            background-color: var(--bg-panel);
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            background-color: var(--bg-app);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 4px;
+            resize: none;
+            margin-bottom: 10px;
+            font-family: var(--font-ui);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-app); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div style="width: 20px; height: 20px; background: var(--accent); border-radius: 3px;"></div>
+        Vibe-Law <span>Workspace</span>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">User: Associate_007</div>
+</header>
+
+<div class="workspace">
+    <!-- Left Panel -->
+    <aside class="search-pane">
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search case law, statutes, entities...">
+        </div>
+        <div class="case-list" id="caseList">
+            <!-- Case Items injected here -->
+        </div>
+    </aside>
+
+    <!-- Right Panel -->
+    <main class="detail-pane" id="detailPane">
+        <div class="empty-state">
+            <div class="empty-icon">⚖️</div>
+            <h3>Select a case to begin review</h3>
+            <p>Search or click on the sidebar to view details.</p>
+        </div>
+    </main>
+</div>
+
+<script>
+    // --- Mock Data ---
+    const MOCK_CASES = [
+        {
+            id: 1,
+            title: "TechCorp v. DataSystems Inc.",
+            court: "U.S. Dist. Court, N.D. Cal.",
+            date: "2023-05-12",
+            summary: "Intellectual property dispute regarding API copyright infringement. The court ruled on fair use applicability in software interfaces.",
+            fullText: "IN THE UNITED STATES DISTRICT COURT\nFOR THE NORTHERN DISTRICT OF CALIFORNIA\n\nTECHCORP, Plaintiff,\nv.\nDATASYSTEMS INC., Defendant.\n\nCase No. 23-cv-00123\n\nORDER GRANTING PARTIAL SUMMARY JUDGMENT\n\n1. INTRODUCTION\nPlaintiff TechCorp brought this action against Defendant DataSystems Inc. on January 15, 2023, alleging copyright infringement regarding the use of proprietary Application Programming Interfaces (APIs). The core issue is whether the structure, sequence, and organization of the APIs constitute protectable expression under Section 102(b) of the Copyright Act.\n\n2. FACTUAL BACKGROUND\nTechCorp developed a platform for cloud computing management. DataSystems Inc. released a competing product in March 2022 that utilized identical API calls to ensure compatibility with existing TechCorp scripts. Mr. John Smith, lead engineer for DataSystems, testified that compatibility was the sole purpose.\n\n3. ANALYSIS\nThe court relies on the precedent set in Google LLC v. Oracle America, Inc. applying the four factors of fair use. The nature of the copyrighted work (APIs) favors fair use due to its functional requirements. The purpose and character of the use were transformative, enabling new creative platforms.\n\n4. CONCLUSION\nThe motion for summary judgment is GRANTED in part. The use of the declaring code is found to be fair use."
+        },
+        {
+            id: 2,
+            title: "State of New York v. Harrison",
+            court: "N.Y. Supreme Court",
+            date: "2022-11-04",
+            summary: "Criminal proceeding involving securities fraud and embezzlement. Key evidence admissible despite chain of custody objections.",
+            fullText: "SUPREME COURT OF THE STATE OF NEW YORK\nCOUNTY OF NEW YORK\n\nTHE PEOPLE OF THE STATE OF NEW YORK,\nv.\nROBERT HARRISON, Defendant.\n\nIndictment No. 4055-2022\n\nDECISION AND ORDER\n\nJustice Elena Rodriguez presiding.\n\nThe Defendant, Robert Harrison, is charged with Grand Larceny in the First Degree and Securities Fraud pursuant to the Martin Act. The defense moved to suppress digital evidence obtained from a server located at 123 Wall Street on September 10, 2022.\n\nThe defense argues that the chain of custody was broken when Detective Miller transferred the hard drives to the forensic lab. However, the prosecution has provided a complete log of the transfer. The court finds that any gaps in the narrative go to the weight of the evidence, not its admissibility.\n\nFurthermore, witness testimony from Ms. Sarah Jenkins, the firm's CFO, corroborates the digital records indicating unauthorized transfers of $5,000,000 to offshore accounts in the Cayman Islands.\n\nMotion to suppress is DENIED."
+        },
+        {
+            id: 3,
+            title: "In re: Global Shipping Logistics Bankruptcy",
+            court: "U.S. Bankruptcy Court, D. Del.",
+            date: "2023-02-28",
+            summary: "Chapter 11 reorganization plan approval. Dispute over priority of unsecured creditors versus secured bondholders.",
+            fullText: "UNITED STATES BANKRUPTCY COURT\nDISTRICT OF DELAWARE\n\nIn re:\nGLOBAL SHIPPING LOGISTICS, LLC,\nDebtor.\n\nCase No. 22-10987\n\nMEMORANDUM OPINION\n\nThis matter comes before the Court on the confirmation of the Debtor's Second Amended Chapter 11 Plan. The Official Committee of Unsecured Creditors objects to the proposed distribution scheme.\n\nThe Debtor, Global Shipping Logistics, filed for relief on August 1, 2022. The secured bondholders, represented by First Capital Bank, assert a lien on all rolling stock and maritime vessels. The Plan proposes a 5% recovery for general unsecured creditors.\n\nUnder the absolute priority rule, equity holders cannot retain value unless senior classes are paid in full. The proposed new value contribution by the existing equity holders is insufficient to satisfy the requirements of 11 U.S.C. § 1129(b). Mr. David Chen, expert for the Creditors, valued the fleet at $450 million, significantly higher than the Debtor's valuation.\n\nConfirmation is DENIED pending modification of the distribution waterfall."
+        },
+        {
+            id: 4,
+            title: "Rivera v. Metro General Hospital",
+            court: "Superior Court of California",
+            date: "2023-06-15",
+            summary: "Medical malpractice suit regarding surgical negligence. Statute of limitations arguments rejected due to delayed discovery rule.",
+            fullText: "SUPERIOR COURT OF CALIFORNIA\nCOUNTY OF LOS ANGELES\n\nMARIA RIVERA, Plaintiff,\nv.\nMETRO GENERAL HOSPITAL, Defendant.\n\nCase No. BC-789012\n\nRULING ON DEMURRER\n\nDefendant Metro General Hospital demurs to the complaint on the grounds that the action is time-barred by Code of Civil Procedure section 340.5. The surgery in question occurred on February 14, 2020. The complaint was filed on March 1, 2023.\n\nPlaintiff alleges she did not discover the foreign object (a surgical sponge) left in her abdomen until an X-ray performed by Dr. Alan Grant on January 15, 2023. Under the discovery rule, the one-year limitation period begins when the plaintiff suspects or should have suspected the injury.\n\nThe Court finds that the Plaintiff could not have reasonably discovered the negligence earlier. The Demurrer is OVERRULED."
+        },
+        {
+            id: 5,
+            title: "Construction Union Local 5 v. City of Chicago",
+            court: "U.S. Court of Appeals, 7th Cir.",
+            date: "2021-09-20",
+            summary: "Labor law dispute concerning prevailing wage ordinances and federal preemption under the NLRA.",
+            fullText: "IN THE UNITED STATES COURT OF APPEALS\nFOR THE SEVENTH CIRCUIT\n\nNo. 20-1456\n\nCONSTRUCTION UNION LOCAL 5,\nPlaintiff-Appellant,\nv.\nCITY OF CHICAGO,\nDefendant-Appellee.\n\nAppeal from the United States District Court for the Northern District of Illinois.\n\nBefore Judges Thompson, Williams, and Peterson.\n\nOPINION\n\nThe Union challenges a city ordinance requiring specific safety training certifications, arguing it is preempted by the National Labor Relations Act (NLRA). The District Court dismissed the claim.\n\nWe affirm. The ordinance establishes minimum labor standards that affect all workers, union and non-union alike. It does not intrude upon the collective bargaining process protected by the NLRA. The City's interest in public safety on construction sites constitutes a valid exercise of police power.\n\nAffirmed."
+        },
+        {
+            id: 6,
+            title: "Omega Pharmaceuticals v. FDA",
+            court: "D.C. Circuit Court",
+            date: "2023-01-10",
+            summary: "Administrative law challenge to FDA's denial of expedited approval for a new cardiac drug.",
+            fullText: "UNITED STATES COURT OF APPEALS\nFOR THE DISTRICT OF COLUMBIA CIRCUIT\n\nOMEGA PHARMACEUTICALS,\nPetitioner,\nv.\nFOOD AND DRUG ADMINISTRATION,\nRespondent.\n\nArgued December 5, 2022\nDecided January 10, 2023\n\nOmega Pharmaceuticals petitions for review of an FDA order denying Fast Track designation for its drug, CardioFix. The FDA determined that the drug did not demonstrate a potential to address an unmet medical need significantly better than existing therapies.\n\nThe agency's decision is reviewed under the arbitrary and capricious standard of the Administrative Procedure Act. The record shows the FDA considered all clinical data submitted by Omega on October 1, 2022. The agency's scientific determination warrants deference.\n\nPetition DENIED."
+        },
+        {
+            id: 7,
+            title: "Doe v. Social Media Giant",
+            court: "U.S. Dist. Court, S.D.N.Y.",
+            date: "2023-04-02",
+            summary: "Privacy class action alleging unauthorized data harvesting of minors in violation of COPPA.",
+            fullText: "UNITED STATES DISTRICT COURT\nSOUTHERN DISTRICT OF NEW YORK\n\nJANE DOE, individually and on behalf of others similarly situated,\nPlaintiff,\nv.\nSOCIAL MEDIA GIANT, INC.,\nDefendant.\n\nORDER ON MOTION TO DISMISS\n\nPlaintiffs allege Defendant collected geolocation data from users under 13 without parental consent, violating the Children's Online Privacy Protection Act (COPPA). Defendant moves to dismiss, arguing Plaintiffs lack a private right of action under COPPA.\n\nWhile COPPA does not provide a private right of action, Plaintiffs' claims are rooted in state consumer protection laws (NY GBL § 349), which can be predicated on COPPA violations. The Complaint sufficiently alleges deceptive practices.\n\nMotion to Dismiss is DENIED."
+        },
+        {
+            id: 8,
+            title: "Estate of Peterson v. AutoDrive",
+            court: "Arizona Supreme Court",
+            date: "2022-08-15",
+            summary: "Product liability case involving autonomous vehicle accident. Defined 'driver' liability in self-driving mode.",
+            fullText: "SUPREME COURT OF ARIZONA\n\nESTATE OF PETERSON,\nPlaintiff-Appellee,\nv.\nAUTODRIVE CORP,\nDefendant-Appellant.\n\nCV-22-0045-PR\n\nOPINION\n\nWe granted review to determine whether a manufacturer of an autonomous vehicle can be held strictly liable for accidents occurring while the vehicle is in 'self-drive' mode, even if a human operator is present.\n\nOn July 4, 2020, the decedent was struck by an AutoDrive vehicle. The vehicle failed to detect the pedestrian due to a sensor calibration error. AutoDrive argues the human operator should have intervened.\n\nWe hold that when a vehicle is marketed as autonomous, the manufacturer bears the burden of design defects in the automated driving system. The expectation of consumer safety shifts liability to the creator of the algorithm.\n\nAffirmed."
+        },
+        {
+            id: 9,
+            title: "Green Energy Solutions v. OilCo",
+            court: "Texas District Court",
+            date: "2023-03-11",
+            summary: "Contract breach regarding renewable energy credits and force majeure clauses during extreme weather events.",
+            fullText: "DISTRICT COURT OF HARRIS COUNTY, TEXAS\n113th JUDICIAL DISTRICT\n\nGREEN ENERGY SOLUTIONS,\nPlaintiff,\nv.\nOILCO, LLC,\nDefendant.\n\nFINAL JUDGMENT\n\nPlaintiff sued for breach of contract after Defendant failed to deliver Renewable Energy Credits (RECs) in February 2021. Defendant claimed the winter storm constituted a Force Majeure event.\n\nThe contract specifically listed 'acts of God' but excluded 'market fluctuations.' The court finds that while the storm was an act of God, the Defendant's failure to winterize equipment as recommended by FERC in 2011 was a foreseeable negligence that contributed to the failure to perform.\n\nJudgment for Plaintiff in the amount of $2,300,000."
+        },
+        {
+            id: 10,
+            title: "US v. Blackwood",
+            court: "U.S. Court of Appeals, 4th Cir.",
+            date: "2021-12-05",
+            summary: "Fourth Amendment appeal regarding warrantless search of cell phone location data.",
+            fullText: "UNITED STATES COURT OF APPEALS\nFOR THE FOURTH CIRCUIT\n\nNo. 21-4567\n\nUNITED STATES OF AMERICA,\nPlaintiff-Appellee,\nv.\nJAMES BLACKWOOD,\nDefendant-Appellant.\n\nAppeal from the Eastern District of Virginia.\n\nDefendant appeals his conviction for drug trafficking, arguing that the warrantless acquisition of his cell site location information (CSLI) violated the Fourth Amendment, citing Carpenter v. United States.\n\nThe government argues the good-faith exception applies because agents relied on the Stored Communications Act prior to the Carpenter decision. We agree. The search occurred in 2017, before the Supreme Court ruled that a warrant is required for CSLI.\n\nConviction AFFIRMED."
+        }
+    ];
+
+    // --- State Management ---
+    let state = {
+        cases: MOCK_CASES,
+        searchQuery: "",
+        selectedCaseId: null,
+        activeTab: 'summary', // 'summary' or 'fullText'
+        entitiesEnabled: false
+    };
+
+    // --- DOM Elements ---
+    const searchInput = document.getElementById('searchInput');
+    const caseListEl = document.getElementById('caseList');
+    const detailPaneEl = document.getElementById('detailPane');
+
+    // --- Initialization ---
+    function init() {
+        renderCaseList();
+        
+        // Search Listener
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value.toLowerCase();
+            renderCaseList();
+        });
+    }
+
+    // --- Logic: Rendering Case List ---
+    function renderCaseList() {
+        caseListEl.innerHTML = '';
+        
+        const filteredCases = state.cases.filter(c => 
+            c.title.toLowerCase().includes(state.searchQuery) || 
+            c.fullText.toLowerCase().includes(state.searchQuery)
+        );
+
+        if (filteredCases.length === 0) {
+            caseListEl.innerHTML = `<div style="padding:20px; color:var(--text-muted); text-align:center;">No cases found.</div>`;
+            return;
+        }
+
+        filteredCases.forEach(c => {
+            const div = document.createElement('div');
+            div.className = `case-item ${state.selectedCaseId === c.id ? 'active' : ''}`;
+            div.onclick = () => selectCase(c.id);
+            div.innerHTML = `
+                <div class="case-title">${highlightText(c.title, state.searchQuery)}</div>
+                <div class="case-meta">
+                    <span>${c.court}</span>
+                    <span>${c.date}</span>
+                </div>
+                <div class="case-snippet">${highlightText(c.summary, state.searchQuery)}</div>
+            `;
+            caseListEl.appendChild(div);
+        });
+    }
+
+    function highlightText(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<span style="background:var(--highlight); color: white;">$1</span>');
+    }
+
+    // --- Logic: Selection & Detail View ---
+    function selectCase(id) {
+        state.selectedCaseId = id;
+        state.activeTab = 'summary'; // Reset tab on new selection
+        state.entitiesEnabled = false; // Reset entities
+        renderCaseList(); // Re-render list to show active state
+        renderDetailView();
+    }
+
+    function renderDetailView() {
+        const c = state.cases.find(x => x.id === state.selectedCaseId);
+        if (!c) return;
+
+        // Content based on tab
+        let contentHtml = '';
+        if (state.activeTab === 'summary') {
+            contentHtml = `<p>${c.summary}</p>`;
+        } else {
+            // Convert newlines to breaks for display
+            contentHtml = c.fullText.replace(/\n/g, '<br>');
+        }
+
+        // Apply Entity Extraction if enabled
+        if (state.entitiesEnabled && state.activeTab === 'fullText') {
+            contentHtml = extractEntities(contentHtml);
+        }
+
+        detailPaneEl.innerHTML = `
+            <div class="doc-viewer">
+                <div class="doc-header">
+                    <h2 class="doc-title">${c.title}</h2>
+                    <div class="doc-tags">
+                        <span class="tag">${c.court}</span>
+                        <span class="tag">${c.date}</span>
+                        <span class="tag">Case ID: ${c.id}</span>
+                    </div>
+                </div>
+                <div class="tabs">
+                    <div class="tab ${state.activeTab === 'summary' ? 'active' : ''}" onclick="switchTab('summary')">Summary</div>
+                    <div class="tab ${state.activeTab === 'fullText' ? 'active' : ''}" onclick="switchTab('fullText')">Full Text</div>
+                </div>
+                <div class="toolbar">
+                    ${state.activeTab === 'fullText' ? 
+                        `<button class="btn ${state.entitiesEnabled ? 'btn-primary' : ''}" onclick="toggleEntities()">
+                            ${state.entitiesEnabled ? 'Entities Active' : 'Extract Entities'}
+                        </button>` : ''}
+                </div>
+                <div class="doc-content">
+                    ${contentHtml}
+                </div>
+            </div>
+            <aside class="notes-sidebar">
+                <div class="notes-header">
+                    <span>Case Notes</span>
+                    <span style="font-size:0.8rem; color:var(--text-muted)">Private</span>
+                </div>
+                <div class="notes-list" id="notesList">
+                    <!-- Notes injected here -->
+                </div>
+                <div class="note-input-area">
+                    <textarea id="noteInput" placeholder="Add a note..."></textarea>
+                    <button class="btn btn-primary" style="width:100%" onclick="saveNote()">Save Note</button>
+                </div>
+            </aside>
+        `;
+
+        loadNotes();
+    }
+
+    function switchTab(tabName) {
+        state.activeTab = tabName;
+        renderDetailView();
+    }
+
+    // --- Logic: Entity Extraction (Simulation) ---
+    function toggleEntities() {
+        state.entitiesEnabled = !state.entitiesEnabled;
+        renderDetailView();
+    }
+
+    function extractEntities(text) {
+        // Simple Regex heuristics for simulation
+        
+        // Dates: YYYY-MM-DD, Month DD, YYYY
+        const dateRegex = /(\b\d{4}-\d{2}-\d{2}\b|\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2},? \d{4}\b)/g;
+        
+        // People (Honourifics + Capitalized words): Mr. X, Ms. Y, Justice Z
+        const personRegex = /\b(Mr\.|Ms\.|Mrs\.|Dr\.|Justice|Judge|Detective)\s+([A-Z][a-z]+)\b/g;
+
+        // Orgs/Parties (ALL CAPS or Inc/LLC): 
+        const orgRegex = /\b([A-Z][a-zA-Z0-9&]+ (?:Inc\.|LLC|Corp\.|Co\.|Ltd\.))\b/g;
+
+        let processed = text;
+
+        // Apply formatting (Order matters to avoid nesting tags incorrectly in a simple replace)
+        processed = processed.replace(dateRegex, '<mark class="entity-date" title="Date">$1</mark>');
+        processed = processed.replace(orgRegex, '<mark class="entity-org" title="Organization">$1</mark>');
+        processed = processed.replace(personRegex, '<mark class="entity-person" title="Person">$1 $2</mark>');
+
+        return processed;
+    }
+
+    // --- Logic: Notes (LocalStorage) ---
+    function getNotesKey() {
+        return `vibe_law_notes_${state.selectedCaseId}`;
+    }
+
+    function loadNotes() {
+        const notesContainer = document.getElementById('notesList');
+        const saved = localStorage.getItem(getNotesKey());
+        const notes = saved ? JSON.parse(saved) : [];
+
+        if (notes.length === 0) {
+            notesContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:20px;">No notes yet.</div>';
+            return;
+        }
+
+        notesContainer.innerHTML = notes.map((note, index) => `
+            <div class="note-card">
+                ${note.text}
+                <span class="delete-note" onclick="deleteNote(${index})">✕</span>
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:5px;">${new Date(note.ts).toLocaleTimeString()}</div>
+            </div>
+        `).join('');
+    }
+
+    function saveNote() {
+        const input = document.getElementById('noteInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const key = getNotesKey();
+        const saved = localStorage.getItem(key);
+        const notes = saved ? JSON.parse(saved) : [];
+
+        notes.push({
+            text: text,
+            ts: Date.now()
+        });
+
+        localStorage.setItem(key, JSON.stringify(notes));
+        input.value = '';
+        loadNotes();
+    }
+
+    function deleteNote(index) {
+        const key = getNotesKey();
+        const saved = localStorage.getItem(key);
+        if (!saved) return;
+
+        const notes = JSON.parse(saved);
+        notes.splice(index, 1);
+        localStorage.setItem(key, JSON.stringify(notes));
+        loadNotes();
+    }
+
+    // Start App
+    init();
+
+</script>
+</body>
+</html>

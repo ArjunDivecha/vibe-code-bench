@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vibe-Law: Legal Case Search Workspace</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121820;
+      color: #eee;
+    }
+    header {
+      background-color: #0d141c;
+      padding: 1rem;
+      border-bottom: 1px solid #1e2a38;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #00bcd4;
+    }
+    #searchBar {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      background-color: #1e2a38;
+      border: none;
+      color: #eee;
+      border-radius: 4px;
+    }
+    #results {
+      padding: 1rem;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+    }
+    .case {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background-color: #1a232f;
+      border: 1px solid #2f3e4e;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .case:hover {
+      background-color: #263544;
+    }
+    .case-title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background-color: #1e2a38;
+      width: 90%;
+      height: 90%;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: row;
+    }
+    .main-pane {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #2f3e4e;
+    }
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      background-color: #1e2a38;
+    }
+    .tab.active {
+      background-color: #263544;
+      font-weight: bold;
+    }
+    .tab-content {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .sidebar {
+      flex: 1;
+      border-left: 1px solid #2f3e4e;
+      padding: 1rem;
+      background-color: #141c25;
+      display: flex;
+      flex-direction: column;
+    }
+    .button {
+      background-color: #00bcd4;
+      border: none;
+      padding: 0.5rem 1rem;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+    .note {
+      background-color: #263544;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+    }
+    .highlight {
+      background-color: #ffc107;
+      color: #000;
+      font-weight: bold;
+    }
+    #closeBtn {
+      position: absolute;
+      top: 1rem;
+      right: 2rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vibe-Law: Legal Case Search Workspace</h1>
+    <input type="text" id="searchBar" placeholder="Search case law..."/>
+  </header>
+  <div id="results"></div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <button id="closeBtn">&times;</button>
+      <div class="main-pane">
+        <div class="tabs">
+          <div class="tab active" data-tab="summary">Summary</div>
+          <div class="tab" data-tab="fulltext">Full Text</div>
+        </div>
+        <div class="tab-content" id="summaryTab"></div>
+        <div class="tab-content" id="fullTextTab" style="display: none;"></div>
+      </div>
+      <div class="sidebar">
+        <button class="button" id="extractBtn">Extract Entities</button>
+        <h3>Notes</h3>
+        <div id="notesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const cases = [
+      {
+        id: 1, title: "Smith v. Jones", court: "Supreme Court", date: "2020-05-14",
+        summary: "A dispute regarding property lines and easement rights.",
+        fullText: "On May 14, 2020, the Supreme Court heard the case of John Smith versus James Jones. Jane Doe testified that the boundary was known since 1998..."
+      },
+      {
+        id: 2, title: "State v. Riley", court: "Court of Appeals", date: "2019-11-02",
+        summary: "An appeal in a criminal fraud case.",
+        fullText: "In the Court of Appeals on November 2, 2019, the State prosecuted Andrew Riley for fraud. Evidence presented by Mary Lane indicated collusion starting in 2017..."
+      },
+      {
+        id: 3, title: "Johnson v. Metro Transit", court: "District Court", date: "2021-08-30",
+        summary: "A personal injury claim against a transit authority.",
+        fullText: "On August 30, 2021, the District Court reviewed a personal injury claim filed by Lisa Johnson against Metro Transit. Witness Alan Baker stated the injury occurred in June 2020..."
+      },
+      {
+        id: 4, title: "People v. Carter", court: "Supreme Court", date: "2018-03-22",
+        summary: "Criminal case involving armed robbery.",
+        fullText: "March 22, 2018, Supreme Court case involving Thomas Carter. Officer Janet Hill testified the robbery took place in December 2017..."
+      },
+      {
+        id: 5, title: "Brown v. Education Board", court: "Federal Court", date: "2022-01-15",
+        summary: "Discrimination claim in public school admissions.",
+        fullText: "Federal Court heard the case of Sarah Brown on January 15, 2022, alleging racial discrimination. Principal Steve Martin provided testimony regarding policy changes in 2021..."
+      },
+      {
+        id: 6, title: "Davis v. Insurance Co.", court: "Court of Appeals", date: "2020-09-10",
+        summary: "Insurance denial dispute for hurricane damage.",
+        fullText: "Court of Appeals on September 10, 2020. Emily Davis sued Coastal Insurance Co. for denying her claim after Hurricane Laura hit in August 2020..."
+      },
+      {
+        id: 7, title: "Miller v. TechCorp", court: "District Court", date: "2017-06-05",
+        summary: "Wrongful termination and whistleblower protection.",
+        fullText: "June 5, 2017, District Court. Robert Miller filed a wrongful termination suit against TechCorp. HR director Karen Young discussed internal reports from 2016..."
+      },
+      {
+        id: 8, title: "City of Gotham v. Wayne", court: "Municipal Court", date: "2019-12-12",
+        summary: "Zoning violation alleged by city officials.",
+        fullText: "Municipal Court, December 12, 2019. Gotham officials cited Bruce Wayne for zoning violations. Architect Lucius Fox testified about construction plans approved in 2018..."
+      },
+      {
+        id: 9, title: "Lopez v. United States", court: "Federal Court", date: "2023-04-10",
+        summary: "Immigration deportation appeal.",
+        fullText: "April 10, 2023, Federal Court. Maria Lopez appealed deportation orders issued in 2022. Attorney Carlos Ramirez argued that ICE violated due process..."
+      },
+      {
+        id: 10, title: "Green v. EPA", court: "Supreme Court", date: "2021-11-18",
+        summary: "Environmental regulation challenge by private entity.",
+        fullText: "Supreme Court, November 18, 2021. David Green challenged EPA standards set in 2020. Expert testimony included Dr. Helen Moore on emissions data..."
+      }
+    ];
+
+    const resultsDiv = document.getElementById("results");
+    const searchBar = document.getElementById("searchBar");
+    const modal = document.getElementById("detailModal");
+    const summaryTab = document.getElementById("summaryTab");
+    const fullTextTab = document.getElementById("fullTextTab");
+    const tabs = document.querySelectorAll(".tab");
+    const extractBtn = document.getElementById("extractBtn");
+    const notesList = document.getElementById("notesList");
+    const closeBtn = document.getElementById("closeBtn");
+
+    let currentCase = null;
+
+    function renderResults(filter = "") {
+      resultsDiv.innerHTML = "";
+      const filtered = cases.filter(c =>
+        c.title.toLowerCase().includes(filter.toLowerCase()) ||
+        c.summary.toLowerCase().includes(filter.toLowerCase())
+      );
+      filtered.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "case";
+        div.innerHTML = `
+          <div class="case-title">${c.title}</div>
+          <div>${c.court} - ${c.date}</div>
+          <div>${c.summary}</div>
+        `;
+        div.onclick = () => openCaseDetail(c);
+        resultsDiv.appendChild(div);
+      });
+    }
+
+    function openCaseDetail(c) {
+      currentCase = c;
+      summaryTab.textContent = c.summary;
+      fullTextTab.textContent = c.fullText;
+      modal.style.display = "flex";
+      loadNotes();
+    }
+
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const which = tab.dataset.tab;
+        summaryTab.style.display = which === "summary" ? "block" : "none";
+        fullTextTab.style.display = which === "fulltext" ? "block" : "none";
+      };
+    });
+
+    extractBtn.onclick = () => {
+      if (!currentCase) return;
+      const content = fullTextTab.textContent;
+      const highlighted = content.replace(/\b([A-Z][a-z]+ [A-Z][a-z]+|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b \d{1,2}, \d{4})/g,
+        '<span class="highlight">$1</span>');
+      fullTextTab.innerHTML = highlighted;
+      Array.from(fullTextTab.querySelectorAll('.highlight')).forEach(span => {
+        span.onclick = () => saveNote(span.textContent);
+      });
+    };
+
+    function saveNote(text) {
+      const key = `notes_${currentCase.id}`;
+      const notes = JSON.parse(localStorage.getItem(key) || "[]");
+      notes.push(text);
+      localStorage.setItem(key, JSON.stringify(notes));
+      loadNotes();
+    }
+
+    function loadNotes() {
+      const key = `notes_${currentCase.id}`;
+      const notes = JSON.parse(localStorage.getItem(key) || "[]");
+      notesList.innerHTML = "";
+      notes.forEach(note => {
+        const n = document.createElement("div");
+        n.className = "note";
+        n.textContent = note;
+        notesList.appendChild(n);
+      });
+    }
+
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+      summaryTab.textContent = "";
+      fullTextTab.textContent = "";
+      notesList.innerHTML = "";
+    };
+
+    searchBar.addEventListener("input", () => {
+      renderResults(searchBar.value);
+    });
+
+    renderResults();
+  </script>
+</body>
+</html>

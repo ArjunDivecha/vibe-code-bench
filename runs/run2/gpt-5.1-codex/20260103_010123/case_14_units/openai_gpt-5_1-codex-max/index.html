@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Unit Converter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+    --bg:#0f172a;
+    --card:#111827;
+    --accent:#22d3ee;
+    --accent2:#a855f7;
+    --text:#e5e7eb;
+    --muted:#9ca3af;
+    --border:#1f2937;
+    --shadow:0 20px 60px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;}
+body{
+    margin:0;
+    background:radial-gradient(circle at 20% 20%, rgba(34,211,238,0.12), transparent 35%),
+               radial-gradient(circle at 80% 0%, rgba(168,85,247,0.18), transparent 35%),
+               radial-gradient(circle at 70% 80%, rgba(34,211,238,0.15), transparent 35%),
+               var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:30px 12px 80px;
+}
+.container{
+    width:100%;
+    max-width:1100px;
+    background:rgba(17,24,39,0.8);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:20px;
+    padding:28px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(10px);
+}
+.header{
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    margin-bottom:22px;
+}
+.title{
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:-0.5px;
+}
+.badge{
+    background:linear-gradient(120deg, var(--accent), var(--accent2));
+    padding:8px 12px;
+    border-radius:999px;
+    font-weight:700;
+    color:#0f172a;
+    box-shadow:0 10px 30px rgba(34,211,238,0.35);
+}
+.description{
+    color:var(--muted);
+    margin:4px 0 16px;
+}
+.select-row{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:14px;
+}
+select, input{
+    width:100%;
+    border:1px solid var(--border);
+    background:#0b1220;
+    color:var(--text);
+    padding:12px 14px;
+    border-radius:12px;
+    font-size:16px;
+    outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+}
+select:focus, input:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(34,211,238,0.15);
+}
+.inputs{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:14px;
+    align-items:flex-end;
+}
+.card{
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    padding:16px;
+    border-radius:16px;
+}
+.card label{
+    color:var(--muted);
+    font-size:14px;
+}
+.card .unit-label{
+    margin-top:4px;
+    margin-bottom:8px;
+    font-weight:600;
+    color:var(--text);
+}
+.swap-btn{
+    height:48px;
+    min-width:48px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:linear-gradient(120deg, rgba(34,211,238,0.15), rgba(168,85,247,0.18));
+    color:var(--text);
+    font-weight:700;
+    cursor:pointer;
+    transition:transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    box-shadow:0 10px 30px rgba(34,211,238,0.25);
+}
+.swap-btn:hover{
+    transform:translateY(-1px);
+    border-color:var(--accent);
+}
+.section-title{
+    font-weight:700;
+    margin:18px 0 10px;
+}
+.quick-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px,1fr));
+    gap:10px;
+}
+.quick-btn{
+    border:1px solid var(--border);
+    background:rgba(255,255,255,0.03);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:transform 0.15s, border-color 0.2s, background 0.2s;
+    text-align:left;
+    font-weight:600;
+}
+.quick-btn small{
+    display:block;
+    color:var(--muted);
+    font-weight:500;
+}
+.quick-btn:hover{
+    transform:translateY(-1px);
+    border-color:var(--accent);
+    background:rgba(34,211,238,0.05);
+}
+.formula{
+    margin-top:18px;
+    padding:14px;
+    border-radius:12px;
+    border:1px dashed rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.02);
+    color:var(--text);
+    line-height:1.5;
+}
+small.hint{
+    color:var(--muted);
+}
+@media(max-width:720px){
+    .header{flex-direction:column;align-items:flex-start;}
+    .swap-btn{width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <div class="title">Universal Unit Converter</div>
+            <div class="description">Convert between length, weight, temperature, volume, and time with live updates.</div>
+        </div>
+        <div class="badge">Instant &amp; Intuitive</div>
+    </div>
+
+    <div class="select-row">
+        <div style="flex:1; min-width:220px;">
+            <label for="category">Category</label>
+            <select id="category"></select>
+        </div>
+    </div>
+
+    <div class="inputs">
+        <div class="card">
+            <label for="fromUnit">From</label>
+            <div class="unit-label" id="fromUnitLabel"></div>
+            <select id="fromUnit"></select>
+            <div style="height:10px;"></div>
+            <input type="text" id="fromValue" placeholder="Enter value">
+        </div>
+
+        <button class="swap-btn" id="swapBtn" title="Swap units">
+            ⇄ Swap
+        </button>
+
+        <div class="card">
+            <label for="toUnit">To</label>
+            <div class="unit-label" id="toUnitLabel"></div>
+            <select id="toUnit"></select>
+            <div style="height:10px;"></div>
+            <input type="text" id="toValue" placeholder="Converted value">
+        </div>
+    </div>
+
+    <div class="section-title">Quick conversions</div>
+    <div class="quick-grid" id="quickGrid"></div>
+
+    <div class="section-title">Conversion formula</div>
+    <div class="formula" id="formulaBox">
+        Select units to see the formula.
+    </div>
+    <small class="hint">Tip: You can type in either field; the other updates instantly.</small>
+</div>
+
+<script>
+const categories = {
+    length:{
+        name:"Length",
+        units:{
+            km:{label:"Kilometer", toBase:1000},
+            m:{label:"Meter", toBase:1},
+            cm:{label:"Centimeter", toBase:0.01},
+            mm:{label:"Millimeter", toBase:0.001},
+            miles:{label:"Mile", toBase:1609.344},
+            feet:{label:"Foot", toBase:0.3048},
+            inches:{label:"Inch", toBase:0.0254},
+        }
+    },
+    weight:{
+        name:"Weight",
+        units:{
+            kg:{label:"Kilogram", toBase:1},
+            g:{label:"Gram", toBase:0.001},
+            lb:{label:"Pound (lb)", toBase:0.45359237},
+            oz:{label:"Ounce (oz)", toBase:0.0283495},
+        }
+    },
+    volume:{
+        name:"Volume",
+        units:{
+            L:{label:"Liter", toBase:1},
+            mL:{label:"Milliliter", toBase:0.001},
+            gallons:{label:"US Gallon", toBase:3.78541},
+            cups:{label:"US Cup", toBase:0.236588},
+        }
+    },
+    time:{
+        name:"Time",
+        units:{
+            hours:{label:"Hour", toBase:3600},
+            minutes:{label:"Minute", toBase:60},
+            seconds:{label:"Second", toBase:1},
+        }
+    }
+};
+
+const temperatureUnits = {
+    C:{
+        label:"Celsius",
+        toBase:(v)=>v+273.15,
+        fromBase:(k)=>k-273.15
+    },
+    F:{
+        label:"Fahrenheit",
+        toBase:(v)=>(v-32)*5/9+273.15,
+        fromBase:(k)=>(k-273.15)*9/5+32
+    },
+    K:{
+        label:"Kelvin",
+        toBase:(v)=>v,
+        fromBase:(k)=>k
+    }
+};
+
+const defaults = {
+    length:["km","miles"],
+    weight:["kg","lb"],
+    temperature:["C","F"],
+    volume:["L","gallons"],
+    time:["hours","minutes"]
+};
+
+const quickPresets = {
+    length:[
+        {label:"1 km → miles", from:"km", to:"miles", value:1},
+        {label:"1 mile → km", from:"miles", to:"km", value:1},
+        {label:"100 cm → inches", from:"cm", to:"inches", value:100},
+        {label:"1 ft → cm", from:"feet", to:"cm", value:1},
+        {label:"10 m → feet", from:"m", to:"feet", value:10},
+    ],
+    weight:[
+        {label:"1 kg → lb", from:"kg", to:"lb", value:1},
+        {label:"10 lb → kg", from:"lb", to:"kg", value:10},
+        {label:"500 g → oz", from:"g", to:"oz", value:500},
+        {label:"16 oz → lb", from:"oz", to:"lb", value:16},
+    ],
+    temperature:[
+        {label:"0 °C → °F", from:"C", to:"F", value:0},
+        {label:"32 °F → °C", from:"F", to:"C", value:32},
+        {label:"100 °C → K", from:"C", to:"K", value:100},
+        {label:"273.15 K → °C", from:"K", to:"C", value:273.15},
+    ],
+    volume:[
+        {label:"1 L → cups", from:"L", to:"cups", value:1},
+        {label:"1 gallon → L", from:"gallons", to:"L", value:1},
+        {label:"250 mL → cups", from:"mL", to:"cups", value:250},
+        {label:"2 cups → mL", from:"cups", to:"mL", value:2},
+    ],
+    time:[
+        {label:"1 hour → minutes", from:"hours", to:"minutes", value:1},
+        {label:"90 minutes → hours", from:"minutes", to:"hours", value:90},
+        {label:"120 seconds → minutes", from:"seconds", to:"minutes", value:120},
+        {label:"2 hours → seconds", from:"hours", to:"seconds", value:2},
+    ],
+};
+
+const categorySelect = document.getElementById("category");
+const fromSelect = document.getElementById("fromUnit");
+const toSelect = document.getElementById("toUnit");
+const fromInput = document.getElementById("fromValue");
+const toInput = document.getElementById("toValue");
+const swapBtn = document.getElementById("swapBtn");
+const quickGrid = document.getElementById("quickGrid");
+const formulaBox = document.getElementById("formulaBox");
+const fromUnitLabel = document.getElementById("fromUnitLabel");
+const toUnitLabel = document.getElementById("toUnitLabel");
+
+let lastEdited = "from";
+
+function initCategorySelect(){
+    ["length","weight","temperature","volume","time"].forEach(key=>{
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = categories[key]?.name || "Temperature";
+        categorySelect.appendChild(opt);
+    });
+}
+
+function populateUnits(catKey){
+    const isTemp = catKey === "temperature";
+    const unitsObj = isTemp ? temperatureUnits : categories[catKey].units;
+    fromSelect.innerHTML = "";
+    toSelect.innerHTML = "";
+    Object.keys(unitsObj).forEach((u, idx)=>{
+        const opt1 = document.createElement("option");
+        opt1.value = u;
+        opt1.textContent = `${unitsObj[u].label} (${u})`;
+        const opt2 = opt1.cloneNode(true);
+        fromSelect.appendChild(opt1);
+        toSelect.appendChild(opt2);
+    });
+    const defaultsPair = defaults[catKey];
+    if(defaultsPair){
+        fromSelect.value = defaultsPair[0];
+        toSelect.value = defaultsPair[1];
+    }
+    updateUnitLabels();
+}
+
+function updateUnitLabels(){
+    const fromKey = fromSelect.value;
+    const toKey = toSelect.value;
+    const catKey = categorySelect.value;
+    if(catKey === "temperature"){
+        fromUnitLabel.textContent = `${temperatureUnits[fromKey].label} (${fromKey})`;
+        toUnitLabel.textContent = `${temperatureUnits[toKey].label} (${toKey})`;
+    }else{
+        fromUnitLabel.textContent = `${categories[catKey].units[fromKey].label} (${fromKey})`;
+        toUnitLabel.textContent = `${categories[catKey].units[toKey].label} (${toKey})`;
+    }
+}
+
+function convertValue(val, from, to, category){
+    if(val === "" || val === null || val === undefined) return "";
+    const num = parseFloat(val);
+    if(isNaN(num)) return "";
+    if(category === "temperature"){
+        return tempConvert(num, from, to);
+    }
+    const factorFrom = categories[category].units[from].toBase;
+    const factorTo = categories[category].units[to].toBase;
+    return num * factorFrom / factorTo;
+}
+
+function tempConvert(value, from, to){
+    if(from === to) return value;
+    const baseK = temperatureUnits[from].toBase(value);
+    return temperatureUnits[to].fromBase(baseK);
+}
+
+function tempFormula(from, to){
+    const map = {
+        "C-F":"°F = (°C × 9/5) + 32",
+        "F-C":"°C = (°F - 32) × 5/9",
+        "C-K":"K = °C + 273.15",
+        "K-C":"°C = K - 273.15",
+        "F-K":"K = (°F - 32) × 5/9 + 273.15",
+        "K-F":"°F = (K - 273.15) × 9/5 + 32"
+    };
+    return map[`${from}-${to}`] || "Same unit, no conversion needed.";
+}
+
+function formatNumber(num){
+    if(!isFinite(num)) return "";
+    if(num === 0) return "0";
+    const abs = Math.abs(num);
+    if(abs >= 1e6 || abs < 1e-4){
+        return num.toExponential(6).replace(/\.?0+e/,"e");
+    }
+    let str = num.toFixed(6);
+    str = str.replace(/\.?0+$/,"");
+    return str;
+}
+
+function getFormulaString(category, from, to){
+    if(category === "temperature"){
+        return tempFormula(from, to);
+    }
+    const catData = categories[category];
+    const factorFrom = catData.units[from].toBase;
+    const factorTo = catData.units[to].toBase;
+    const factor = factorFrom / factorTo;
+    return `${to} = ${from} × (${factorFrom} / ${factorTo}) ≈ ${from} × ${formatNumber(factor)} <br><small>So, 1 ${from} = ${formatNumber(factor)} ${to}</small>`;
+}
+
+function updateFormula(){
+    const cat = categorySelect.value;
+    const from = fromSelect.value;
+    const to = toSelect.value;
+    const html = getFormulaString(cat, from, to);
+    formulaBox.innerHTML = html;
+}
+
+function calculate(){
+    const category = categorySelect.value;
+    updateUnitLabels();
+    if(lastEdited === "from"){
+        const result = convertValue(fromInput.value, fromSelect.value, toSelect.value, category);
+        toInput.value = result === "" ? "" : formatNumber(result);
+    }else{
+        const result = convertValue(toInput.value, toSelect.value, fromSelect.value, category);
+        fromInput.value = result === "" ? "" : formatNumber(result);
+    }
+    updateFormula();
+}
+
+function populateQuickButtons(catKey){
+    quickGrid.innerHTML = "";
+    (quickPresets[catKey] || []).forEach(preset=>{
+        const btn = document.createElement("button");
+        btn.className = "quick-btn";
+        btn.innerHTML = `${preset.label} <small>${categories[catKey]?.name || "Temperature"}</small>`;
+        btn.addEventListener("click", ()=>{
+            fromSelect.value = preset.from;
+            toSelect.value = preset.to;
+            updateUnitLabels();
+            fromInput.value = preset.value;
+            lastEdited = "from";
+            calculate();
+        });
+        quickGrid.appendChild(btn);
+    });
+}
+
+categorySelect.addEventListener("change", ()=>{
+    populateUnits(categorySelect.value);
+    populateQuickButtons(categorySelect.value);
+    fromInput.value = "1";
+    toInput.value = "";
+    lastEdited = "from";
+    calculate();
+});
+
+fromSelect.addEventListener("change", ()=>{updateUnitLabels(); calculate();});
+toSelect.addEventListener("change", ()=>{updateUnitLabels(); calculate();});
+
+fromInput.addEventListener("input", ()=>{lastEdited="from"; calculate();});
+toInput.addEventListener("input", ()=>{lastEdited="to"; calculate();});
+
+swapBtn.addEventListener("click", ()=>{
+    const tmpUnit = fromSelect.value;
+    fromSelect.value = toSelect.value;
+    toSelect.value = tmpUnit;
+
+    const tmpVal = fromInput.value;
+    fromInput.value = toInput.value;
+    toInput.value = tmpVal;
+
+    updateUnitLabels();
+    lastEdited = "from";
+    calculate();
+});
+
+function startup(){
+    initCategorySelect();
+    categorySelect.value = "length";
+    populateUnits("length");
+    populateQuickButtons("length");
+    fromInput.value = "1";
+    lastEdited = "from";
+    calculate();
+}
+
+startup();
+</script>
+</body>
+</html>

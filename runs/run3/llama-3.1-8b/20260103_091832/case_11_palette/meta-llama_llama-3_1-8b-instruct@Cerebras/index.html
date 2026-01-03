@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .color {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .color:hover {
+            transform: scale(1.1);
+        }
+        .color.locked {
+            border: 2px solid #333;
+        }
+        .color.locked:hover {
+            transform: scale(1.05);
+        }
+        .color-code {
+            font-size: 12px;
+            color: #666;
+        }
+        .color-name {
+            font-size: 12px;
+            color: #999;
+        }
+        .palette-container {
+            width: 80%;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .generate-button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .generate-button:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="palette-container">
+        <div class="palette" id="palette"></div>
+        <div class="generate-button" id="generate-button">Press Spacebar to Generate New Palette</div>
+    </div>
+    <script>
+        const paletteContainer = document.getElementById('palette');
+        const generateButton = document.getElementById('generate-button');
+        const lockedColors = JSON.parse(localStorage.getItem('lockedColors')) || [];
+
+        function generatePalette() {
+            paletteContainer.innerHTML = '';
+            const colors = [];
+            for (let i = 0; i < 5; i++) {
+                colors.push(getRandomColor());
+            }
+            colors.forEach((color) => {
+                const colorElement = document.createElement('div');
+                colorElement.classList.add('color');
+                colorElement.style.backgroundColor = color.hex;
+                colorElement.addEventListener('click', () => {
+                    navigator.clipboard.writeText(color.hex);
+                    alert(`Copied ${color.hex} to clipboard!`);
+                });
+                colorElement.addEventListener('dblclick', () => {
+                    lockedColors.includes(color.hex) ? lockedColors.splice(lockedColors.indexOf(color.hex), 1) : lockedColors.push(color.hex);
+                    localStorage.setItem('lockedColors', JSON.stringify(lockedColors));
+                    colorElement.classList.toggle('locked');
+                });
+                const colorCodeElement = document.createElement('div');
+                colorCodeElement.classList.add('color-code');
+                colorCodeElement.textContent = `${color.hex} (${color.rgb})`;
+                const colorNameElement = document.createElement('div');
+                colorNameElement.classList.add('color-name');
+                colorNameElement.textContent = getRandomColorName();
+                const colorLockElement = document.createElement('div');
+                colorLockElement.classList.add('locked', 'color');
+                colorLockElement.style.backgroundColor = color.hex;
+                colorLockElement.style.display = lockedColors.includes(color.hex) ? 'block' : 'none';
+                colorElement.appendChild(colorCodeElement);
+                colorElement.appendChild(colorNameElement);
+                colorElement.appendChild(colorLockElement);
+                paletteContainer.appendChild(colorElement);
+            });
+        }
+
+        function getRandomColor() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            return {
+                hex,
+                rgb: `${r},${g},${b}`,
+                name: getRandomColorName()
+            };
+        }
+
+        function getRandomColorName() {
+            const colorNames = ['Aurora', 'Sulfur', 'Ocean', 'Emerald', 'Scarlet', 'Midnight', 'Mocha', 'Sage', 'Coral', 'Amber'];
+            return colorNames[Math.floor(Math.random() * colorNames.length)];
+        }
+
+        generatePalette();
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                generatePalette();
+            }
+        });
+    </script>
+</body>
+</html>

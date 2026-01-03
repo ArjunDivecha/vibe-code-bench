@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultimate Trivia Challenge!</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom, #e0f2f1, #c0e9fe);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 3.5rem;
+        }
+
+        .start-btn {
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .quiz-box {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .question {
+            margin: 20px 0;
+            font-size: 2rem;
+            color: #5d6d7e;
+            min-height: 60px;
+        }
+
+        .answer-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #ecf0f1;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .button.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .button.wrong {
+            background: #fff3cd;
+            color: #721c24;
+        }
+
+        .feedback {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .score {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+
+        .progress {
+            height: 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #b0bec5;
+        }
+
+        .progress-bar {
+            height: 15px;
+            background: #4CAF50;
+            border-radius: 5px;
+        }
+
+        .progress-text {
+            margin: 0 10px;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ultimate Trivia Challenge!</h1>
+        <button class="start-btn" onclick="startQuiz()">Begin Quiz</button>
+        <div class="quiz-box" id="quiz-box">
+            <div class="score">Score: <span id="score-value">0</span></div>
+            <div id="question-container"></div>
+            <div id="answer-container"></div>
+            <div id="feedback" class="feedback"></div>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+                <div class="progress-text" id="progress-text">Question 1/10</div>
+            </div>
+        </div>
+        <div id="results" class="container">
+            <h2>Your Final Score: <span id="final-score">0</span>/10</h2>
+            <button onclick="restartQuiz()">Play Again?</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "What is the largest planet in our solar system?",
+                options: ["Jupiter", "Earth", "Mars", "Venus"],
+                correct: "Jupiter"
+            },
+            {
+                question: "Who painted the Mona Lisa?",
+                options: ["Leonardo da Vinci", "Vincent van Gogh", "Pablo Picasso", "Michelangelo"],
+                correct: "Leonardo da Vinci"
+            },
+            {
+                question: "What year did World War II end?",
+                options: ["1945", "1939", "1918", "2001"],
+                correct: "1945"
+            },
+            {
+                question: "What is the chemical symbol for gold?",
+                options: ["Au", "Ag", "Fe", "Hg"],
+                correct: "Au"
+            },
+            {
+                question: "What is the capital of Australia?",
+                options: ["Sydney", "Canberra", "Melbourne", "Brisbane"],
+                correct: "Canberra"
+            },
+            {
+                question: "What is the fastest land animal?",
+                options: ["Cheetah", "Lion", "Gazelle", "Elephant"],
+                correct: "Cheetah"
+            },
+            {
+                question: "What is the largest ocean on Earth?",
+                options: ["Atlantic", "Indian", "Arctic", "Pacific"],
+                correct: "Pacific"
+            },
+            {
+                question: "Who wrote 'Romeo and Juliet'?",
+                options: ["William Shakespeare", "Charles Dickens", "Jane Austen", "Mark Twain"],
+                correct: "William Shakespeare"
+            },
+            {
+                question: "What is the freezing point of water in Celsius?",
+                options: ["0°C", "100°C", "-10°C", "32°F"],
+                correct: "0°C"
+            },
+            {
+                question: "What is the tallest mountain in the world?",
+                options: ["Mount Everest", "K2", "Mount Kilimanjaro", "Mount Fuji"],
+                correct: "Mount Everest"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let totalQuestions = questions.length;
+
+        function startQuiz() {
+            document.getElementById('quiz-box').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            currentQuestion = 0;
+            score = 0;
+            document.getElementById('score-value').textContent = score;
+            document.getElementById('progress-text').textContent = `Question ${currentQuestion + 1}/${totalQuestions}`;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            document.getElementById('question-container').textContent = questions[currentQuestion].question;
+            document.getElementById('answer-container').innerHTML = '';
+            
+            questions[currentQuestion].options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'button';
+                button.textContent = option;
+                button.setAttribute('data-answer', option);
+                button.onclick = checkAnswer;
+                document.getElementById('answer-container').appendChild(button);
+            });
+        }
+
+        function checkAnswer(e) {
+            e = e || window.event;
+            const selectedAnswer = e.target.getAttribute('data-answer');
+            const correctAnswer = questions[currentQuestion].correct;
+            
+            if (selectedAnswer === correctAnswer) {
+                score++;
+                document.getElementById('score-value').textContent = score;
+                e.target.classList.add('correct');
+                setTimeout(() => e.target.classList.remove('correct'), 300);
+                showFeedback('correct');
+            } else {
+                e.target.classList.add('wrong');
+                setTimeout(() => e.target.classList.remove('wrong'), 300);
+                showFeedback('wrong', correctAnswer);
+            }
+            
+            currentQuestion++;
+            if (currentQuestion < totalQuestions) {
+                setTimeout(showQuestion, 1000);
+            } else {
+                showResults();
+            }
+        }
+
+        function showFeedback(result, correctAnswer = null) {
+            const feedbackElement = document.getElementById('feedback');
+            feedbackElement.textContent = result === 'correct' 
+                ? 'Correct!' 
+                : `Wrong! The correct answer was: ${correctAnswer}`;
+            feedbackElement.style.color = result === 'correct' ? '#2ecc71' : '#e74c3c';
+            feedbackElement.classList.add('pulse');
+            setTimeout(() => feedbackElement.classList.remove('pulse'), 500);
+        }
+
+        function showResults() {
+            document.getElementById('quiz-box').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('final-score').textContent = score;
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+
+        // Initialize with start screen
+        document.getElementById('quiz-box').style.display = 'none';
+        document.getElementById('results').style.display = 'none';
+    </script>
+</body>
+</html>
