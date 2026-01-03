@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Control Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.12);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Effects */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.02;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--glass-highlight);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active::before {
+            opacity: 1;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .user-profile:hover {
+            background: var(--glass-highlight);
+        }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--glass-highlight);
+            border-color: var(--glass-highlight);
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Widgets Grid */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        /* Widget Card */
+        .widget {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .widget:hover {
+            border-color: var(--glass-highlight);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .widget-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .widget-title svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+        }
+
+        .widget-action {
+            padding: 6px 12px;
+            background: var(--glass-highlight);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .widget-action:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+        }
+
+        /* Active Projects Widget */
+        .widget-projects {
+            grid-column: span 8;
+        }
+
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .project-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .project-card:hover {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .project-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .project-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .project-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .project-details h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .project-details span {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .project-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-review {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-paused {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .progress-container {
+            margin-top: 12px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .progress-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* Activity Widget */
+        .widget-activity {
+            grid-column: span 4;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 4px;
+            bottom: 4px;
+            width: 2px;
+            background: var(--glass-border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 3px solid var(--accent-primary);
+        }
+
+        .timeline-content h5 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .timeline-content p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Quick Links Widget */
+        .widget-links {
+            grid-column: span 4;
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .link-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .link-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .link-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .link-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .link-item span {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Task List Widget */
+        .widget-tasks {
+            grid-column: span 8;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--glass-highlight);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .task-checkbox.checked {
+            background: var(--accent-gradient);
+            border-color: transparent;
+        }
+
+        .task-checkbox svg {
+            width: 12px;
+            height: 12px;
+            fill: white;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .task-checkbox.checked svg {
+            opacity: 1;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .task-priority {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .priority-medium {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .priority-low {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .task-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover .task-delete {
+            opacity: 1;
+        }
+
+        .task-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .task-delete svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--danger);
+        }
+
+        .add-task-form {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .add-task-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .add-task-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-task-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .priority-select {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-add-task {
+            padding: 12px 20px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-add-task:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            max-width: 500px;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--glass-highlight);
+        }
+
+        .modal-close svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* Page Views */
+        .page-view {
+            display: none;
+        }
+
+        .page-view.active {
+            display: block;
+        }
+
+        /* Projects Page */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .project-full-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .project-full-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Settings Page */
+        .settings-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .settings-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .setting-info p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .toggle {
+            width: 48px;
+            height: 26px;
+            background: var(--glass-border);
+            border-radius: 13px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s ease;
+        }
+
+        .toggle.active {
+            background: var(--accent-primary);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle.active::after {
+            transform: translateX(22px);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .widgets-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .widget-projects,
+            .widget-tasks {
+                grid-column: span 6;
+            }
+            
+            .widget-activity,
+            .widget-links {
+                grid-column: span 3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .widget {
+                grid-column: span 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="noise-overlay"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <span class="logo-text">Control Center</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <div class="nav-item active" data-view="home">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9,22 9,12 15,12 15,22"/>
+                        </svg>
+                        <span>Home</span>
+                    </div>
+                    <div class="nav-item" data-view="projects">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span>Projects</span>
+                    </div>
+                    <div class="nav-item" data-view="settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        <span>Settings</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Quick Access</div>
+                    <div class="nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        <span>Documents</span>
+                    </div>
+                    <div class="nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span>Calendar</span>
+                    </div>
+                    <div class="nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>Team</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">JD</div>
+                    <div class="user-info">
+                        <div class="user-name">John Doe</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Home View -->
+            <div class="page-view active" id="view-home">
+                <header class="page-header">
+                    <h1 class="page-title">Welcome back, John 👋</h1>
+                    <p class="page-subtitle">Here's what's happening with your projects today.</p>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            New Project
+                        </button>
+                        <button class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17,8 12,3 7,8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Export
+                        </button>
+                    </div>
+                </header>
+
+                <div class="widgets-grid">
+                    <!-- Active Projects Widget -->
+                    <div class="widget widget-projects">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12,2 2,7 12,12 22,7"/>
+                                    <polyline points="2,17 12,22 22,17"/>
+                                    <polyline points="2,12 12,17 22,12"/>
+                                </svg>
+                                Active Projects
+                            </h3>
+                            <button class="widget-action">View All</button>
+                        </div>
+                        <div class="project-list">
+                            <div class="project-card">
+                                <div class="project-header">
+                                    <div class="project-info">
+                                        <div class="project-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">🚀</div>
+                                        <div class="project-details">
+                                            <h4>Website Redesign</h4>
+                                            <span>Design Team • 8 members</span>
+                                        </div>
+                                    </div>
+                                    <span class="project-status status-active">Active</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-header">
+                                        <span class="progress-label">Progress</span>
+                                        <span class="progress-value">72%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 72%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="project-card">
+                                <div class="project-header">
+                                    <div class="project-info">
+                                        <div class="project-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">📱</div>
+                                        <div class="project-details">
+                                            <h4>Mobile App v2.0</h4>
+                                            <span>Development • 12 members</span>
+                                        </div>
+                                    </div>
+                                    <span class="project-status status-review">In Review</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-header">
+                                        <span class="progress-label">Progress</span>
+                                        <span class="progress-value">89%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 89%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="project-card">
+                                <div class="project-header">
+                                    <div class="project-info">
+                                        <div class="project-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">📊</div>
+                                        <div class="project-details">
+                                            <h4>Analytics Dashboard</h4>
+                                            <span>Data Team • 5 members</span>
+                                        </div>
+                                    </div>
+                                    <span class="project-status status-paused">Paused</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-header">
+                                        <span class="progress-label">Progress</span>
+                                        <span class="progress-value">34%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 34%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Widget -->
+                    <div class="widget widget-activity">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                                </svg>
+                                Recent Activity
+                            </h3>
+                        </div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <h5>Design approved</h5>
+                                    <p>Homepage mockup was approved by client</p>
+                                    <span class="timeline-time">2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <h5>New comment</h5>
+                                    <p>Sarah left a comment on Task #234</p>
+                                    <span class="timeline-time">4 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <h5>Task completed</h5>
+                                    <p>API integration finished</p>
+                                    <span class="timeline-time">Yesterday</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <h5>Project created</h5>
+                                    <p>New project "Marketing Site" added</p>
+                                    <span class="timeline-time">2 days ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links Widget -->
+                    <div class="widget widget-links">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                </svg>
+                                Quick Links
+                            </h3>
+                        </div>
+                        <div class="links-grid">
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(99, 102, 241, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14,2 14,8 20,8"/>
+                                    </svg>
+                                </div>
+                                <span>Docs</span>
+                            </div>
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(16, 185, 129, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                </div>
+                                <span>Chat</span>
+                            </div>
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(245, 158, 11, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                        <polyline points="22,6 12,13 2,6"/>
+                                    </svg>
+                                </div>
+                                <span>Email</span>
+                            </div>
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(239, 68, 68, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                                        <polygon points="23,7 16,12 23,17"/>
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                    </svg>
+                                </div>
+                                <span>Meet</span>
+                            </div>
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(139, 92, 246, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12,6 12,12 16,14"/>
+                                    </svg>
+                                </div>
+                                <span>Time</span>
+                            </div>
+                            <div class="link-item">
+                                <div class="link-icon" style="background: rgba(236, 72, 153, 0.2);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2">
+                                        <path d="M12 20V10"/>
+                                        <path d="M18 20V4"/>
+                                        <path d="M6 20v-4"/>
+                                    </svg>
+                                </div>
+                                <span>Stats</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task List Widget -->
+                    <div class="widget widget-tasks">
+                        <div class="widget-header">
+                            <h3 class="widget-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                </svg>
+                                Task List
+                            </h3>
+                            <span class="widget-action" id="task-count">0 tasks</span>
+                        </div>
+                        <div class="task-list" id="task-list">
+                            <!-- Tasks will be rendered here -->
+                        </div>
+                        <div class="add-task-form">
+                            <input type="text" class="add-task-input" id="new-task-input" placeholder="Add a new task...">
+                            <select class="priority-select" id="task-priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                            <button class="btn-add-task" onclick="addTask()">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects View -->
+            <div class="page-view" id="view-projects">
+                <header class="page-header">
+                    <h1 class="page-title">All Projects</h1>
+                    <p class="page-subtitle">Manage and track all your ongoing projects.</p>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            New Project
+                        </button>
+                    </div>
+                </header>
+
+                <div class="projects-grid" id="projects-grid">
+                    <!-- Projects will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div class="page-view" id="view-settings">
+                <header class="page-header">
+                    <h1 class="page-title">Settings</h1>
+                    <p class="page-subtitle">Manage your account and application preferences.</p>
+                </header>
+
+                <div class="settings-section">
+                    <h3 class="settings-title">Appearance</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Dark Mode</h4>
+                            <p>Use dark theme across the application</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Compact View</h4>
+                            <p>Reduce spacing and padding in the UI</p>
+                        </div>
+                        <div class="toggle" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Animations</h4>
+                            <p>Enable smooth animations and transitions</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="settings-title">Notifications</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Email Notifications</h4>
+                            <p>Receive project updates via email</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Push Notifications</h4>
+                            <p>Get real-time browser notifications</p>
+                        </div>
+                        <div class="toggle" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Weekly Digest</h4>
+                            <p>Receive a summary every Monday</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="settings-title">Data & Privacy</h3>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Analytics</h4>
+                            <p>Help improve the app by sharing usage data</p>
+                        </div>
+                        <div class="toggle" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Clear Local Data</h4>
+                            <p>Remove all locally stored tasks and preferences</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="clearAllData()">Clear Data</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Project</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="createProject(event)">
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-input" id="project-name" placeholder="Enter project name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-input form-textarea" id="project-desc" placeholder="Describe your project..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Team</label>
+                        <select class="form-input" id="project-team">
+                            <option>Design Team</option>
+                            <option>Development</option>
+                            <option>Marketing</option>
+                            <option>Data Team</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-input" id="project-priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [
+            { id: 1, text: 'Review design mockups', completed: false, priority: 'high' },
+            { id: 2, text: 'Update project documentation', completed: true, priority: 'medium' },
+            { id: 3, text: 'Schedule team meeting', completed: false, priority: 'low' },
+            { id: 4, text: 'Deploy staging environment', completed: false, priority: 'high' }
+        ];
+
+        let projects = JSON.parse(localStorage.getItem('projects')) || [
+            { id: 1, name: 'Website Redesign', desc: 'Complete overhaul of company website', team: 'Design Team', progress: 72, status: 'active', emoji: '🚀' },
+            { id: 2, name: 'Mobile App v2.0', desc: 'New features and performance improvements', team: 'Development', progress: 89, status: 'review', emoji: '📱' },
+            { id: 3, name: 'Analytics Dashboard', desc: 'Real-time data visualization', team: 'Data Team', progress: 34, status: 'paused', emoji: '📊' },
+            { id: 4, name: 'Marketing Campaign', desc: 'Q4 product launch campaign', team: 'Marketing', progress: 55, status: 'active', emoji: '📣' },
+            { id: 5, name: 'API Integration', desc: 'Third-party service integration', team: 'Development', progress: 95, status: 'review', emoji: '🔗' }
+        ];
+
+        // Navigation
+        document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+            item.addEventListener('click', function() {
+                const view = this.dataset.view;
+                
+                // Update nav items
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update views
+                document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${view}`).classList.add('active');
+                
+                // Render projects if switching to projects view
+                if (view === 'projects') {
+                    renderProjects();
+                }
+            });
+        });
+
+        // Tasks
+        function renderTasks() {
+            const taskList = document.getElementById('task-list');
+            const taskCount = document.getElementById('task-count');
+            
+            const incompleteTasks = tasks.filter(t => !t.completed).length;
+            taskCount.textContent = `${incompleteTasks} task${incompleteTasks !== 1 ? 's' : ''}`;
+            
+            taskList.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="toggleTask(${task.id})">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polyline points="20,6 9,17 4,12" fill="none" stroke="currentColor" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <span class="task-text">${task.text}</span>
+                    <span class="task-priority priority-${task.priority}">${task.priority}</span>
+                    <button class="task-delete" onclick="deleteTask(${task.id})">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function addTask() {
+            const input = document.getElementById('new-task-input');
+            const priority = document.getElementById('task-priority').value;
+            const text = input.value.trim();
+            
+            if (text) {
+                const newTask = {
+                    id: Date.now(),
+                    text: text,
+                    completed: false,
+                    priority: priority
+                };
+                tasks.unshift(newTask);
+                saveTasks();
+                renderTasks();
+                input.value = '';
+            }
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // Enter key to add task
+        document.getElementById('new-task-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // Projects
+        function renderProjects() {
+            const grid = document.getElementById('projects-grid');
+            const emojis = ['🚀', '📱', '📊', '📣', '🔗', '💡', '🎯', '⚡', '🔮', '🌟'];
+            
+            grid.innerHTML = projects.map(project => {
+                const statusClass = project.status === 'active' ? 'status-active' : 
+                                   project.status === 'review' ? 'status-review' : 'status-paused';
+                const statusText = project.status === 'active' ? 'Active' : 
+                                  project.status === 'review' ? 'In Review' : 'Paused';
+                
+                return `
+                    <div class="project-full-card">
+                        <div class="project-header">
+                            <div class="project-info">
+                                <div class="project-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">${project.emoji || '📁'}</div>
+                                <div class="project-details">
+                                    <h4>${project.name}</h4>
+                                    <span>${project.team}</span>
+                                </div>
+                            </div>
+                            <span class="project-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 13px; margin: 16px 0;">${project.desc}</p>
+                        <div class="progress-container">
+                            <div class="progress-header">
+                                <span class="progress-label">Progress</span>
+                                <span class="progress-value">${project.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${project.progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Modal
+        function openModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        function createProject(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('project-name').value;
+            const desc = document.getElementById('project-desc').value;
+            const team = document.getElementById('project-team').value;
+            const emojis = ['🚀', '📱', '📊', '📣', '🔗', '💡', '🎯', '⚡', '🔮', '🌟'];
+            
+            const newProject = {
+                id: Date.now(),
+                name: name,
+                desc: desc || 'No description provided',
+                team: team,
+                progress: 0,
+                status: 'active',
+                emoji: emojis[Math.floor(Math.random() * emojis.length)]
+            };
+            
+            projects.unshift(newProject);
+            localStorage.setItem('projects', JSON.stringify(projects));
+            
+            closeModal();
+            
+            // Switch to projects view
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelector('.nav-item[data-view="projects"]').classList.add('active');
+            document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-projects').classList.add('active');
+            
+            renderProjects();
+            
+            // Reset form
+            document.getElementById('project-name').value = '';
+            document.getElementById('project-desc').value = '';
+        }
+
+        // Close modal on overlay click
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Clear all data
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all local data? This cannot be undone.')) {
+                localStorage.removeItem('tasks');
+                localStorage.removeItem('projects');
+                tasks = [];
+                projects = [];
+                renderTasks();
+                renderProjects();
+                alert('All local data has been cleared.');
+            }
+        }
+
+        // Initialize
+        renderTasks();
+        renderProjects();
+    </script>
+</body>
+</html>

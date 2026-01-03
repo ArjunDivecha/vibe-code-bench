@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #f5f5f5;
+            --editor-bg: #ffffff;
+            --preview-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #ddd;
+            --toolbar-bg: #2c3e50;
+            --toolbar-text: #ffffff;
+            --code-bg: #f4f4f4;
+            --blockquote-border: #3498db;
+            --blockquote-bg: #f9f9f9;
+            --link-color: #3498db;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a2e;
+            --editor-bg: #16213e;
+            --preview-bg: #1a1a2e;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+            --toolbar-bg: #0f0f23;
+            --toolbar-text: #ffffff;
+            --code-bg: #2d2d44;
+            --blockquote-border: #3498db;
+            --blockquote-bg: #1e1e32;
+            --link-color: #5dade2;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .toolbar {
+            background-color: var(--toolbar-bg);
+            color: var(--toolbar-text);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .toolbar h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .toolbar-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #219a52;
+        }
+
+        .btn-dark {
+            background-color: #34495e;
+            color: white;
+        }
+
+        .btn-dark:hover {
+            background-color: #2c3e50;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            background-color: var(--border-color);
+            padding: 10px 15px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border-color);
+        }
+
+        #editor {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            border: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background-color: var(--editor-bg);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        #preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--preview-bg);
+            line-height: 1.7;
+        }
+
+        /* Preview Styles */
+        #preview h1, #preview h2, #preview h3, 
+        #preview h4, #preview h5, #preview h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        #preview h1 {
+            font-size: 2em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+
+        #preview h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+
+        #preview h3 { font-size: 1.25em; }
+        #preview h4 { font-size: 1em; }
+        #preview h5 { font-size: 0.875em; }
+        #preview h6 { font-size: 0.85em; opacity: 0.8; }
+
+        #preview p {
+            margin-bottom: 16px;
+        }
+
+        #preview strong {
+            font-weight: 700;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview ul, #preview ol {
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+
+        #preview li {
+            margin-bottom: 4px;
+        }
+
+        #preview code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        #preview pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        #preview pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--blockquote-border);
+            background-color: var(--blockquote-bg);
+            padding: 12px 20px;
+            margin: 0 0 16px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        #preview blockquote p {
+            margin-bottom: 0;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 24px 0;
+        }
+
+        .status-bar {
+            background-color: var(--toolbar-bg);
+            color: var(--toolbar-text);
+            padding: 6px 20px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            opacity: 0.9;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .editor-pane {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .pane {
+                min-height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>📝 Markdown Editor</h1>
+        <div class="toolbar-buttons">
+            <button class="btn btn-secondary" onclick="loadFromStorage()" title="Load saved content">
+                📂 Load
+            </button>
+            <button class="btn btn-primary" onclick="saveToStorage()" title="Save to browser">
+                💾 Save
+            </button>
+            <button class="btn btn-success" onclick="exportHTML()" title="Export as HTML file">
+                📤 Export HTML
+            </button>
+            <button class="btn btn-dark" onclick="toggleDarkMode()" id="darkModeBtn" title="Toggle dark mode">
+                🌙 Dark
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="pane editor-pane">
+            <div class="pane-header">Markdown</div>
+            <textarea id="editor" placeholder="Start writing your markdown here..."></textarea>
+        </div>
+        <div class="pane preview-pane">
+            <div class="pane-header">Preview</div>
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="charCount">0 characters</span>
+        <span id="wordCount">0 words</span>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const toast = document.getElementById('toast');
+        const darkModeBtn = document.getElementById('darkModeBtn');
+
+        // Default sample markdown
+        const sampleMarkdown = `# Welcome to Markdown Editor
+
+This is a **live preview** markdown editor. Start typing on the left to see the rendered output on the right!
+
+## Features
+
+- **Bold text** using \`**text**\`
+- *Italic text* using \`*text*\`
+- Headers using \`#\`, \`##\`, \`###\`
+
+### Code Examples
+
+Inline \`code\` looks like this.
+
+\`\`\`
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+### Lists
+
+Unordered list:
+- First item
+- Second item
+- Third item
+
+Ordered list:
+1. First step
+2. Second step
+3. Third step
+
+### Links and Quotes
+
+Visit [Google](https://google.com) for more info.
+
+> This is a blockquote.
+> It can span multiple lines.
+
+---
+
+Enjoy writing! 🎉
+`;
+
+        // Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+            
+            // Escape HTML characters first
+            html = html
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Restore blockquotes (>) that were escaped
+            html = html.replace(/^&gt;\s?(.*)$/gm, '|||BLOCKQUOTE|||$1');
+            
+            // Code blocks (``` ... ```)
+            html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
+                return '<pre><code>' + code.trim() + '</code></pre>';
+            });
+            
+            // Inline code (`code`)
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Headers (# to ######)
+            html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+            html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+            
+            // Horizontal rules
+            html = html.replace(/^---+$/gm, '<hr>');
+            
+            // Bold (**text**)
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic (*text*) - but not inside words
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            
+            // Links [text](url)
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            
+            // Process blockquotes
+            html = html.replace(/\|\|\|BLOCKQUOTE\|\|\|(.*)$/gm, '<blockquote><p>$1</p></blockquote>');
+            // Merge consecutive blockquotes
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+            
+            // Unordered lists
+            html = html.replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)\n(?!<li>)/g, '$1</ul>\n');
+            html = html.replace(/(?<!<\/ul>\n)(<li>)/g, '<ul>$1');
+            
+            // Ordered lists
+            html = html.replace(/^\d+\.\s+(.+)$/gm, '<oli>$1</oli>');
+            html = html.replace(/(<oli>.*<\/oli>)\n(?!<oli>)/g, '$1</ol>\n');
+            html = html.replace(/(?<!<\/ol>\n)(<oli>)/g, '<ol>$1');
+            html = html.replace(/<\/?oli>/g, function(match) {
+                return match === '<oli>' ? '<li>' : '</li>';
+            });
+            
+            // Paragraphs - wrap standalone lines
+            const lines = html.split('\n');
+            let result = [];
+            let inParagraph = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const isSpecial = line.startsWith('<h') || 
+                                  line.startsWith('<ul') || 
+                                  line.startsWith('<ol') || 
+                                  line.startsWith('<li') || 
+                                  line.startsWith('</ul') || 
+                                  line.startsWith('</ol') ||
+                                  line.startsWith('<pre') || 
+                                  line.startsWith('</pre') ||
+                                  line.startsWith('<blockquote') || 
+                                  line.startsWith('</blockquote') ||
+                                  line.startsWith('<hr') ||
+                                  line === '';
+                
+                if (isSpecial) {
+                    if (inParagraph) {
+                        result.push('</p>');
+                        inParagraph = false;
+                    }
+                    result.push(lines[i]);
+                } else {
+                    if (!inParagraph) {
+                        result.push('<p>');
+                        inParagraph = true;
+                    }
+                    result.push(lines[i]);
+                }
+            }
+            
+            if (inParagraph) {
+                result.push('</p>');
+            }
+            
+            html = result.join('\n');
+            
+            // Clean up empty paragraphs
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            
+            return html;
+        }
+
+        // Update preview
+        function updatePreview() {
+            const markdown = editor.value;
+            preview.innerHTML = parseMarkdown(markdown);
+            updateCounts();
+        }
+
+        // Update character and word counts
+        function updateCounts() {
+            const text = editor.value;
+            charCount.textContent = text.length + ' characters';
+            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            wordCount.textContent = words + ' words';
+        }
+
+        // Show toast notification
+        function showToast(message, duration = 2000) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Save to localStorage
+        function saveToStorage() {
+            localStorage.setItem('markdownContent', editor.value);
+            showToast('✓ Saved successfully!');
+        }
+
+        // Load from localStorage
+        function loadFromStorage() {
+            const saved = localStorage.getItem('markdownContent');
+            if (saved) {
+                editor.value = saved;
+                updatePreview();
+                showToast('✓ Loaded successfully!');
+            } else {
+                showToast('No saved content found');
+            }
+        }
+
+        // Export as HTML
+        function exportHTML() {
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.7;
+            color: #333;
+        }
+        h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; }
+        h1, h2 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+        pre { background: #f4f4f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        blockquote { border-left: 4px solid #3498db; margin: 0 0 16px; padding: 12px 20px; background: #f9f9f9; }
+        a { color: #3498db; }
+        ul, ol { padding-left: 2em; }
+        hr { border: none; border-top: 2px solid #eee; margin: 24px 0; }
+    </style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markdown-export.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('✓ Exported as HTML!');
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            darkModeBtn.innerHTML = isDark ? '☀️ Light' : '🌙 Dark';
+            localStorage.setItem('darkMode', isDark);
+        }
+
+        // Initialize
+        function init() {
+            // Load dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeBtn.innerHTML = '☀️ Light';
+            }
+
+            // Load saved content or use sample
+            const saved = localStorage.getItem('markdownContent');
+            editor.value = saved || sampleMarkdown;
+            
+            // Set up event listeners
+            editor.addEventListener('input', updatePreview);
+            
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                if (editor.value) {
+                    localStorage.setItem('markdownContent', editor.value);
+                }
+            }, 30000);
+            
+            // Initial render
+            updatePreview();
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>

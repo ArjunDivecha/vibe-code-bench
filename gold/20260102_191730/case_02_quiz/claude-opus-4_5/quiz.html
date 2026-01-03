@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Trivia Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+        }
+
+        .screen {
+            display: none;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: block;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .question-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            min-height: 80px;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f3ff;
+            transform: translateX(5px);
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+        }
+
+        .option .letter {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            animation: pulse 0.5s ease;
+        }
+
+        .option.correct .letter {
+            background: #28a745;
+        }
+
+        .option.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            animation: shake 0.5s ease;
+        }
+
+        .option.wrong .letter {
+            background: #dc3545;
+        }
+
+        .next-btn {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .next-btn.show {
+            display: inline-block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .result-score {
+            font-size: 5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 20px 0;
+        }
+
+        .result-text {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .result-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti 3s ease-out forwards;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="emoji">🧠</div>
+            <h1>Trivia Time!</h1>
+            <p class="subtitle">Test your knowledge with 10 fun questions across various topics!</p>
+            <button class="btn" onclick="startQuiz()">Begin Quiz</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="question-info">
+                <span id="question-number">Question 1 of 10</span>
+                <span class="score-display">Score: <span id="current-score">0</span></span>
+            </div>
+            <div class="question-text" id="question-text"></div>
+            <div class="options" id="options"></div>
+            <div class="feedback" id="feedback"></div>
+            <button class="btn next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <div class="result-emoji" id="result-emoji">🏆</div>
+            <h1>Quiz Complete!</h1>
+            <div class="result-score" id="result-score">0/10</div>
+            <p class="result-text" id="result-text">Great job!</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="correct-count">0</div>
+                    <div class="stat-label">Correct</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="wrong-count">0</div>
+                    <div class="stat-label">Wrong</div>
+                </div>
+            </div>
+            <button class="btn" onclick="restartQuiz()">Play Again</button>
+        </div>
+    </div>
+
+    <div class="confetti-container" id="confetti-container"></div>
+
+    <script>
+        const questions = [
+            {
+                question: "What is the only planet that spins clockwise?",
+                options: ["Mars", "Venus", "Jupiter", "Saturn"],
+                correct: 1,
+                funFact: "Venus rotates so slowly that a day on Venus is longer than a year!"
+            },
+            {
+                question: "How many hearts does an octopus have?",
+                options: ["1", "2", "3", "4"],
+                correct: 2,
+                funFact: "Two hearts pump blood to the gills, and one pumps it to the rest of the body!"
+            },
+            {
+                question: "What was the first toy to be advertised on television?",
+                options: ["Barbie", "Mr. Potato Head", "Slinky", "Lego"],
+                correct: 1,
+                funFact: "Mr. Potato Head was advertised on TV in 1952!"
+            },
+            {
+                question: "Which country invented ice cream?",
+                options: ["Italy", "United States", "China", "France"],
+                correct: 2,
+                funFact: "Ice cream dates back to around 200 BC in China!"
+            },
+            {
+                question: "What is the fear of long words called?",
+                options: ["Logophobia", "Hippopotomonstrosesquippedaliophobia", "Verbophobia", "Lexophobia"],
+                correct: 1,
+                funFact: "Ironically, it's one of the longest words in the dictionary!"
+            },
+            {
+                question: "How long is a jiffy?",
+                options: ["1 second", "1/100th of a second", "1 minute", "1 millisecond"],
+                correct: 1,
+                funFact: "A jiffy is an actual unit of time used in physics and computing!"
+            },
+            {
+                question: "What animal can sleep for 3 years?",
+                options: ["Koala", "Sloth", "Snail", "Cat"],
+                correct: 2,
+                funFact: "Snails can sleep for up to 3 years if the weather isn't humid enough!"
+            },
+            {
+                question: "Which fruit floats because it's 25% air?",
+                options: ["Banana", "Orange", "Apple", "Grape"],
+                correct: 2,
+                funFact: "That's why apple bobbing works!"
+            },
+            {
+                question: "What is the national animal of Scotland?",
+                options: ["Lion", "Dragon", "Unicorn", "Phoenix"],
+                correct: 2,
+                funFact: "The unicorn was chosen because in Celtic mythology, it symbolizes purity and power!"
+            },
+            {
+                question: "How many times does the average person laugh per day?",
+                options: ["5 times", "13 times", "25 times", "50 times"],
+                correct: 1,
+                funFact: "Children laugh about 300 times a day, but adults only about 13 times!"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            answered = false;
+            showScreen('quiz-screen');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('question-text').textContent = q.question;
+            document.getElementById('question-number').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            document.getElementById('current-score').textContent = score;
+            document.getElementById('progress').style.width = `${((currentQuestion) / questions.length) * 100}%`;
+            
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            const letters = ['A', 'B', 'C', 'D'];
+            q.options.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.innerHTML = `<span class="letter">${letters[index]}</span><span>${option}</span>`;
+                optionEl.onclick = () => selectAnswer(index);
+                optionsContainer.appendChild(optionEl);
+            });
+
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('next-btn').classList.remove('show');
+            answered = false;
+        }
+
+        function selectAnswer(index) {
+            if (answered) return;
+            answered = true;
+
+            const options = document.querySelectorAll('.option');
+            const q = questions[currentQuestion];
+            const feedback = document.getElementById('feedback');
+
+            options.forEach(opt => opt.classList.add('disabled'));
+
+            if (index === q.correct) {
+                options[index].classList.add('correct');
+                score++;
+                document.getElementById('current-score').textContent = score;
+                feedback.className = 'feedback correct show';
+                feedback.textContent = `✅ Correct! ${q.funFact}`;
+            } else {
+                options[index].classList.add('wrong');
+                options[q.correct].classList.add('correct');
+                feedback.className = 'feedback wrong show';
+                feedback.textContent = `❌ Wrong! The answer was "${q.options[q.correct]}". ${q.funFact}`;
+            }
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.textContent = currentQuestion === questions.length - 1 ? 'See Results' : 'Next Question';
+            nextBtn.classList.add('show');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion >= questions.length) {
+                showResults();
+            } else {
+                displayQuestion();
+            }
+        }
+
+        function showResults() {
+            showScreen('result-screen');
+            document.getElementById('result-score').textContent = `${score}/${questions.length}`;
+            document.getElementById('correct-count').textContent = score;
+            document.getElementById('wrong-count').textContent = questions.length - score;
+            document.getElementById('progress').style.width = '100%';
+
+            let emoji, text;
+            const percentage = (score / questions.length) * 100;
+
+            if (percentage === 100) {
+                emoji = '🏆';
+                text = 'Perfect score! You\'re a trivia genius!';
+                createConfetti();
+            } else if (percentage >= 80) {
+                emoji = '🌟';
+                text = 'Excellent! You really know your stuff!';
+                createConfetti();
+            } else if (percentage >= 60) {
+                emoji = '😊';
+                text = 'Good job! You did well!';
+            } else if (percentage >= 40) {
+                emoji = '🤔';
+                text = 'Not bad! Keep learning!';
+            } else {
+                emoji = '📚';
+                text = 'Time to hit the books! Try again?';
+            }
+
+            document.getElementById('result-emoji').textContent = emoji;
+            document.getElementById('result-text').textContent = text;
+        }
+
+        function createConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                container.appendChild(confetti);
+            }
+
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+    </script>
+</body>
+</html>

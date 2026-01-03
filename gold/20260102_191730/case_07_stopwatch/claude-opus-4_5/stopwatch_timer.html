@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch & Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 5px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: #888;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: #fff;
+        }
+
+        .display-container {
+            background: #0a0a0a;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #333;
+            box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .time-display {
+            font-family: 'Courier New', monospace;
+            font-size: 48px;
+            color: #00ff88;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5),
+                         0 0 40px rgba(0, 255, 136, 0.3);
+            letter-spacing: 3px;
+        }
+
+        .time-display.warning {
+            color: #ffaa00;
+            text-shadow: 0 0 20px rgba(255, 170, 0, 0.5),
+                         0 0 40px rgba(255, 170, 0, 0.3);
+        }
+
+        .time-display.danger {
+            color: #ff4444;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5),
+                         0 0 40px rgba(255, 68, 68, 0.3);
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .milliseconds {
+            font-size: 24px;
+            color: #00cc6a;
+        }
+
+        .timer-inputs {
+            display: none;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timer-inputs.visible {
+            display: flex;
+        }
+
+        .time-input-group {
+            text-align: center;
+        }
+
+        .time-input-group label {
+            display: block;
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .time-input-group input {
+            width: 70px;
+            padding: 12px;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #00ff88;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .time-input-group input:focus {
+            border-color: #00ff88;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 200, 83, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 200, 83, 0.6);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ff5252, #ff1744);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 82, 82, 0.4);
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 82, 82, 0.6);
+        }
+
+        .btn-lap {
+            background: linear-gradient(135deg, #448aff, #2979ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(68, 138, 255, 0.4);
+        }
+
+        .btn-lap:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(68, 138, 255, 0.6);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #666, #888);
+            color: white;
+            box-shadow: 0 4px 15px rgba(100, 100, 100, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(100, 100, 100, 0.6);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .laps-container {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .laps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .laps-container::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .laps-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            color: #aaa;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .lap-number {
+            color: #888;
+        }
+
+        .lap-time {
+            color: #00ff88;
+        }
+
+        .lap-diff {
+            color: #ffaa00;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .timer-complete-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 68, 68, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            animation: flashBg 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes flashBg {
+            from { background: rgba(255, 68, 68, 0.9); }
+            to { background: rgba(200, 50, 50, 0.9); }
+        }
+
+        .timer-complete-overlay h1 {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .timer-complete-overlay .btn {
+            font-size: 20px;
+            padding: 20px 50px;
+        }
+
+        .preset-buttons {
+            display: none;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .preset-buttons.visible {
+            display: flex;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #444;
+            border-radius: 20px;
+            color: #aaa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="stopwatchModeBtn" onclick="switchMode('stopwatch')">Stopwatch</button>
+            <button class="mode-btn" id="timerModeBtn" onclick="switchMode('timer')">Timer</button>
+        </div>
+
+        <div class="display-container">
+            <div class="time-display" id="display">00:00:00<span class="milliseconds">.000</span></div>
+        </div>
+
+        <div class="timer-inputs" id="timerInputs">
+            <div class="time-input-group">
+                <label>Hours</label>
+                <input type="number" id="hoursInput" min="0" max="99" value="0">
+            </div>
+            <div class="time-input-group">
+                <label>Minutes</label>
+                <input type="number" id="minutesInput" min="0" max="59" value="5">
+            </div>
+            <div class="time-input-group">
+                <label>Seconds</label>
+                <input type="number" id="secondsInput" min="0" max="59" value="0">
+            </div>
+        </div>
+
+        <div class="preset-buttons" id="presetButtons">
+            <button class="preset-btn" onclick="setPreset(1, 0, 0)">1 min</button>
+            <button class="preset-btn" onclick="setPreset(5, 0, 0)">5 min</button>
+            <button class="preset-btn" onclick="setPreset(10, 0, 0)">10 min</button>
+            <button class="preset-btn" onclick="setPreset(15, 0, 0)">15 min</button>
+            <button class="preset-btn" onclick="setPreset(30, 0, 0)">30 min</button>
+        </div>
+
+        <div class="controls" id="stopwatchControls">
+            <button class="btn btn-start" id="startBtn" onclick="startStopwatch()">Start</button>
+            <button class="btn btn-stop hidden" id="stopBtn" onclick="stopStopwatch()">Stop</button>
+            <button class="btn btn-lap" id="lapBtn" onclick="recordLap()" disabled>Lap</button>
+            <button class="btn btn-reset" id="resetBtn" onclick="resetStopwatch()">Reset</button>
+        </div>
+
+        <div class="controls hidden" id="timerControls">
+            <button class="btn btn-start" id="timerStartBtn" onclick="startTimer()">Start</button>
+            <button class="btn btn-stop hidden" id="timerStopBtn" onclick="pauseTimer()">Pause</button>
+            <button class="btn btn-reset" id="timerResetBtn" onclick="resetTimer()">Reset</button>
+        </div>
+
+        <div class="laps-container" id="lapsContainer"></div>
+    </div>
+
+    <div class="timer-complete-overlay hidden" id="timerCompleteOverlay">
+        <h1>⏰ Time's Up!</h1>
+        <button class="btn btn-reset" onclick="dismissAlert()">Dismiss</button>
+    </div>
+
+    <script>
+        // State variables
+        let currentMode = 'stopwatch';
+        let stopwatchInterval = null;
+        let stopwatchTime = 0;
+        let stopwatchRunning = false;
+        let laps = [];
+        let lastLapTime = 0;
+
+        let timerInterval = null;
+        let timerTime = 0;
+        let timerRunning = false;
+        let timerInitialTime = 0;
+
+        // Audio context for alert sound
+        let audioContext = null;
+
+        function createBeep() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 880;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function playAlarm() {
+            let beepCount = 0;
+            const alarmInterval = setInterval(() => {
+                createBeep();
+                beepCount++;
+                if (beepCount >= 5) {
+                    clearInterval(alarmInterval);
+                }
+            }, 300);
+        }
+
+        // Format time for display
+        function formatTime(ms, showMs = true) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = ms % 1000;
+
+            const hh = String(hours).padStart(2, '0');
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+            const msStr = String(milliseconds).padStart(3, '0');
+
+            if (showMs) {
+                return `${hh}:${mm}:${ss}<span class="milliseconds">.${msStr}</span>`;
+            }
+            return `${hh}:${mm}:${ss}`;
+        }
+
+        // Update display
+        function updateDisplay(time, showMs = true) {
+            const display = document.getElementById('display');
+            display.innerHTML = formatTime(time, showMs);
+        }
+
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Reset both
+            resetStopwatch();
+            resetTimer();
+
+            // Update UI
+            document.getElementById('stopwatchModeBtn').classList.toggle('active', mode === 'stopwatch');
+            document.getElementById('timerModeBtn').classList.toggle('active', mode === 'timer');
+            
+            document.getElementById('stopwatchControls').classList.toggle('hidden', mode !== 'stopwatch');
+            document.getElementById('timerControls').classList.toggle('hidden', mode !== 'timer');
+            document.getElementById('timerInputs').classList.toggle('visible', mode === 'timer');
+            document.getElementById('presetButtons').classList.toggle('visible', mode === 'timer');
+            document.getElementById('lapsContainer').classList.toggle('hidden', mode !== 'stopwatch');
+
+            updateDisplay(0);
+            document.getElementById('display').className = 'time-display';
+        }
+
+        // Stopwatch functions
+        function startStopwatch() {
+            if (stopwatchRunning) return;
+            
+            stopwatchRunning = true;
+            document.getElementById('startBtn').classList.add('hidden');
+            document.getElementById('stopBtn').classList.remove('hidden');
+            document.getElementById('lapBtn').disabled = false;
+
+            const startTime = Date.now() - stopwatchTime;
+            
+            stopwatchInterval = setInterval(() => {
+                stopwatchTime = Date.now() - startTime;
+                updateDisplay(stopwatchTime);
+            }, 10);
+        }
+
+        function stopStopwatch() {
+            if (!stopwatchRunning) return;
+            
+            stopwatchRunning = false;
+            clearInterval(stopwatchInterval);
+            
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('stopBtn').classList.add('hidden');
+        }
+
+        function recordLap() {
+            if (!stopwatchRunning) return;
+            
+            const lapTime = stopwatchTime;
+            const lapDiff = lapTime - lastLapTime;
+            lastLapTime = lapTime;
+            
+            laps.push({ time: lapTime, diff: lapDiff });
+            renderLaps();
+        }
+
+        function renderLaps() {
+            const container = document.getElementById('lapsContainer');
+            container.innerHTML = '';
+            
+            laps.slice().reverse().forEach((lap, index) => {
+                const lapNumber = laps.length - index;
+                const lapElement = document.createElement('div');
+                lapElement.className = 'lap-item';
+                lapElement.innerHTML = `
+                    <span class="lap-number">Lap ${lapNumber}</span>
+                    <span class="lap-diff">+${formatTime(lap.diff, false).replace(/<[^>]*>/g, '')}</span>
+                    <span class="lap-time">${formatTime(lap.time, false).replace(/<[^>]*>/g, '')}</span>
+                `;
+                container.appendChild(lapElement);
+            });
+        }
+
+        function resetStopwatch() {
+            stopStopwatch();
+            stopwatchTime = 0;
+            laps = [];
+            lastLapTime = 0;
+            updateDisplay(0);
+            document.getElementById('lapsContainer').innerHTML = '';
+            document.getElementById('lapBtn').disabled = true;
+            document.getElementById('display').className = 'time-display';
+        }
+
+        // Timer functions
+        function getInputTime() {
+            const hours = parseInt(document.getElementById('hoursInput').value) || 0;
+            const minutes = parseInt(document.getElementById('minutesInput').value) || 0;
+            const seconds = parseInt(document.getElementById('secondsInput').value) || 0;
+            return (hours * 3600 + minutes * 60 + seconds) * 1000;
+        }
+
+        function setPreset(minutes, seconds, hours = 0) {
+            document.getElementById('hoursInput').value = hours;
+            document.getElementById('minutesInput').value = minutes;
+            document.getElementById('secondsInput').value = seconds;
+        }
+
+        function startTimer() {
+            if (timerRunning) return;
+            
+            if (timerTime === 0) {
+                timerTime = getInputTime();
+                timerInitialTime = timerTime;
+            }
+            
+            if (timerTime <= 0) return;
+            
+            timerRunning = true;
+            document.getElementById('timerStartBtn').classList.add('hidden');
+            document.getElementById('timerStopBtn').classList.remove('hidden');
+            document.getElementById('timerInputs').classList.remove('visible');
+            document.getElementById('presetButtons').classList.remove('visible');
+
+            const startTime = Date.now();
+            const startTimerTime = timerTime;
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                timerTime = Math.max(0, startTimerTime - elapsed);
+                updateDisplay(timerTime);
+                updateTimerDisplayClass();
+                
+                if (timerTime <= 0) {
+                    timerComplete();
+                }
+            }, 10);
+        }
+
+        function updateTimerDisplayClass() {
+            const display = document.getElementById('display');
+            const percentage = timerTime / timerInitialTime;
+            
+            if (timerTime <= 0) {
+                display.className = 'time-display danger';
+            } else if (percentage <= 0.1 || timerTime <= 10000) {
+                display.className = 'time-display danger';
+            } else if (percentage <= 0.25 || timerTime <= 30000) {
+                display.className = 'time-display warning';
+            } else {
+                display.className = 'time-display';
+            }
+        }
+
+        function pauseTimer() {
+            if (!timerRunning) return;
+            
+            timerRunning = false;
+            clearInterval(timerInterval);
+            
+            document.getElementById('timerStartBtn').classList.remove('hidden');
+            document.getElementById('timerStartBtn').textContent = 'Resume';
+            document.getElementById('timerStopBtn').classList.add('hidden');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timerTime = 0;
+            timerInitialTime = 0;
+            updateDisplay(0);
+            document.getElementById('timerStartBtn').textContent = 'Start';
+            document.getElementById('timerInputs').classList.add('visible');
+            document.getElementById('presetButtons').classList.add('visible');
+            document.getElementById('display').className = 'time-display';
+        }
+
+        function timerComplete() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerTime = 0;
+            
+            document.getElementById('timerCompleteOverlay').classList.remove('hidden');
+            playAlarm();
+        }
+
+        function dismissAlert() {
+            document.getElementById('timerCompleteOverlay').classList.add('hidden');
+            resetTimer();
+        }
+
+        // Input validation
+        document.querySelectorAll('.time-input-group input').forEach(input => {
+            input.addEventListener('change', function() {
+                const max = parseInt(this.max);
+                const min = parseInt(this.min);
+                let value = parseInt(this.value) || 0;
+                
+                if (value > max) value = max;
+                if (value < min) value = min;
+                
+                this.value = value;
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (currentMode === 'stopwatch') {
+                    if (stopwatchRunning) {
+                        stopStopwatch();
+                    } else {
+                        startStopwatch();
+                    }
+                } else {
+                    if (timerRunning) {
+                        pauseTimer();
+                    } else {
+                        startTimer();
+                    }
+                }
+            } else if (e.code === 'KeyL' && currentMode === 'stopwatch' && stopwatchRunning) {
+                recordLap();
+            } else if (e.code === 'KeyR') {
+                if (currentMode === 'stopwatch') {
+                    resetStopwatch();
+                } else {
+                    resetTimer();
+                }
+            } else if (e.code === 'Escape') {
+                dismissAlert();
+            }
+        });
+
+        // Initialize
+        updateDisplay(0);
+    </script>
+</body>
+</html>

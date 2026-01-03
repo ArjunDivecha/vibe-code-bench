@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Law | Legal Case Search Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-hover: #30363d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-purple: #a371f7;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --highlight-name: rgba(163, 113, 247, 0.3);
+            --highlight-date: rgba(88, 166, 255, 0.3);
+            --highlight-org: rgba(63, 185, 80, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 42px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 57px);
+        }
+
+        .results-panel {
+            width: 400px;
+            min-width: 350px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .case-card {
+            padding: 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .case-card:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-hover);
+        }
+
+        .case-card.active {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        .case-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .case-meta {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .case-meta-item {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .court-badge {
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--accent-blue);
+            border: 1px solid var(--border-color);
+        }
+
+        .case-snippet {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            gap: 16px;
+        }
+
+        .detail-empty-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        .detail-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .detail-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .detail-meta-label {
+            color: var(--text-muted);
+        }
+
+        .tabs-container {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            padding: 0 24px;
+        }
+
+        .tab {
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        .tab-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-blue);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #79b8ff;
+        }
+
+        .detail-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .content-main {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-section {
+            margin-bottom: 24px;
+        }
+
+        .summary-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .summary-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        .full-text {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .entity-name {
+            background: var(--highlight-name);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-purple);
+        }
+
+        .entity-date {
+            background: var(--highlight-date);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .entity-org {
+            background: var(--highlight-org);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid var(--accent-green);
+        }
+
+        .entity-legend {
+            display: flex;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.name { background: var(--highlight-name); border: 1px solid var(--accent-purple); }
+        .legend-dot.date { background: var(--highlight-date); border: 1px solid var(--accent-blue); }
+        .legend-dot.org { background: var(--highlight-org); border: 1px solid var(--accent-green); }
+
+        .notes-sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .note-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .note-case {
+            font-size: 11px;
+            color: var(--accent-blue);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .note-snippet {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 8px;
+            font-style: italic;
+            border-left: 2px solid var(--accent-purple);
+            padding-left: 10px;
+        }
+
+        .note-text {
+            font-size: 12px;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .note-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .note-date {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .note-delete {
+            font-size: 11px;
+            color: var(--accent-red);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .note-delete:hover {
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        .notes-add-form {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .notes-add-form textarea {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .notes-add-form textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .notes-add-form textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .notes-add-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .notes-add-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .selection-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .selected-snippet {
+            font-size: 11px;
+            color: var(--accent-purple);
+            background: var(--bg-primary);
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-style: italic;
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .empty-notes {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-notes-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .no-results-icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-hover);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent-green);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            color: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚖</div>
+            <span>Vibe-Law</span>
+        </div>
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search case law... (e.g., 'constitutional', 'contract', 'liability')">
+        </div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <span>Cases:</span>
+                <span class="stat-value" id="totalCases">15</span>
+            </div>
+            <div class="stat-item">
+                <span>Notes:</span>
+                <span class="stat-value" id="totalNotes">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="results-panel">
+            <div class="results-header">
+                <span class="results-title">Search Results</span>
+                <span class="results-count" id="resultsCount">15 cases</span>
+            </div>
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-empty" id="detailEmpty">
+                <div class="detail-empty-icon">📋</div>
+                <div>Select a case to view details</div>
+            </div>
+            <div id="detailContent" style="display: none; flex-direction: column; height: 100%;">
+                <div class="detail-header">
+                    <h1 class="detail-title" id="detailTitle"></h1>
+                    <div class="detail-meta">
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Court:</span>
+                            <span id="detailCourt"></span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Date:</span>
+                            <span id="detailDate"></span>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span class="detail-meta-label">Citation:</span>
+                            <span id="detailCitation"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tabs-container">
+                    <div class="tab active" data-tab="summary">Summary</div>
+                    <div class="tab" data-tab="fulltext">Full Text</div>
+                    <div class="tab-actions">
+                        <button class="btn" id="extractEntitiesBtn">
+                            <span>✨</span> Extract Entities
+                        </button>
+                    </div>
+                </div>
+
+                <div class="detail-content">
+                    <div class="content-main" id="contentMain">
+                        <div class="tab-content active" id="summaryTab"></div>
+                        <div class="tab-content" id="fulltextTab"></div>
+                    </div>
+
+                    <div class="notes-sidebar">
+                        <div class="notes-header">
+                            <span class="notes-title">📝 Notes</span>
+                        </div>
+                        <div class="notes-list" id="notesList">
+                            <div class="empty-notes">
+                                <div class="empty-notes-icon">📝</div>
+                                <div>No notes yet</div>
+                                <div style="font-size: 11px; margin-top: 8px;">Select text and add a note</div>
+                            </div>
+                        </div>
+                        <div class="notes-add-form">
+                            <div class="selection-hint">💡 Select text from the case to save a snippet</div>
+                            <div class="selected-snippet" id="selectedSnippet" style="display: none;"></div>
+                            <textarea id="noteInput" placeholder="Add your note here..."></textarea>
+                            <div class="notes-add-actions">
+                                <button class="btn btn-primary" id="saveNoteBtn">Save Note</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span id="toastMessage">Note saved successfully</span>
+    </div>
+
+    <script>
+        const mockCases = [
+            {
+                id: 1,
+                title: "Smith v. Metropolitan Healthcare Systems, Inc.",
+                court: "Supreme Court",
+                date: "2024-01-15",
+                citation: "2024 U.S. LEXIS 1234",
+                snippet: "Defendant's motion for summary judgment denied where genuine issues of material fact exist regarding breach of fiduciary duty...",
+                summary: {
+                    holding: "The Court held that healthcare providers owe a heightened duty of care to patients in emergency situations, and that corporate policies limiting treatment options may constitute a breach of fiduciary duty.",
+                    facts: "Plaintiff John Smith brought action against Metropolitan Healthcare Systems after being denied emergency treatment based on insurance verification protocols. The incident occurred on March 15, 2023, when Smith presented with acute symptoms requiring immediate intervention.",
+                    reasoning: "The Court applied the traditional negligence framework while recognizing the unique nature of healthcare provider-patient relationships. Justice Williams wrote that corporate efficiency cannot supersede fundamental patient care obligations."
+                },
+                fullText: `SUPREME COURT OF THE UNITED STATES
+
+No. 23-1456
+
+JOHN SMITH, PETITIONER v. METROPOLITAN HEALTHCARE SYSTEMS, INC.
+
+ON WRIT OF CERTIORARI TO THE UNITED STATES COURT OF APPEALS FOR THE NINTH CIRCUIT
+
+[January 15, 2024]
+
+JUSTICE WILLIAMS delivered the opinion of the Court.
+
+This case presents the question of whether healthcare corporations may be held liable for policies that delay emergency treatment based on insurance verification protocols.
+
+I. BACKGROUND
+
+Petitioner John Smith arrived at Metropolitan General Hospital on March 15, 2023, experiencing acute chest pain and difficulty breathing. Despite presenting with classic symptoms of myocardial infarction, Smith was required to wait approximately forty-five minutes while hospital staff attempted to verify his insurance coverage pursuant to Metropolitan Healthcare Systems' corporate policy.
+
+Dr. Rebecca Martinez, the attending physician, testified that she was prevented from initiating treatment protocols by administrative staff following corporate directives. Hospital records indicate that Smith's condition deteriorated significantly during the verification delay.
+
+II. PROCEDURAL HISTORY
+
+Smith filed suit in the United States District Court for the Central District of California, alleging negligence, breach of fiduciary duty, and violations of the Emergency Medical Treatment and Labor Act (EMTALA). The District Court granted Metropolitan's motion for summary judgment on all claims.
+
+The Ninth Circuit Court of Appeals reversed in part, finding genuine issues of material fact regarding the breach of fiduciary duty claim. Metropolitan Healthcare Systems petitioned for certiorari, which we granted.
+
+III. ANALYSIS
+
+The fundamental question before this Court is whether corporate policies that impede emergency medical treatment can constitute a breach of the duty of care owed by healthcare providers to their patients.
+
+We hold that they can.
+
+Healthcare providers, whether individual practitioners or corporate entities, assume a fiduciary responsibility when they undertake to provide medical care. This responsibility cannot be delegated away through corporate bureaucracy or subordinated to financial considerations.
+
+IV. CONCLUSION
+
+The judgment of the Court of Appeals is AFFIRMED. The case is remanded for further proceedings consistent with this opinion.
+
+It is so ordered.`
+            },
+            {
+                id: 2,
+                title: "United States v. TechCorp International",
+                court: "Federal Circuit",
+                date: "2023-11-22",
+                citation: "2023 Fed. Cir. LEXIS 8876",
+                snippet: "Patent infringement claim sustained where defendant's software implementation substantially copied protected algorithms...",
+                summary: {
+                    holding: "The Federal Circuit affirmed the district court's finding of willful patent infringement, holding that TechCorp's machine learning algorithms infringed upon three valid patents owned by the United States government.",
+                    facts: "The United States, through the Department of Defense, held patents on certain encryption algorithms developed at the National Security Agency. TechCorp International incorporated substantially similar algorithms in their commercial cybersecurity products.",
+                    reasoning: "The Court applied the doctrine of equivalents and found that TechCorp's implementation performed substantially the same function in substantially the same way to achieve the same result."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE FEDERAL CIRCUIT
+
+2023-1892
+
+UNITED STATES OF AMERICA, Plaintiff-Appellee
+v.
+TECHCORP INTERNATIONAL, INC., Defendant-Appellant
+
+[November 22, 2023]
+
+Before ANDERSON, Chief Judge, PARK and REYES, Circuit Judges.
+
+ANDERSON, Chief Judge.
+
+TechCorp International, Inc. appeals from the final judgment of the United States District Court for the Eastern District of Virginia, which found that TechCorp willfully infringed three patents owned by the United States government.
+
+I. BACKGROUND
+
+The patents at issue—U.S. Patent Nos. 9,123,456, 9,234,567, and 9,345,678—relate to advanced encryption algorithms developed by researchers at the National Security Agency in 2018.
+
+Dr. Michael Chen, an expert witness for the Government, testified that the mathematical operations performed by SecureShield are "functionally identical" to those described in the patent claims.
+
+II. ANALYSIS
+
+The doctrine of equivalents applies where an accused product performs substantially the same function, in substantially the same way, to achieve substantially the same result as the patented invention.
+
+IV. CONCLUSION
+
+For the foregoing reasons, the judgment of the district court is AFFIRMED.`
+            },
+            {
+                id: 3,
+                title: "Johnson Family Trust v. Coastal Development LLC",
+                court: "9th Circuit",
+                date: "2023-09-08",
+                citation: "2023 WL 5678901",
+                snippet: "Environmental impact assessment requirements applied retroactively to development projects commenced before regulatory changes...",
+                summary: {
+                    holding: "The Ninth Circuit held that the California Environmental Quality Act amendments of 2022 apply retroactively to development projects that had not yet broken ground.",
+                    facts: "Coastal Development LLC obtained preliminary permits in 2021 for a mixed-use development on property adjacent to wetlands owned by the Johnson Family Trust.",
+                    reasoning: "The Court found that environmental protection statutes should be liberally construed to effectuate their remedial purpose."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE NINTH CIRCUIT
+
+No. 22-56789
+
+JOHNSON FAMILY TRUST, Plaintiffs-Appellees,
+v.
+COASTAL DEVELOPMENT LLC, Defendants-Appellants.
+
+[September 8, 2023]
+
+Before: YAMAMOTO, FITZGERALD, and OCONNOR, Circuit Judges.
+
+YAMAMOTO, Circuit Judge:
+
+This appeal concerns the retroactive application of the California Environmental Quality Act (CEQA) amendments enacted in July 2022.
+
+The Johnson Family Trust owns approximately 50 acres of coastal wetlands in Santa Monica, California. The property has been in the Johnson family since 1952, when Robert Johnson, Sr. acquired it.
+
+CONCLUSION
+
+The judgment of the district court is AFFIRMED. Coastal Development must comply with the 2022 CEQA amendments before proceeding.`
+            },
+            {
+                id: 4,
+                title: "In re: Global Financial Services Bankruptcy",
+                court: "Bankruptcy Court",
+                date: "2024-02-28",
+                citation: "2024 Bankr. LEXIS 445",
+                snippet: "Creditor priority dispute resolved in favor of pension fund beneficiaries over secured bondholders in Chapter 11 reorganization...",
+                summary: {
+                    holding: "The Bankruptcy Court ruled that pension fund obligations constitute priority claims under ERISA, superseding the claims of secured bondholders.",
+                    facts: "Global Financial Services filed for Chapter 11 bankruptcy protection in December 2023, listing assets of $2.3 billion and liabilities of $4.1 billion.",
+                    reasoning: "The Court applied the fraudulent transfer provisions of Section 548 of the Bankruptcy Code."
+                },
+                fullText: `UNITED STATES BANKRUPTCY COURT
+SOUTHERN DISTRICT OF NEW YORK
+
+In re: GLOBAL FINANCIAL SERVICES, INC., Debtors.
+Case No. 23-12345 (ABC) Chapter 11
+
+[February 28, 2024]
+
+JUDGE PATRICIA REYNOLDS
+
+Global Financial Services, Inc. filed a voluntary petition for relief under Chapter 11 of the Bankruptcy Code on December 1, 2023.
+
+Chief Financial Officer David Morrison testified that he was "aware that the pension fund would likely never be fully funded" at the time the forbearance agreement was executed.
+
+CONCLUSION
+
+The security interest granted in September 2023 is hereby AVOIDED pursuant to Section 548 of the Bankruptcy Code.
+
+IT IS SO ORDERED.`
+            },
+            {
+                id: 5,
+                title: "State v. Williams",
+                court: "State Supreme Court",
+                date: "2023-06-14",
+                citation: "456 P.3d 789",
+                snippet: "Fourth Amendment challenge to warrantless drone surveillance of private property sustained on state constitutional grounds...",
+                summary: {
+                    holding: "The State Supreme Court held that warrantless drone surveillance of a private residence violates Article I, Section 7 of the State Constitution.",
+                    facts: "Law enforcement officers used an unmanned aerial vehicle (drone) to conduct surveillance of Marcus Williams's property for 72 consecutive hours without obtaining a warrant.",
+                    reasoning: "The Court distinguished this case from California v. Ciraolo, finding that persistent drone surveillance fundamentally differs from momentary aerial observations."
+                },
+                fullText: `STATE SUPREME COURT
+
+No. 2022-SC-0892
+
+STATE OF WASHINGTON, Respondent,
+v.
+MARCUS WILLIAMS, Petitioner.
+
+[June 14, 2023]
+
+CHIEF JUSTICE NAKAMURA authored the opinion of the Court.
+
+In August 2022, the Spokane County Sheriff's Office received an anonymous tip that Marcus Williams was manufacturing methamphetamine at his rural property. Detective James Foster deployed a department-owned drone equipped with high-resolution cameras and thermal imaging technology.
+
+We hold that Article I, Section 7 protects against persistent drone surveillance. The judgment of the Court of Appeals is REVERSED.`
+            },
+            {
+                id: 6,
+                title: "Patterson v. National Insurance Group",
+                court: "2nd Circuit",
+                date: "2023-12-05",
+                citation: "2023 U.S. App. LEXIS 32145",
+                snippet: "Class action certified where insurance company systematically denied claims using algorithmic decision-making systems...",
+                summary: {
+                    holding: "The Second Circuit affirmed class certification in a case alleging that National Insurance Group used biased algorithms to systematically deny legitimate insurance claims.",
+                    facts: "Lead plaintiff Sarah Patterson alleged that National Insurance Group's automated claims processing system was programmed to deny claims meeting certain demographic criteria.",
+                    reasoning: "The Court found that the alleged systematic nature of the discrimination created common issues suitable for class treatment."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE SECOND CIRCUIT
+
+No. 23-1567
+
+SARAH PATTERSON, on behalf of herself and all others similarly situated, Plaintiff-Appellee,
+v.
+NATIONAL INSURANCE GROUP, INC., Defendant-Appellant.
+
+[December 5, 2023]
+
+Before: WONG, MARTINEZ, and BLACKWELL, Circuit Judges.
+
+Dr. Robert Kim, an expert in machine learning systems, analyzed ClaimsIQ's algorithms and concluded that the system was designed to deny claims at higher rates in predominantly minority neighborhoods.
+
+CONCLUSION
+
+The district court did not abuse its discretion in certifying the class. The order is AFFIRMED.`
+            },
+            {
+                id: 7,
+                title: "Rivera v. Department of Homeland Security",
+                court: "D.C. Circuit",
+                date: "2024-03-11",
+                citation: "2024 WL 1098765",
+                snippet: "Agency interpretation of visa eligibility requirements held arbitrary and capricious under APA review...",
+                summary: {
+                    holding: "The D.C. Circuit vacated a DHS rule restricting H-1B visa eligibility, finding that the agency failed to adequately explain its departure from longstanding interpretations.",
+                    facts: "Maria Rivera, a software engineer from Colombia, challenged DHS's denial of her H-1B visa renewal based on a 2023 policy memorandum.",
+                    reasoning: "The Court found that DHS's new interpretation was unreasonable and inadequately justified under State Farm."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE DISTRICT OF COLUMBIA CIRCUIT
+
+No. 23-5234
+
+MARIA RIVERA, Petitioner
+v.
+DEPARTMENT OF HOMELAND SECURITY, Respondent
+
+[March 11, 2024]
+
+JACKSON, Circuit Judge:
+
+Maria Rivera is a citizen of Colombia who has resided in the United States since 2016 under H-1B nonimmigrant status. She holds a master's degree in computer science from Stanford University.
+
+The petition for review is GRANTED. The denial of Rivera's H-1B extension is VACATED.`
+            },
+            {
+                id: 8,
+                title: "Chen v. Pacific Manufacturing Co.",
+                court: "California Supreme Court",
+                date: "2023-08-22",
+                citation: "15 Cal. 5th 234",
+                snippet: "Workplace safety whistleblower protections extended to cover reports made to private safety organizations...",
+                summary: {
+                    holding: "The California Supreme Court held that Labor Code Section 1102.5 protects employees who report safety violations to private industry safety organizations.",
+                    facts: "Wei Chen was terminated from Pacific Manufacturing after reporting machine safety defects to the American Society of Safety Professionals.",
+                    reasoning: "The Court applied principles of statutory construction and found that the Legislature's intent was to encourage safety reporting broadly."
+                },
+                fullText: `SUPREME COURT OF CALIFORNIA
+
+S274521
+
+WEI CHEN, Plaintiff and Appellant,
+v.
+PACIFIC MANUFACTURING CO., INC., Defendant and Respondent.
+
+[August 22, 2023]
+
+CANTIL-SAKAUYE, C.J.
+
+Wei Chen worked as a quality control supervisor at Pacific Manufacturing's facility in Fresno. In March 2021, Chen identified that several industrial presses were operating without required safety guards.
+
+We hold that Labor Code section 1102.5 protects employees who report safety violations to private organizations. The judgment of the Court of Appeal is AFFIRMED.`
+            },
+            {
+                id: 9,
+                title: "In re Estate of Morrison",
+                court: "Probate Court",
+                date: "2023-10-30",
+                citation: "2023 TX Prob. LEXIS 892",
+                snippet: "Digital asset inheritance dispute resolved in favor of decedent's stated intentions expressed through cryptocurrency wallet designations...",
+                summary: {
+                    holding: "The Probate Court recognized cryptocurrency wallet beneficiary designations as valid testamentary instruments under Texas law.",
+                    facts: "Thomas Morrison died intestate regarding his substantial cryptocurrency holdings exceeding $4.2 million. His wallet included embedded beneficiary designations naming his daughter.",
+                    reasoning: "The Court applied principles of testamentary intent and found that Morrison's specific actions demonstrated clear intent."
+                },
+                fullText: `PROBATE COURT OF HARRIS COUNTY, TEXAS
+
+Cause No. 2023-PC-45678
+
+IN THE MATTER OF THE ESTATE OF THOMAS JAMES MORRISON, DECEASED
+
+[October 30, 2023]
+
+JUDGE ELEANOR VASQUEZ
+
+Thomas James Morrison passed away on July 12, 2023, at the age of 67. At the time of his death, Decedent held cryptocurrency assets valued at approximately $4.2 million.
+
+Jennifer Morrison-Blake and Michael Morrison dispute the distribution of decedent's cryptocurrency holdings.
+
+The cryptocurrency assets shall pass to Jennifer Morrison-Blake in accordance with those designations.
+
+IT IS SO ORDERED.`
+            },
+            {
+                id: 10,
+                title: "Board of Education v. Teachers Union Local 47",
+                court: "State Court of Appeals",
+                date: "2024-01-08",
+                citation: "2024 WL 234567",
+                snippet: "Collective bargaining agreement provisions regarding remote work held enforceable during declared health emergencies...",
+                summary: {
+                    holding: "The Court of Appeals held that the collective bargaining agreement's remote work provisions remained enforceable during declared health emergencies.",
+                    facts: "During the 2022-2023 school year, the Board of Education unilaterally required all teachers to return to in-person instruction.",
+                    reasoning: "The Court found that the CBA's emergency provisions were not superseded by the board's management rights."
+                },
+                fullText: `COURT OF APPEALS OF OHIO
+EIGHTH APPELLATE DISTRICT
+
+Case No. CA-23-112456
+
+CLEVELAND METROPOLITAN BOARD OF EDUCATION, Appellant,
+v.
+TEACHERS UNION LOCAL 47, Appellee.
+
+[January 8, 2024]
+
+PRESIDING JUDGE O'BRIEN
+
+Union President Margaret Thompson objected to the directive requiring in-person instruction, citing Article 15.4 of the CBA.
+
+The decision of the State Employment Relations Board is AFFIRMED.`
+            },
+            {
+                id: 11,
+                title: "Greenfield Environmental Coalition v. EPA",
+                court: "5th Circuit",
+                date: "2023-07-19",
+                citation: "2023 U.S. App. LEXIS 18234",
+                snippet: "Environmental group standing established where members demonstrated concrete aesthetic and recreational injuries...",
+                summary: {
+                    holding: "The Fifth Circuit found that Greenfield Environmental Coalition had standing to challenge EPA's decision to relax water quality standards.",
+                    facts: "The EPA relaxed Clean Water Act discharge limits for certain industrial facilities along the Gulf Coast in 2022.",
+                    reasoning: "Applying the three-part standing test from Lujan v. Defenders of Wildlife, the Court found member declarations established injury-in-fact."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE FIFTH CIRCUIT
+
+No. 22-60789
+
+GREENFIELD ENVIRONMENTAL COALITION, Petitioner
+v.
+UNITED STATES ENVIRONMENTAL PROTECTION AGENCY, Respondent
+
+[July 19, 2023]
+
+HIGGINSON, Circuit Judge:
+
+Greenfield submitted declarations from members Robert Tran and Lisa Montoya. Mr. Tran states that he has fished in Galveston Bay for thirty years and has observed declining fish populations.
+
+The petition for review is GRANTED and the rule is VACATED.`
+            },
+            {
+                id: 12,
+                title: "Martinez v. Autonomous Vehicle Corp.",
+                court: "District Court",
+                date: "2024-02-14",
+                citation: "2024 U.S. Dist. LEXIS 3456",
+                snippet: "Product liability theory applied to autonomous vehicle algorithm design defects in fatal collision case...",
+                summary: {
+                    holding: "The District Court denied summary judgment on strict liability claims involving autonomous vehicle algorithm design defects.",
+                    facts: "Rosa Martinez was killed when an autonomous vehicle operated by AV Corp failed to detect her crossing the street at night.",
+                    reasoning: "The Court applied traditional design defect analysis to the vehicle's software."
+                },
+                fullText: `UNITED STATES DISTRICT COURT
+DISTRICT OF ARIZONA
+
+CV-23-01234-PHX-DGC
+
+CARLOS MARTINEZ v. AUTONOMOUS VEHICLE CORPORATION, INC.
+
+[February 14, 2024]
+
+CAMPBELL, District Judge.
+
+On September 3, 2022, Rosa Martinez, age 62, was crossing Mill Avenue in Tempe, Arizona. An autonomous vehicle operated by AVC struck Mrs. Martinez, causing fatal injuries.
+
+Plaintiff's expert, Dr. Amanda Foster, opines that the algorithm's object classification system prioritized speed over accuracy.
+
+Defendant's Motion for Summary Judgment is DENIED.`
+            },
+            {
+                id: 13,
+                title: "Alliance for Digital Rights v. Social Media Inc.",
+                court: "N.D. California",
+                date: "2023-05-03",
+                citation: "2023 U.S. Dist. LEXIS 8901",
+                snippet: "First Amendment challenge to content moderation policies fails where platform is private actor...",
+                summary: {
+                    holding: "The District Court dismissed direct First Amendment claims against Social Media Inc. but allowed state action doctrine claims to proceed.",
+                    facts: "Alliance for Digital Rights brought suit after Social Media Inc. removed accounts and content related to public health discussions.",
+                    reasoning: "The Court found that alleged joint action between government and platform could transform private moderation into state action."
+                },
+                fullText: `UNITED STATES DISTRICT COURT
+NORTHERN DISTRICT OF CALIFORNIA
+
+Case No. 3:22-cv-05678-JD
+
+ALLIANCE FOR DIGITAL RIGHTS v. SOCIAL MEDIA INC.
+
+[May 3, 2023]
+
+DONATO, District Judge:
+
+The Complaint alleges that officials from the Department of Health and Human Services regularly communicated with SMI executives regarding content removal.
+
+Direct First Amendment claims against SMI are DISMISSED. State action claims may proceed.`
+            },
+            {
+                id: 14,
+                title: "Thompson v. State Farm Insurance",
+                court: "Illinois Supreme Court",
+                date: "2023-11-15",
+                citation: "2023 IL 128345",
+                snippet: "Bad faith insurance claim survives where insurer delayed investigation for 18 months despite clear liability...",
+                summary: {
+                    holding: "The Illinois Supreme Court held that an insurer's 18-month delay in investigating a claim supported a finding of bad faith.",
+                    facts: "James Thompson was injured in an automobile accident caused by a State Farm insured. Despite clear evidence of fault, State Farm delayed resolution for 18 months.",
+                    reasoning: "Internal documents showed the company deliberately delayed payment to pressure a lower settlement."
+                },
+                fullText: `SUPREME COURT OF ILLINOIS
+
+No. 128345
+
+JAMES THOMPSON v. STATE FARM INSURANCE COMPANY
+
+[November 15, 2023]
+
+JUSTICE THEIS delivered the judgment of the court.
+
+On April 22, 2021, James Thompson was stopped at a red light when his vehicle was struck from behind by a vehicle driven by State Farm insured Daniel Brooks.
+
+Internal State Farm documents revealed communications discussing a strategy of delay. One email stated: "We can probably wait this one out."
+
+The judgment of the Appellate Court is AFFIRMED. Punitive damages of $500,000 are appropriate.`
+            },
+            {
+                id: 15,
+                title: "Consolidated Crypto Holdings v. SEC",
+                court: "11th Circuit",
+                date: "2024-03-25",
+                citation: "2024 U.S. App. LEXIS 7890",
+                snippet: "Cryptocurrency exchange tokens held to be securities under Howey test where purchasers had reasonable expectation of profits...",
+                summary: {
+                    holding: "The Eleventh Circuit held that tokens issued by Consolidated Crypto Holdings constituted investment contracts under the Howey test.",
+                    facts: "CCH issued and sold 'CCHCoin' tokens through an initial coin offering in 2021. The SEC brought enforcement action.",
+                    reasoning: "Applying the Howey factors, the Court found purchasers invested with a reasonable expectation of profits from CCH's efforts."
+                },
+                fullText: `UNITED STATES COURT OF APPEALS FOR THE ELEVENTH CIRCUIT
+
+No. 23-12456
+
+CONSOLIDATED CRYPTO HOLDINGS, LLC, Petitioner,
+v.
+SECURITIES AND EXCHANGE COMMISSION, Respondent.
+
+[March 25, 2024]
+
+ROSENBAUM, Circuit Judge:
+
+CCH's CEO, Alexander Novak, made public statements promising a "10x return" for early investors.
+
+Under Howey, an investment contract exists where there is an investment of money in a common enterprise with an expectation of profits derived from the efforts of others.
+
+The SEC's order is AFFIRMED.`
+            }
+        ];
+
+        let currentCase = null;
+        let entitiesExtracted = false;
+        let selectedSnippet = '';
+        let notes = JSON.parse(localStorage.getItem('vibelaw_notes') || '[]');
+
+        const searchInput = document.getElementById('searchInput');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const detailEmpty = document.getElementById('detailEmpty');
+        const detailContent = document.getElementById('detailContent');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailCourt = document.getElementById('detailCourt');
+        const detailDate = document.getElementById('detailDate');
+        const detailCitation = document.getElementById('detailCitation');
+        const summaryTab = document.getElementById('summaryTab');
+        const fulltextTab = document.getElementById('fulltextTab');
+        const extractEntitiesBtn = document.getElementById('extractEntitiesBtn');
+        const notesList = document.getElementById('notesList');
+        const noteInput = document.getElementById('noteInput');
+        const saveNoteBtn = document.getElementById('saveNoteBtn');
+        const selectedSnippetEl = document.getElementById('selectedSnippet');
+        const totalNotes = document.getElementById('totalNotes');
+        const toast = document.getElementById('toast');
+        const contentMain = document.getElementById('contentMain');
+
+        function init() {
+            renderCases(mockCases);
+            renderNotes();
+            setupEventListeners();
+        }
+
+        function renderCases(cases) {
+            if (cases.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <div>No cases found</div>
+                        <div style="font-size: 12px; margin-top: 8px;">Try adjusting your search terms</div>
+                    </div>
+                `;
+            } else {
+                resultsList.innerHTML = cases.map(c => `
+                    <div class="case-card ${currentCase && currentCase.id === c.id ? 'active' : ''}" data-id="${c.id}">
+                        <div class="case-title">${c.title}</div>
+                        <div class="case-meta">
+                            <span class="court-badge">${c.court}</span>
+                            <span class="case-meta-item">📅 ${formatDate(c.date)}</span>
+                        </div>
+                        <div class="case-snippet">${c.snippet}</div>
+                    </div>
+                `).join('');
+            }
+            resultsCount.textContent = `${cases.length} case${cases.length !== 1 ? 's' : ''}`;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function showCaseDetail(caseId) {
+            currentCase = mockCases.find(c => c.id === caseId);
+            entitiesExtracted = false;
+            
+            if (!currentCase) return;
+
+            detailEmpty.style.display = 'none';
+            detailContent.style.display = 'flex';
+
+            detailTitle.textContent = currentCase.title;
+            detailCourt.textContent = currentCase.court;
+            detailDate.textContent = formatDate(currentCase.date);
+            detailCitation.textContent = currentCase.citation;
+
+            summaryTab.innerHTML = `
+                <div class="summary-section">
+                    <div class="summary-label">Holding</div>
+                    <div class="summary-text">${currentCase.summary.holding}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Key Facts</div>
+                    <div class="summary-text">${currentCase.summary.facts}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Reasoning</div>
+                    <div class="summary-text">${currentCase.summary.reasoning}</div>
+                </div>
+            `;
+
+            fulltextTab.innerHTML = `<div class="full-text">${currentCase.fullText}</div>`;
+
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab[data-tab="summary"]').classList.add('active');
+            summaryTab.classList.add('active');
+            fulltextTab.classList.remove('active');
+
+            document.querySelectorAll('.case-card').forEach(card => {
+                card.classList.toggle('active', parseInt(card.dataset.id) === caseId);
+            });
+
+            extractEntitiesBtn.innerHTML = '<span>✨</span> Extract Entities';
+        }
+
+        function extractEntities() {
+            if (!currentCase || entitiesExtracted) return;
+
+            const highlightText = (text) => {
+                let result = text;
+                
+                // Highlight names (Justice, Judge, Dr., Mr., Mrs.)
+                result = result.replace(/\b(Justice|Judge|Dr\.|Mr\.|Mrs\.|Ms\.)\s+([A-Z][a-z]+)/g, 
+                    '<span class="entity-name">$1 $2</span>');
+                
+                // Highlight dates
+                result = result.replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g, 
+                    '<span class="entity-date">$&</span>');
+                result = result.replace(/\b\d{4}\b/g, '<span class="entity-date">$&</span>');
+                
+                // Highlight organizations
+                const orgs = ['Supreme Court', 'Court of Appeals', 'District Court', 'Federal Circuit', 
+                             'Department of Homeland Security', 'Department of Defense', 'EPA', 'SEC', 'DHS', 
+                             'National Security Agency', 'Bankruptcy Court', 'Probate Court'];
+                orgs.forEach(org => {
+                    const regex = new RegExp(`\\b${org}\\b`, 'g');
+                    result = result.replace(regex, `<span class="entity-org">${org}</span>`);
+                });
+                
+                return result;
+            };
+
+            const legend = `
+                <div class="entity-legend">
+                    <div class="legend-item"><div class="legend-dot name"></div> Names</div>
+                    <div class="legend-item"><div class="legend-dot date"></div> Dates</div>
+                    <div class="legend-item"><div class="legend-dot org"></div> Organizations</div>
+                </div>
+            `;
+
+            summaryTab.innerHTML = legend + `
+                <div class="summary-section">
+                    <div class="summary-label">Holding</div>
+                    <div class="summary-text">${highlightText(currentCase.summary.holding)}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Key Facts</div>
+                    <div class="summary-text">${highlightText(currentCase.summary.facts)}</div>
+                </div>
+                <div class="summary-section">
+                    <div class="summary-label">Reasoning</div>
+                    <div class="summary-text">${highlightText(currentCase.summary.reasoning)}</div>
+                </div>
+            `;
+
+            fulltextTab.innerHTML = legend + `<div class="full-text">${highlightText(currentCase.fullText)}</div>`;
+
+            entitiesExtracted = true;
+            extractEntitiesBtn.innerHTML = '<span>✓</span> Entities Extracted';
+            showToast('Entities extracted and highlighted');
+        }
+
+        function renderNotes() {
+            const caseNotes = currentCase ? notes.filter(n => n.caseId === currentCase.id) : notes;
+            totalNotes.textContent = notes.length;
+
+            if (caseNotes.length === 0) {
+                notesList.innerHTML = `
+                    <div class="empty-notes">
+                        <div class="empty-notes-icon">📝</div>
+                        <div>No notes yet</div>
+                        <div style="font-size: 11px; margin-top: 8px;">Select text and add a note</div>
+                    </div>
+                `;
+            } else {
+                notesList.innerHTML = caseNotes.map(note => `
+                    <div class="note-card" data-id="${note.id}">
+                        <div class="note-case">${note.caseTitle}</div>
+                        ${note.snippet ? `<div class="note-snippet">"${note.snippet}"</div>` : ''}
+                        <div class="note-text">${note.text}</div>
+                        <div class="note-actions">
+                            <span class="note-date">${formatDate(note.date)}</span>
+                            <button class="note-delete" onclick="deleteNote('${note.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function saveNote() {
+            if (!currentCase) {
+                showToast('Please select a case first');
+                return;
+            }
+
+            const text = noteInput.value.trim();
+            if (!text) {
+                showToast('Please enter a note');
+                return;
+            }
+
+            const note = {
+                id: Date.now().toString(),
+                caseId: currentCase.id,
+                caseTitle: currentCase.title,
+                snippet: selectedSnippet,
+                text: text,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            notes.push(note);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            
+            noteInput.value = '';
+            selectedSnippet = '';
+            selectedSnippetEl.style.display = 'none';
+            
+            renderNotes();
+            showToast('Note saved successfully');
+        }
+
+        function deleteNote(noteId) {
+            notes = notes.filter(n => n.id !== noteId);
+            localStorage.setItem('vibelaw_notes', JSON.stringify(notes));
+            renderNotes();
+            showToast('Note deleted');
+        }
+
+        function showToast(message) {
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function setupEventListeners() {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = mockCases.filter(c => 
+                    c.title.toLowerCase().includes(query) ||
+                    c.snippet.toLowerCase().includes(query) ||
+                    c.court.toLowerCase().includes(query) ||
+                    c.fullText.toLowerCase().includes(query)
+                );
+                renderCases(filtered);
+            });
+
+            resultsList.addEventListener('click', (e) => {
+                const card = e.target.closest('.case-card');
+                if (card) {
+                    showCaseDetail(parseInt(card.dataset.id));
+                    renderNotes();
+                }
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    if (tab.dataset.tab) {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        summaryTab.classList.toggle('active', tab.dataset.tab === 'summary');
+                        fulltextTab.classList.toggle('active', tab.dataset.tab === 'fulltext');
+                    }
+                });
+            });
+
+            extractEntitiesBtn.addEventListener('click', extractEntities);
+            saveNoteBtn.addEventListener('click', saveNote);
+
+            contentMain.addEventListener('mouseup', () => {
+                const selection = window.getSelection();
+                const text = selection.toString().trim();
+                if (text && text.length > 0 && text.length < 500) {
+                    selectedSnippet = text;
+                    selectedSnippetEl.textContent = `"${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`;
+                    selectedSnippetEl.style.display = 'block';
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

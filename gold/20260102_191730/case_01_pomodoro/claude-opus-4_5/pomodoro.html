@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍅 Pomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #ff6b6b 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            min-width: 350px;
+        }
+
+        .tomato-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .session-info {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            display: inline-block;
+        }
+
+        .session-info.work {
+            background: rgba(231, 76, 60, 0.6);
+        }
+
+        .session-info.break {
+            background: rgba(39, 174, 96, 0.6);
+        }
+
+        .timer-display {
+            font-size: 6rem;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 4px;
+            transition: width 1s linear;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #2ecc71;
+            transform: scale(1.05);
+        }
+
+        .btn-pause {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-pause:hover {
+            background: #f1c40f;
+            transform: scale(1.05);
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .stats {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .stats span {
+            margin: 0 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tomato-icon">🍅</div>
+        <h1>Pomodoro Timer</h1>
+        
+        <div class="session-info work" id="sessionInfo">Work Session 1</div>
+        
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 100%"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-start" id="startBtn" onclick="startTimer()">Start</button>
+            <button class="btn-pause hidden" id="pauseBtn" onclick="pauseTimer()">Pause</button>
+            <button class="btn-reset" id="resetBtn" onclick="resetTimer()">Reset</button>
+        </div>
+        
+        <div class="stats">
+            <span>🍅 Pomodoros: <strong id="pomodoroCount">0</strong></span>
+            <span>☕ Breaks: <strong id="breakCount">0</strong></span>
+        </div>
+    </div>
+
+    <script>
+        // Timer settings (in seconds)
+        const WORK_TIME = 25 * 60;  // 25 minutes
+        const BREAK_TIME = 5 * 60;  // 5 minutes
+
+        // State
+        let timeRemaining = WORK_TIME;
+        let totalTime = WORK_TIME;
+        let isRunning = false;
+        let isWorkSession = true;
+        let workSessionCount = 1;
+        let breakSessionCount = 0;
+        let pomodorosCompleted = 0;
+        let breaksCompleted = 0;
+        let timerInterval = null;
+
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionInfo = document.getElementById('sessionInfo');
+        const progressFill = document.getElementById('progressFill');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const pomodoroCount = document.getElementById('pomodoroCount');
+        const breakCount = document.getElementById('breakCount');
+
+        // Audio context for beep
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep() {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+
+            // Play a second beep
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 1000;
+                osc2.type = 'sine';
+                gain2.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                osc2.start(audioContext.currentTime);
+                osc2.stop(audioContext.currentTime + 0.5);
+            }, 200);
+
+            // Play a third beep
+            setTimeout(() => {
+                const osc3 = audioContext.createOscillator();
+                const gain3 = audioContext.createGain();
+                osc3.connect(gain3);
+                gain3.connect(audioContext.destination);
+                osc3.frequency.value = 1200;
+                osc3.type = 'sine';
+                gain3.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gain3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.7);
+                osc3.start(audioContext.currentTime);
+                osc3.stop(audioContext.currentTime + 0.7);
+            }, 400);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeRemaining);
+            
+            // Update progress bar
+            const progress = (timeRemaining / totalTime) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            // Update page title
+            document.title = `${formatTime(timeRemaining)} - ${isWorkSession ? 'Work' : 'Break'} | 🍅 Pomodoro`;
+        }
+
+        function updateSessionInfo() {
+            if (isWorkSession) {
+                sessionInfo.textContent = `Work Session ${workSessionCount}`;
+                sessionInfo.className = 'session-info work';
+            } else {
+                sessionInfo.textContent = `Break ${breakSessionCount}`;
+                sessionInfo.className = 'session-info break';
+            }
+        }
+
+        function startTimer() {
+            initAudio(); // Initialize audio on user interaction
+            
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden');
+                
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateDisplay();
+                    
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        playBeep();
+                        switchSession();
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                pauseBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+                startBtn.textContent = 'Resume';
+            }
+        }
+
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            
+            if (isWorkSession) {
+                timeRemaining = WORK_TIME;
+                totalTime = WORK_TIME;
+            } else {
+                timeRemaining = BREAK_TIME;
+                totalTime = BREAK_TIME;
+            }
+            
+            pauseBtn.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+            startBtn.textContent = 'Start';
+            
+            updateDisplay();
+        }
+
+        function switchSession() {
+            if (isWorkSession) {
+                // Completed a work session
+                pomodorosCompleted++;
+                pomodoroCount.textContent = pomodorosCompleted;
+                breakSessionCount++;
+                
+                // Switch to break
+                isWorkSession = false;
+                timeRemaining = BREAK_TIME;
+                totalTime = BREAK_TIME;
+            } else {
+                // Completed a break
+                breaksCompleted++;
+                breakCount.textContent = breaksCompleted;
+                workSessionCount++;
+                
+                // Switch to work
+                isWorkSession = true;
+                timeRemaining = WORK_TIME;
+                totalTime = WORK_TIME;
+            }
+            
+            updateSessionInfo();
+            updateDisplay();
+            
+            // Auto-start next session
+            isRunning = false;
+            startBtn.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            startBtn.textContent = 'Start';
+        }
+
+        // Initialize display
+        updateDisplay();
+        updateSessionInfo();
+    </script>
+</body>
+</html>

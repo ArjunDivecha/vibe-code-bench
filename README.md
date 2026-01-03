@@ -1,12 +1,12 @@
-# Vibe Eval 🎨
+# Vibe Code Bench 🎨
 
 > **Evaluate LLMs on "Vibe Coding" — building complete apps from natural language prompts.**
 
-Vibe Eval is a framework for testing how well AI models can take casual, human-style prompts ("Build me a Pomodoro timer") and produce **fully working, self-contained applications** without installing any external packages.
+Vibe Code Bench is a framework for testing how well AI models can take casual, human-style prompts ("Build me a Pomodoro timer") and produce **fully working, self-contained applications** without installing any external packages.
 
-## ✨ Why Vibe Eval?
+## ✨ Why Vibe Code Bench?
 
-Traditional coding benchmarks test narrow skills (syntax, algorithms). **Vibe Eval** tests what matters for real-world AI coding assistants:
+Traditional coding benchmarks test narrow skills (syntax, algorithms). **Vibe Code Bench** tests what matters for real-world AI coding assistants:
 
 - 🎯 **End-to-end app generation** from natural language
 - 🚫 **Zero external dependencies** — stdlib only, no `pip install`
