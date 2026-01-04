@@ -358,17 +358,22 @@ This document describes all 20 evaluation cases in the Vibe Eval benchmark. Each
 
 ---
 
-## Scoring Rubric
+## Scoring Rubric (V2)
 
-Each case is scored 0-100 across 6 dimensions:
+Each case is scored 0-100 across 5 dimensions:
 
 | Dimension | Weight | Description |
 |-----------|--------|-------------|
-| Executes | 15% | Does the code run without errors? |
+| Executes | 25% | Does the code run without errors? (Increased in V2) |
 | Features Complete | 30% | Are all specified features implemented? |
-| Output Quality | 25% | Does output match expectations? |
-| Direction Following | 15% | Did it build exactly what was asked? |
-| Code Quality | 10% | Is code readable and well-organized? |
-| Elegance | 5% | Clever or particularly clean design? |
+| Output Quality | 20% | Does output match expectations? |
+| Direction Following | 10% | Did it build exactly what was asked? |
+| Code Quality | 15% | Is code readable and well-organized? (Increased in V2) |
 
-**Judge:** Claude Opus (by default)
+**V2 Changes:**
+- Removed "Elegance" dimension (too subjective)
+- Increased "Executes" weight (25% from 15%) - broken code should fail harder
+- Increased "Code Quality" weight (15% from 10%) - production code matters
+- Added execution gate: if Executes < 3, total score capped at 30
+
+**Judge:** Multi-judge arbitration (Claude Opus 4.5, GPT-4o, Gemini 3 Flash) by default

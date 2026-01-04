@@ -1,6 +1,11 @@
-# Vibe Code Bench - Final Report
+# Vibe Code Bench - Final Report (V1)
+
+> **Note:** These results were generated with V1 scoring (6 dimensions including Elegance).
+> V2 uses 5 dimensions with rebalanced weights. See CASES.md for V2 rubric.
+
 **Date:** 2026-01-03T12:34:38.356381
 **Runs Averaged:** 3
+**Scoring Version:** V1 (pre-2026-01-04)
 
 ## 🏆 Leaderboard
 | Rank | Model | Average Score (0-100) | Avg Time (s) | Avg Tokens |

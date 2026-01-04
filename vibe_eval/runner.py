@@ -1,4 +1,20 @@
-"""Main evaluation runner - orchestrates models, cases, and judges."""
+"""
+=============================================================================
+SCRIPT NAME: runner.py
+=============================================================================
+
+Main evaluation runner - orchestrates models, cases, and judges.
+
+VERSION: 2.0
+LAST UPDATED: 2026-01-04
+
+CHANGES IN V2:
+- Multi-judge arbitration by default (Claude, GPT-4o, Gemini)
+- Runtime execution validation integrated
+- Dependency enforcement active
+
+=============================================================================
+"""
 
 import json
 import os
@@ -12,10 +28,12 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 
 from .agent_loop import AgentLoop
 from .models.base import get_model
-from .judge.absolute import AbsoluteJudge
+from .judge.absolute import AbsoluteJudge, AbsoluteScore, DimensionScore
 from .judge.comparative import ComparativeJudge, run_all_comparisons
+from .judge.multi_judge import MultiJudgeArbitrator, create_multi_judge
 from .reporting.leaderboard import EvalRun, CaseResult, print_leaderboard, ModelMetrics
 from .sandbox.executor import create_workspace
+from .sandbox.validator import ExecutionValidator
 
 
 @dataclass
@@ -77,11 +95,13 @@ def load_cases(cases_dir: Path, filter_names: Optional[list[str]] = None) -> lis
 class EvalRunner:
     """
     Main evaluation runner.
-    
+
     Orchestrates running models on cases, judging results,
     and compiling the leaderboard.
+
+    V2: Now uses multi-judge arbitration by default for unbiased scoring.
     """
-    
+
     def __init__(
         self,
         models: list[str],
@@ -89,29 +109,48 @@ class EvalRunner:
         case_filter: Optional[list[str]] = None,
         timeout_minutes: int = 20,
         results_dir: Path = Path("results"),
-        judge_model: str = "claude-opus-4-20250514"
+        judge_model: str = "claude-opus-4.5",
+        multi_judge: bool = True,  # V2: Multi-judge by default
+        validate_execution: bool = True,  # V2: Execution validation
+        run_comparisons: bool = False,  # V2: Head-to-head off by default
     ):
         """
         Initialize eval runner.
-        
+
         Args:
             models: List of model IDs to evaluate
             cases_dir: Directory containing eval cases
             case_filter: Optional list of case names (None = all)
             timeout_minutes: Timeout per model per case
             results_dir: Directory to save results
-            judge_model: Model to use for judging
+            judge_model: Model to use for judging (fallback if single-judge)
+            multi_judge: Use multi-judge arbitration (default True)
+            validate_execution: Run execution validation (default True)
+            run_comparisons: Run head-to-head comparisons (default False, O(n²))
         """
         self.models = models
         self.cases = load_cases(cases_dir, case_filter)
         self.timeout_minutes = timeout_minutes
         self.results_dir = Path(results_dir)
         self.results_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize judges
-        self.absolute_judge = AbsoluteJudge(judge_model=judge_model)
-        self.comparative_judge = ComparativeJudge(judge_model=judge_model)
-        
+        self.validate_execution = validate_execution
+        self.run_comparisons = run_comparisons  # V2: Off by default
+
+        # V2: Initialize judges - multi-judge by default
+        self.multi_judge_enabled = multi_judge
+        if multi_judge:
+            self.multi_judge = create_multi_judge()
+            self.absolute_judge = None  # Not used in multi-judge mode
+        else:
+            self.multi_judge = None
+            self.absolute_judge = AbsoluteJudge(judge_model=judge_model)
+
+        # Only init comparative judge if needed
+        self.comparative_judge = ComparativeJudge(judge_model=judge_model) if run_comparisons else None
+
+        # V2: Execution validator
+        self.validator = ExecutionValidator(timeout=30) if validate_execution else None
+
         self.console = Console()
     
     def run(self) -> EvalRun:
@@ -184,26 +223,91 @@ class EvalRunner:
                     self.console.print(f"[red]✗ Error: {e}[/red]")
                     workspaces[model_id] = workspace
             
-            # Score with absolute judge
+            # V2: Run execution validation first (if enabled)
+            execution_reports = {}
+            if self.validator:
+                self.console.print("  Validating execution...", end=" ")
+                for model_id, workspace in workspaces.items():
+                    exec_report = self.validator.validate(workspace)
+                    execution_reports[model_id] = exec_report
+                    if not exec_report.executed:
+                        # Log execution failure
+                        self.console.print(f"\n    [yellow]{model_id}: execution failed[/yellow]", end="")
+                self.console.print(" [green]done[/green]")
+
+            # Score with judge (multi-judge by default)
             self.console.print("  Scoring...", end=" ")
             for model_id, workspace in workspaces.items():
-                score = self.absolute_judge.score(
-                    spec=case.spec,
-                    workspace=workspace,
-                    criteria=case.criteria
-                )
+                multi_score = None  # Initialize for single-judge case
+                if self.multi_judge_enabled:
+                    # V2: Multi-judge arbitration
+                    multi_score = self.multi_judge.score(
+                        spec=case.spec,
+                        workspace=workspace,
+                        criteria=case.criteria
+                    )
+                    # Convert multi-judge score to AbsoluteScore for compatibility
+                    # Use aggregated dimension scores
+                    dims = multi_score.aggregated_dimensions
+                    score = AbsoluteScore(
+                        executes=DimensionScore(int(dims.get("executes", 0)), "Multi-judge aggregated"),
+                        features_complete=DimensionScore(int(dims.get("features_complete", 0)), "Multi-judge aggregated"),
+                        output_quality=DimensionScore(int(dims.get("output_quality", 0)), "Multi-judge aggregated"),
+                        direction_following=DimensionScore(int(dims.get("direction_following", 0)), "Multi-judge aggregated"),
+                        code_quality=DimensionScore(int(dims.get("code_quality", 0)), "Multi-judge aggregated"),
+                    )
+
+                    # V2: If execution validation failed, cap executes score
+                    if model_id in execution_reports and not execution_reports[model_id].executed:
+                        score = AbsoluteScore(
+                            executes=DimensionScore(min(score.executes.score, 2), f"Execution failed: {execution_reports[model_id].errors}"),
+                            features_complete=score.features_complete,
+                            output_quality=score.output_quality,
+                            direction_following=score.direction_following,
+                            code_quality=score.code_quality,
+                        )
+                else:
+                    # Single judge mode (legacy)
+                    score = self.absolute_judge.score(
+                        spec=case.spec,
+                        workspace=workspace,
+                        criteria=case.criteria
+                    )
+
+                    # V2: Apply execution validation cap
+                    if model_id in execution_reports and not execution_reports[model_id].executed:
+                        score = AbsoluteScore(
+                            executes=DimensionScore(min(score.executes.score, 2), f"Execution failed: {execution_reports[model_id].errors}"),
+                            features_complete=score.features_complete,
+                            output_quality=score.output_quality,
+                            direction_following=score.direction_following,
+                            code_quality=score.code_quality,
+                        )
+
                 absolute_scores[model_id] = score
+
+                # V2: Update metrics with judge cost
+                if model_id in metrics:
+                    if self.multi_judge_enabled and multi_score:
+                        metrics[model_id].judge_tokens = multi_score.total_judge_tokens
+                        metrics[model_id].judge_cost = multi_score.total_judge_cost
+                    elif score.judge_metrics:
+                        metrics[model_id].judge_tokens = score.judge_metrics.total_tokens
+                        metrics[model_id].judge_cost = score.judge_metrics.estimated_cost()
+
             self.console.print("[green]done[/green]")
-            
-            # Run head-to-head comparisons
-            self.console.print("  Comparing...", end=" ")
-            comparisons = run_all_comparisons(
-                spec=case.spec,
-                workspaces=workspaces,
-                judge=self.comparative_judge
-            )
-            self.console.print("[green]done[/green]")
-            
+
+            # V2: Head-to-head comparisons (opt-in, O(n²))
+            comparisons = []
+            if self.run_comparisons and len(workspaces) > 1:
+                self.console.print("  Comparing...", end=" ")
+                comparisons = run_all_comparisons(
+                    spec=case.spec,
+                    workspaces=workspaces,
+                    judge=self.comparative_judge
+                )
+                self.console.print("[green]done[/green]")
+
             # Store case result
             case_results[case.name] = CaseResult(
                 case_name=case.name,
@@ -221,11 +325,24 @@ class EvalRunner:
             case_results=case_results,
             timeout_minutes=self.timeout_minutes
         )
-        
+
         # Save results
         self._save_results(eval_run)
-        
+
+        # V2: Cleanup shared resources
+        self._cleanup()
+
         return eval_run
+
+    def _cleanup(self):
+        """Clean up shared resources after evaluation run."""
+        # V2: Clear file cache
+        from .judge.absolute import clear_file_cache
+        clear_file_cache()
+
+        # V2: Clean up Playwright browser
+        if self.validator:
+            ExecutionValidator.cleanup()
     
     def _save_results(self, run: EvalRun):
         """Save results to JSON file."""
@@ -268,7 +385,10 @@ class EvalRunner:
                             "turns": met.turns,
                             "files_created": met.files_created,
                             "input_tokens": met.input_tokens,
-                            "output_tokens": met.output_tokens
+                            "output_tokens": met.output_tokens,
+                            # V2: Judge cost tracking
+                            "judge_tokens": met.judge_tokens,
+                            "judge_cost": met.judge_cost,
                         } for m, met in cr.model_metrics.items()
                     },
                     "comparisons": [

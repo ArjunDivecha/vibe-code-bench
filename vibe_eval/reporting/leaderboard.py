@@ -22,26 +22,37 @@ class ModelMetrics:
     files_created: int
     input_tokens: int
     output_tokens: int
-    
+    # V2: Separate judge cost tracking
+    judge_tokens: int = 0
+    judge_cost: float = 0.0
+
     @property
     def total_tokens(self) -> int:
         return self.input_tokens + self.output_tokens
-    
-    def estimated_cost(self, model_name: str) -> float:
-        """Estimate cost in USD based on model pricing."""
-        # Approximate pricing per 1M tokens (input, output)
+
+    def estimated_llm_cost(self, model_name: str) -> float:
+        """Estimate LLM cost in USD based on model pricing (OpenRouter rates)."""
+        # OpenRouter pricing per 1M tokens (input, output) - updated Jan 2026
         pricing = {
-            "claude-opus-4.5": (15.0, 75.0),
-            "claude-sonnet-4.5": (3.0, 15.0),
-            "claude-sonnet-4": (3.0, 15.0),
-            "claude-opus-4": (15.0, 75.0),
-            "gpt-4o": (2.5, 10.0),
-            "gemini-2.5-pro": (1.25, 5.0),
+            "anthropic/claude-opus-4.5": (5.0, 25.0),
+            "anthropic/claude-sonnet-4": (3.0, 15.0),
+            "openai/gpt-4o": (3.0, 10.0),
+            "google/gemini-3-flash": (0.075, 0.3),
+            "meta-llama/llama-3.1-8b-instruct": (0.055, 0.055),
+            "meta-llama/llama-3.1-70b-instruct": (0.35, 0.4),
+            # Fallback rates
+            "default": (1.0, 3.0),
         }
-        input_rate, output_rate = pricing.get(model_name, (3.0, 15.0))
+        # Normalize model name for lookup
+        model_key = model_name.lower()
+        input_rate, output_rate = pricing.get(model_key, pricing["default"])
         cost = (self.input_tokens / 1_000_000) * input_rate
         cost += (self.output_tokens / 1_000_000) * output_rate
         return round(cost, 4)
+
+    def estimated_cost(self, model_name: str) -> float:
+        """Estimate total cost (LLM + Judge) in USD - legacy compatibility."""
+        return self.estimated_llm_cost(model_name) + self.judge_cost
 
 
 @dataclass
@@ -269,38 +280,41 @@ def print_leaderboard(run: EvalRun, console: Optional[Console] = None):
     console.print(case_table)
     console.print()
     
-    # Average metrics table
+    # Average metrics table - V2: Separate LLM and Judge costs
     metrics_table = Table(title="Model Performance & Cost", show_header=True, header_style="bold")
     metrics_table.add_column("Model", style="cyan")
     metrics_table.add_column("Avg Score", justify="right")
     metrics_table.add_column("Avg Time", justify="right")
-    metrics_table.add_column("Avg Cost", justify="right")
+    metrics_table.add_column("LLM Cost", justify="right")
+    metrics_table.add_column("Judge Cost", justify="right")
     metrics_table.add_column("Total Files", justify="right")
-    
+
     for model in leaderboard.rankings:
         # Calculate averages/totals
         score = averages.get(model, 0)
         total_time = 0
-        total_cost = 0
+        total_llm_cost = 0
+        total_judge_cost = 0
         total_files = 0
         case_count = 0
-        
+
         for result in run.case_results.values():
             if model in result.model_metrics:
                 m = result.model_metrics[model]
                 total_time += m.time_seconds
-                total_cost += m.estimated_cost(model)
+                total_llm_cost += m.estimated_llm_cost(model)
+                total_judge_cost += m.judge_cost
                 total_files += m.files_created
                 case_count += 1
-        
+
         avg_time = total_time / case_count if case_count else 0
-        avg_cost = total_cost / case_count if case_count else 0
-        
+
         metrics_table.add_row(
             model,
             f"{score:.1f}",
             f"{avg_time:.0f}s",
-            f"${avg_cost:.4f}",
+            f"${total_llm_cost:.4f}",
+            f"${total_judge_cost:.4f}",
             str(total_files)
         )
     

@@ -58,10 +58,28 @@ def cli():
 )
 @click.option(
     '--judge', '-j',
-    default='claude-opus-4.5',
-    help='Judge model for scoring'
+    default='anthropic/claude-opus-4.5',
+    help='Judge model for scoring (used in single-judge mode, via OpenRouter)'
 )
-def run(models, cases, timeout, cases_dir, output, judge):
+@click.option(
+    '--single-judge', '-s',
+    is_flag=True,
+    default=False,
+    help='Use single judge instead of multi-judge arbitration'
+)
+@click.option(
+    '--no-validation',
+    is_flag=True,
+    default=False,
+    help='Disable runtime execution validation'
+)
+@click.option(
+    '--head-to-head',
+    is_flag=True,
+    default=False,
+    help='Enable head-to-head comparisons (O(n²), off by default)'
+)
+def run(models, cases, timeout, cases_dir, output, judge, single_judge, no_validation, head_to_head):
     """Run evaluation across models and cases."""
     from .runner import EvalRunner
     from .reporting.leaderboard import print_leaderboard
@@ -78,13 +96,18 @@ def run(models, cases, timeout, cases_dir, output, judge):
     _check_api_keys(model_list)
     
     # Run evaluation
+    # V2: Multi-judge is default, single-judge is opt-in
+    # V2: Head-to-head is opt-in (O(n²) cost)
     runner = EvalRunner(
         models=model_list,
         cases_dir=Path(cases_dir),
         case_filter=case_filter,
         timeout_minutes=timeout,
         results_dir=Path(output),
-        judge_model=judge
+        judge_model=judge,
+        multi_judge=not single_judge,
+        validate_execution=not no_validation,
+        run_comparisons=head_to_head,  # V2: Off by default
     )
     
     results = runner.run()
@@ -351,33 +374,29 @@ def list_models():
 def _check_api_keys(models: list[str]):
     """Check that required API keys are set."""
     needed = set()
-    
+
     for model in models:
         model_lower = model.lower()
-        if "claude" in model_lower:
+        # Check if model uses OpenRouter (has / in ID)
+        if "/" in model_lower:
+            needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
+        elif "claude" in model_lower:
             needed.add(("ANTHROPIC_API_KEY", "Anthropic"))
         elif any(p in model_lower for p in ["gpt", "o1", "o3"]):
-            # If it's a standard OpenAI model ID (no /)
-            if "/" not in model_lower:
-                needed.add(("OPENAI_API_KEY", "OpenAI"))
-            else:
-                needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
+            needed.add(("OPENAI_API_KEY", "OpenAI"))
         elif "gemini" in model_lower:
-            if "/" not in model_lower:
-                needed.add(("GOOGLE_API_KEY", "Google"))
-            else:
-                needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
+            needed.add(("GOOGLE_API_KEY", "Google"))
         else:
             needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
-    
-    # Always need Anthropic for judge
-    needed.add(("ANTHROPIC_API_KEY", "Anthropic (for judge)"))
-    
+
+    # V2: All judges go through OpenRouter (only need OPENROUTER_API_KEY)
+    needed.add(("OPENROUTER_API_KEY", "OpenRouter (for judges)"))
+
     missing = []
     for key, provider in needed:
         if not os.environ.get(key):
             missing.append(f"{key} ({provider})")
-    
+
     if missing:
         console.print("[red]Missing API keys:[/red]")
         for key in missing:

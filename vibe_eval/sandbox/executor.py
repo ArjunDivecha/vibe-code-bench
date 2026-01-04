@@ -1,4 +1,21 @@
-"""Sandbox executor for running code in isolated environment."""
+"""
+=============================================================================
+SCRIPT NAME: executor.py
+=============================================================================
+
+Sandbox executor for running code in isolated environment with dependency
+enforcement.
+
+VERSION: 2.0
+LAST UPDATED: 2026-01-04
+
+DESCRIPTION:
+Executes generated code in a sandboxed environment. Now includes:
+- Blocking of package manager commands (pip, npm, etc.)
+- Zero-dependency enforcement for vibe-coding evaluation
+
+=============================================================================
+"""
 
 import os
 import subprocess
@@ -6,6 +23,41 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+
+
+# Package manager commands that are blocked
+BLOCKED_COMMANDS = [
+    # Python package managers
+    'pip install', 'pip3 install', 'pip uninstall', 'pip3 uninstall',
+    'python -m pip install', 'python3 -m pip install',
+    'python -m pip uninstall', 'python3 -m pip uninstall',
+    'conda install', 'conda create', 'mamba install',
+    'poetry add', 'poetry install',
+    'pipenv install', 'pdm add',
+    # Node.js package managers
+    'npm install', 'npm i ', 'npm ci', 'npm add',
+    'yarn add', 'yarn install',
+    'pnpm install', 'pnpm add',
+    'bun install', 'bun add',
+    # Other package managers
+    'brew install', 'apt install', 'apt-get install',
+    'yum install', 'dnf install', 'pacman -S',
+    'cargo add', 'cargo install',
+    'go get', 'go install',
+    'gem install', 'bundle install',
+    'composer require', 'composer install',
+    'nuget install', 'dotnet add package',
+]
+
+# Patterns to detect in commands (more flexible matching)
+BLOCKED_PATTERNS = [
+    'pip install',
+    'pip3 install',
+    'npm install',
+    'npm i ',
+    'yarn add',
+    'conda install',
+]
 
 
 @dataclass
@@ -50,18 +102,35 @@ class SandboxExecutor:
     def run(self, command: str) -> ExecutionResult:
         """
         Run a command in the sandbox.
-        
+
         Args:
             command: Shell command to execute
-            
+
         Returns:
             ExecutionResult with success status and output
+
+        Note:
+            Package manager commands (pip, npm, etc.) are blocked
+            to enforce the zero-dependency constraint.
         """
+        # Check for blocked commands
+        blocked = self._check_blocked_command(command)
+        if blocked:
+            return ExecutionResult(
+                success=False,
+                stdout="",
+                stderr=f"BLOCKED: Package manager commands are not allowed. "
+                       f"This benchmark requires zero external dependencies.\n"
+                       f"Blocked command pattern: '{blocked}'",
+                return_code=1,
+                timed_out=False
+            )
+
         try:
             # Set up environment with workspace in PATH-friendly way
             env = os.environ.copy()
             env["PYTHONUNBUFFERED"] = "1"
-            
+
             result = subprocess.run(
                 command,
                 shell=True,
@@ -71,7 +140,7 @@ class SandboxExecutor:
                 timeout=self.timeout,
                 env=env
             )
-            
+
             return ExecutionResult(
                 success=result.returncode == 0,
                 stdout=self._truncate(result.stdout),
@@ -79,7 +148,7 @@ class SandboxExecutor:
                 return_code=result.returncode,
                 timed_out=False
             )
-            
+
         except subprocess.TimeoutExpired as e:
             return ExecutionResult(
                 success=False,
@@ -88,7 +157,7 @@ class SandboxExecutor:
                 return_code=-1,
                 timed_out=True
             )
-            
+
         except Exception as e:
             return ExecutionResult(
                 success=False,
@@ -97,6 +166,42 @@ class SandboxExecutor:
                 return_code=-1,
                 timed_out=False
             )
+
+    def _check_blocked_command(self, command: str) -> Optional[str]:
+        """
+        Check if a command contains blocked package manager patterns.
+
+        Args:
+            command: Command string to check
+
+        Returns:
+            The blocked pattern found, or None if command is allowed
+        """
+        command_lower = command.lower()
+
+        # Check against blocked commands list
+        for blocked in BLOCKED_COMMANDS:
+            if blocked.lower() in command_lower:
+                return blocked
+
+        # Check against patterns (more flexible)
+        for pattern in BLOCKED_PATTERNS:
+            if pattern.lower() in command_lower:
+                return pattern
+
+        return None
+
+    def is_command_allowed(self, command: str) -> bool:
+        """
+        Check if a command is allowed (not blocked).
+
+        Args:
+            command: Command string to check
+
+        Returns:
+            True if allowed, False if blocked
+        """
+        return self._check_blocked_command(command) is None
     
     def _truncate(self, text: str) -> str:
         """Truncate text to max_output_chars."""

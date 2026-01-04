@@ -36,6 +36,13 @@ dependencies = [
 [project.scripts]
 vibe-eval = "vibe_eval.cli:cli"
 
+[project.optional-dependencies]
+test = ["pytest>=7.0.0", "playwright>=1.40.0"]
+
 [project.urls]
 Homepage = "https://github.com/arjundivecha/vibe-code-bench"
 Repository = "https://github.com/arjundivecha/vibe-code-bench"
+
+[tool.setuptools.packages.find]
+include = ["vibe_eval*"]
+exclude = ["tests*", "gold*", "logs*", "runs*", "results*", "eval_cases*"]
