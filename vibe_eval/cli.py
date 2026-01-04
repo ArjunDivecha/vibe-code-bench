@@ -58,7 +58,7 @@ def cli():
 )
 @click.option(
     '--judge', '-j',
-    default='claude-opus-4-20250514',
+    default='claude-opus-4.5',
     help='Judge model for scoring'
 )
 def run(models, cases, timeout, cases_dir, output, judge):
