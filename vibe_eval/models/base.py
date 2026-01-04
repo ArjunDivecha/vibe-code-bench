@@ -52,42 +52,59 @@ class BaseModel(ABC):
 def get_model(model_id: str) -> BaseModel:
     """
     Factory function to get a model adapter by ID.
-    
+
+    V2: ALL models route through OpenRouter (single API key).
+
     Supported formats:
-      - claude-sonnet-4, claude-opus-4 → ClaudeModel
-      - gpt-4o, gpt-4o-mini, o1, o3-mini → OpenAIModel  
-      - gemini-2.0-flash, gemini-2.5-pro → GeminiModel
-      - local, local:model-name → LMStudioModel
-      - any/model-id → OpenRouterModel
-      - any/model-id@Provider → OpenRouterModel with provider hint
+      - local, local:model-name → LMStudioModel (local only)
+      - Everything else → OpenRouterModel
+
+    Model ID formats for OpenRouter:
+      - anthropic/claude-sonnet-4.5, anthropic/claude-opus-4.5
+      - openai/gpt-4o, openai/o1
+      - google/gemini-2.0-flash, google/gemini-2.5-pro
+      - meta-llama/llama-3.1-8b-instruct
+      - any/model-id@Provider (provider hint)
     """
-    from .claude import ClaudeModel
-    from .openai import OpenAIModel
-    from .gemini import GeminiModel
     from .lmstudio import LMStudioModel
     from .openrouter import OpenRouterModel
-    
+
     model_lower = model_id.lower()
-    
+
     # Check for provider hint (model@Provider format)
     provider = None
     if "@" in model_id:
         model_id, provider = model_id.rsplit("@", 1)
         model_lower = model_id.lower()
-    
-    if model_lower.startswith("claude"):
-        return ClaudeModel(model_id)
-    elif model_lower.startswith(("gpt", "o1", "o3")):
-        return OpenAIModel(model_id)
-    elif model_lower.startswith("gemini"):
-        return GeminiModel(model_id)
-    elif model_lower.startswith("local"):
+
+    # Only local models bypass OpenRouter
+    if model_lower.startswith("local"):
         # Support "local" or "local:model-name"
         if ":" in model_id:
             name = model_id.split(":", 1)[1]
             return LMStudioModel(model_id=name)
         return LMStudioModel()
-    else:
-        # Default to OpenRouter for any other model ID
-        # This handles: qwen/qwen3, anthropic/claude-haiku, google/gemini-*, etc.
-        return OpenRouterModel(model_id=model_id, provider=provider)
+
+    # V2: Everything else goes through OpenRouter
+    # Auto-prefix common model names if no provider specified
+    if "/" not in model_id:
+        # Map shorthand names to OpenRouter format
+        # Use actual OpenRouter model IDs (not dated versions)
+        model_map = {
+            "claude-opus-4.5": "anthropic/claude-opus-4.5",
+            "claude-sonnet-4.5": "anthropic/claude-sonnet-4.5",
+            "claude-sonnet-4": "anthropic/claude-sonnet-4",
+            "claude-haiku-4.5": "anthropic/claude-haiku-4.5",
+            "gpt-4o": "openai/gpt-4o",
+            "gpt-4o-mini": "openai/gpt-4o-mini",
+            "o1": "openai/o1",
+            "o3-mini": "openai/o3-mini",
+            "gemini-2.0-flash": "google/gemini-2.0-flash-001",
+            "gemini-2.5-pro": "google/gemini-2.5-pro-preview-06-05",
+            "gemini-3-flash": "google/gemini-3-flash",
+            "llama-3.1-8b": "meta-llama/llama-3.1-8b-instruct",
+            "llama-3.1-70b": "meta-llama/llama-3.1-70b-instruct",
+        }
+        model_id = model_map.get(model_lower, model_id)
+
+    return OpenRouterModel(model_id=model_id, provider=provider)

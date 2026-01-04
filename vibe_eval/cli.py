@@ -356,52 +356,56 @@ def dashboard(results_file, output):
 
 @cli.command('list-models')
 def list_models():
-    """List supported models."""
+    """List supported models (all via OpenRouter)."""
+    console.print("\n[bold]Supported Models (V2 - All via OpenRouter)[/bold]")
+    console.print("[dim]Use full OpenRouter model IDs or shorthand names[/dim]\n")
+
     models = {
-        "Anthropic": ["claude-sonnet-4", "claude-opus-4", "claude-sonnet-3.5"],
-        "OpenAI": ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"],
-        "Cerebras (via OpenRouter)": ["openai/gpt-oss-120b@Cerebras"],
-        "Google": ["gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro"],
+        "Anthropic": [
+            ("claude-sonnet-4.5", "anthropic/claude-sonnet-4.5"),
+            ("claude-opus-4.5", "anthropic/claude-opus-4.5"),
+            ("claude-haiku-4.5", "anthropic/claude-haiku-4.5"),
+        ],
+        "OpenAI": [
+            ("gpt-4o", "openai/gpt-4o"),
+            ("gpt-4o-mini", "openai/gpt-4o-mini"),
+            ("o1", "openai/o1"),
+            ("o3-mini", "openai/o3-mini"),
+        ],
+        "Google": [
+            ("gemini-2.0-flash", "google/gemini-2.0-flash-001"),
+            ("gemini-2.5-pro", "google/gemini-2.5-pro-preview-06-05"),
+            ("gemini-3-flash", "google/gemini-3-flash"),
+        ],
+        "Meta": [
+            ("llama-3.1-8b", "meta-llama/llama-3.1-8b-instruct"),
+            ("llama-3.1-70b", "meta-llama/llama-3.1-70b-instruct"),
+        ],
+        "Other (use full OpenRouter ID)": [
+            ("qwen3-coder", "qwen/qwen3-coder"),
+            ("kimi-k2", "moonshotai/kimi-k2-0905@Groq"),
+            ("gpt-oss-120b", "openai/gpt-oss-120b@Cerebras"),
+        ],
     }
-    
-    console.print("\n[bold]Supported Models:[/bold]")
+
     for provider, model_list in models.items():
-        console.print(f"\n  [cyan]{provider}[/cyan]")
-        for model in model_list:
-            console.print(f"    • {model}")
+        console.print(f"  [cyan]{provider}[/cyan]")
+        for shorthand, full_id in model_list:
+            console.print(f"    • {shorthand} → {full_id}")
+        console.print()
 
 
 def _check_api_keys(models: list[str]):
-    """Check that required API keys are set."""
-    needed = set()
+    """Check that required API keys are set.
 
-    for model in models:
-        model_lower = model.lower()
-        # Check if model uses OpenRouter (has / in ID)
-        if "/" in model_lower:
-            needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
-        elif "claude" in model_lower:
-            needed.add(("ANTHROPIC_API_KEY", "Anthropic"))
-        elif any(p in model_lower for p in ["gpt", "o1", "o3"]):
-            needed.add(("OPENAI_API_KEY", "OpenAI"))
-        elif "gemini" in model_lower:
-            needed.add(("GOOGLE_API_KEY", "Google"))
-        else:
-            needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
-
-    # V2: All judges go through OpenRouter (only need OPENROUTER_API_KEY)
-    needed.add(("OPENROUTER_API_KEY", "OpenRouter (for judges)"))
-
-    missing = []
-    for key, provider in needed:
-        if not os.environ.get(key):
-            missing.append(f"{key} ({provider})")
-
-    if missing:
-        console.print("[red]Missing API keys:[/red]")
-        for key in missing:
-            console.print(f"  • {key}")
+    V2: All models and judges use OpenRouter - only OPENROUTER_API_KEY needed.
+    """
+    # V2: Only OpenRouter key needed (all models + judges route through it)
+    if not os.environ.get("OPENROUTER_API_KEY"):
+        console.print("[red]Missing API key:[/red]")
+        console.print("  • OPENROUTER_API_KEY")
         console.print("\n[dim]Set in .env file or environment[/dim]")
+        console.print("[dim]All models and judges use OpenRouter in V2[/dim]")
         raise click.Abort()
 
 

@@ -1,9 +1,10 @@
-"""Model adapters package."""
+"""Model adapters package.
 
-from .base import BaseModel
-from .claude import ClaudeModel
-from .openai import OpenAIModel
-from .gemini import GeminiModel
+V2: All models route through OpenRouter (except local LMStudio).
+"""
+
+from .base import BaseModel, get_model, Message, ModelResponse
+from .openrouter import OpenRouterModel
 from .lmstudio import LMStudioModel
 
-__all__ = ["BaseModel", "ClaudeModel", "OpenAIModel", "GeminiModel", "LMStudioModel"]
+__all__ = ["BaseModel", "get_model", "Message", "ModelResponse", "OpenRouterModel", "LMStudioModel"]
