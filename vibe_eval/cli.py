@@ -337,6 +337,7 @@ def list_models():
     models = {
         "Anthropic": ["claude-sonnet-4", "claude-opus-4", "claude-sonnet-3.5"],
         "OpenAI": ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"],
+        "Cerebras (via OpenRouter)": ["openai/gpt-oss-120b@Cerebras"],
         "Google": ["gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro"],
     }
     
@@ -353,12 +354,21 @@ def _check_api_keys(models: list[str]):
     
     for model in models:
         model_lower = model.lower()
-        if model_lower.startswith("claude"):
+        if "claude" in model_lower:
             needed.add(("ANTHROPIC_API_KEY", "Anthropic"))
-        elif model_lower.startswith(("gpt", "o1", "o3")):
-            needed.add(("OPENAI_API_KEY", "OpenAI"))
-        elif model_lower.startswith("gemini"):
-            needed.add(("GOOGLE_API_KEY", "Google"))
+        elif any(p in model_lower for p in ["gpt", "o1", "o3"]):
+            # If it's a standard OpenAI model ID (no /)
+            if "/" not in model_lower:
+                needed.add(("OPENAI_API_KEY", "OpenAI"))
+            else:
+                needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
+        elif "gemini" in model_lower:
+            if "/" not in model_lower:
+                needed.add(("GOOGLE_API_KEY", "Google"))
+            else:
+                needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
+        else:
+            needed.add(("OPENROUTER_API_KEY", "OpenRouter"))
     
     # Always need Anthropic for judge
     needed.add(("ANTHROPIC_API_KEY", "Anthropic (for judge)"))

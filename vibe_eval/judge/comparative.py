@@ -7,9 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-import anthropic
-
 from .absolute import collect_code_files, format_code_files, extract_json
+from ..models.base import get_model, Message
 
 
 @dataclass
@@ -40,7 +39,7 @@ class ComparativeJudge:
     
     def __init__(
         self, 
-        judge_model: str = "claude-opus-4-20250514",
+        judge_model: str = "claude-opus-4.5",
         temperature: float = 0.0
     ):
         """
@@ -50,11 +49,10 @@ class ComparativeJudge:
             judge_model: Model to use for judging
             temperature: Sampling temperature (0 for determinism)
         """
-        self.client = anthropic.Anthropic(
-            api_key=os.environ.get("ANTHROPIC_API_KEY")
-        )
-        self.model = judge_model
-        self.temperature = temperature
+        self.model = get_model(judge_model)
+        # Force low temperature for judging if supported
+        if hasattr(self.model, 'temperature'):
+            self.model.temperature = temperature
     
     def compare(
         self,
@@ -132,15 +130,10 @@ Respond ONLY with JSON in this exact format:
 }}
 """
         
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            temperature=self.temperature,
-            messages=[{"role": "user", "content": prompt}]
-        )
+        response = self.model.complete([Message(role="user", content=prompt)])
         
         try:
-            raw_json = extract_json(response.content[0].text)
+            raw_json = extract_json(response.content)
             result = json.loads(raw_json)
             
             # Normalize winner value
