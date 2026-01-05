@@ -97,6 +97,8 @@ def get_model(model_id: str) -> BaseModel:
             "claude-haiku-4.5": "anthropic/claude-haiku-4.5",
             "gpt-4o": "openai/gpt-4o",
             "gpt-4o-mini": "openai/gpt-4o-mini",
+            "gpt-oss": "openai/gpt-oss-120b",
+            "gpt-oss-120b": "openai/gpt-oss-120b",
             "o1": "openai/o1",
             "o3-mini": "openai/o3-mini",
             "gemini-2.0-flash": "google/gemini-2.0-flash-001",

@@ -32,20 +32,46 @@ class ModelMetrics:
 
     def estimated_llm_cost(self, model_name: str) -> float:
         """Estimate LLM cost in USD based on model pricing (OpenRouter rates)."""
-        # OpenRouter pricing per 1M tokens (input, output) - updated Jan 2026
+        # OpenRouter pricing per 1M tokens (input, output) - verified from openrouter.ai Jan 2026
         pricing = {
             "anthropic/claude-opus-4.5": (5.0, 25.0),
+            "anthropic/claude-sonnet-4.5": (3.0, 15.0),
             "anthropic/claude-sonnet-4": (3.0, 15.0),
-            "openai/gpt-4o": (3.0, 10.0),
-            "google/gemini-3-flash": (0.075, 0.3),
-            "meta-llama/llama-3.1-8b-instruct": (0.055, 0.055),
+            "anthropic/claude-haiku-4.5": (1.0, 5.0),
+            "openai/gpt-4o": (2.5, 10.0),
+            "openai/gpt-5.1-codex-max": (1.25, 10.0),
+            "openai/chatgpt-4o-latest": (5.0, 15.0),
+            "openai/gpt-oss-120b": (0.02, 0.10),
+            "google/gemini-3-flash": (0.50, 3.0),
+            "google/gemini-3-flash-preview": (0.50, 3.0),
+            "google/gemini-3-pro-preview": (2.0, 12.0),
+            "z-ai/glm-4.7": (0.16, 0.80),
+            "moonshotai/kimi-k2-0905": (0.39, 1.90),
+            "qwen/qwen3-coder": (0.22, 0.95),
+            "qwen/qwen3-235b-a22b-2507": (0.071, 0.463),
+            "minimax/minimax-m2.1": (0.12, 0.48),
+            "meta-llama/llama-3.1-8b-instruct": (0.02, 0.03),
             "meta-llama/llama-3.1-70b-instruct": (0.35, 0.4),
             # Fallback rates
             "default": (1.0, 3.0),
         }
-        # Normalize model name for lookup
+        # Normalize model name for lookup - try exact match, then partial match
         model_key = model_name.lower()
-        input_rate, output_rate = pricing.get(model_key, pricing["default"])
+        if model_key in pricing:
+            input_rate, output_rate = pricing[model_key]
+        else:
+            # Try partial matching (e.g., "gpt-oss" matches "openai/gpt-oss-120b")
+            matched = False
+            for key, rates in pricing.items():
+                if key == "default":
+                    continue
+                # Check if model_key is contained in pricing key or vice versa
+                if model_key in key or key.split("/")[-1].split("@")[0] in model_key:
+                    input_rate, output_rate = rates
+                    matched = True
+                    break
+            if not matched:
+                input_rate, output_rate = pricing["default"]
         cost = (self.input_tokens / 1_000_000) * input_rate
         cost += (self.output_tokens / 1_000_000) * output_rate
         return round(cost, 4)
@@ -280,11 +306,12 @@ def print_leaderboard(run: EvalRun, console: Optional[Console] = None):
     console.print(case_table)
     console.print()
     
-    # Average metrics table - V2: Separate LLM and Judge costs
+    # Average metrics table - V2: Separate LLM and Judge costs + Total Tokens
     metrics_table = Table(title="Model Performance & Cost", show_header=True, header_style="bold")
     metrics_table.add_column("Model", style="cyan")
     metrics_table.add_column("Avg Score", justify="right")
     metrics_table.add_column("Avg Time", justify="right")
+    metrics_table.add_column("Total Tokens", justify="right")
     metrics_table.add_column("LLM Cost", justify="right")
     metrics_table.add_column("Judge Cost", justify="right")
     metrics_table.add_column("Total Files", justify="right")
@@ -293,6 +320,7 @@ def print_leaderboard(run: EvalRun, console: Optional[Console] = None):
         # Calculate averages/totals
         score = averages.get(model, 0)
         total_time = 0
+        total_tokens = 0
         total_llm_cost = 0
         total_judge_cost = 0
         total_files = 0
@@ -302,6 +330,7 @@ def print_leaderboard(run: EvalRun, console: Optional[Console] = None):
             if model in result.model_metrics:
                 m = result.model_metrics[model]
                 total_time += m.time_seconds
+                total_tokens += m.total_tokens
                 total_llm_cost += m.estimated_llm_cost(model)
                 total_judge_cost += m.judge_cost
                 total_files += m.files_created
@@ -309,10 +338,19 @@ def print_leaderboard(run: EvalRun, console: Optional[Console] = None):
 
         avg_time = total_time / case_count if case_count else 0
 
+        # Format tokens with K/M suffix for readability
+        if total_tokens >= 1_000_000:
+            tokens_str = f"{total_tokens / 1_000_000:.1f}M"
+        elif total_tokens >= 1_000:
+            tokens_str = f"{total_tokens / 1_000:.0f}K"
+        else:
+            tokens_str = str(total_tokens)
+
         metrics_table.add_row(
             model,
             f"{score:.1f}",
             f"{avg_time:.0f}s",
+            tokens_str,
             f"${total_llm_cost:.4f}",
             f"${total_judge_cost:.4f}",
             str(total_files)

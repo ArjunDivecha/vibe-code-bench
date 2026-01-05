@@ -189,7 +189,8 @@ class ExecutionValidator:
         Returns:
             ExecutionReport with combined validation results
         """
-        workspace = Path(workspace_path)
+        # V2 Fix: Always use absolute paths to avoid path doubling
+        workspace = Path(workspace_path).absolute()
 
         # Find primary entry point
         python_files = list(workspace.glob("**/*.py"))
