@@ -54,6 +54,7 @@ def get_model(model_id: str) -> BaseModel:
     Factory function to get a model adapter by ID.
 
     V2: ALL models route through OpenRouter (single API key).
+    Exception: local models use LMStudio.
 
     Supported formats:
       - local, local:model-name → LMStudioModel (local only)
@@ -63,6 +64,7 @@ def get_model(model_id: str) -> BaseModel:
       - anthropic/claude-sonnet-4.5, anthropic/claude-opus-4.5
       - openai/gpt-4o, openai/o1
       - google/gemini-2.0-flash, google/gemini-2.5-pro
+      - moonshotai/kimi-k2.5
       - meta-llama/llama-3.1-8b-instruct
       - any/model-id@Provider (provider hint)
     """
@@ -106,6 +108,9 @@ def get_model(model_id: str) -> BaseModel:
             "gemini-3-flash": "google/gemini-3-flash",
             "llama-3.1-8b": "meta-llama/llama-3.1-8b-instruct",
             "llama-3.1-70b": "meta-llama/llama-3.1-70b-instruct",
+            # Kimi models via OpenRouter
+            "kimi-k2.5": "moonshotai/kimi-k2.5",
+            "kimi-k2": "moonshotai/kimi-k2.5",
         }
         model_id = model_map.get(model_lower, model_id)
 
