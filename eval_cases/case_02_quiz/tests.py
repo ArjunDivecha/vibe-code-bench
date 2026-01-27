@@ -116,3 +116,63 @@ def test_can_complete_quiz(page):
     content = page.locator("body").text_content().lower()
     # Either still in quiz or showing results
     assert len(content) > 20, "Quiz navigation not working"
+
+
+def test_shows_correct_incorrect_feedback(page):
+    """Should indicate if answer was correct or incorrect."""
+    # Click an option
+    options = page.locator("button:visible, [class*='option']:visible").all()
+    if len(options) >= 1:
+        options[0].click()
+        page.wait_for_timeout(500)
+        
+        content = page.locator("body").text_content().lower()
+        html = page.content().lower()
+        
+        has_feedback = any(term in content or term in html for term in [
+            'correct', 'incorrect', 'wrong', 'right', 'green', 'red', '#0f0', '#f00'
+        ])
+        assert has_feedback, "No correct/incorrect feedback shown"
+
+
+def test_shows_final_score(page):
+    """Should show final score after completing quiz."""
+    # Answer all questions
+    for _ in range(10):
+        options = page.locator("button:visible, [class*='option']:visible").all()
+        if len(options) >= 1:
+            try:
+                options[0].click()
+                page.wait_for_timeout(400)
+            except Exception:
+                break
+        else:
+            break
+    
+    content = page.locator("body").text_content().lower()
+    has_final = any(term in content for term in [
+        'score', 'result', 'total', 'out of', '/', 'complete', 'finish'
+    ])
+    assert has_final, "No final score shown"
+
+
+def test_try_again_button(page):
+    """Should have try again/restart option after completion."""
+    # Complete quiz
+    for _ in range(10):
+        options = page.locator("button:visible, [class*='option']:visible").all()
+        if len(options) >= 1:
+            try:
+                options[0].click()
+                page.wait_for_timeout(300)
+            except Exception:
+                break
+    
+    content = page.locator("body").text_content().lower()
+    buttons = page.locator("button").all_text_contents()
+    button_text = " ".join(buttons).lower()
+    
+    has_retry = any(term in content or term in button_text for term in [
+        'again', 'restart', 'retry', 'new', 'play again'
+    ])
+    assert has_retry, "No try again button"

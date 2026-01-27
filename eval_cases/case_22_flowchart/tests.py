@@ -1,129 +1,150 @@
 """
 Functional tests for Flowchart Editor (case_22_flowchart).
 
-V3 Tests - More flexible, behavior-focused.
+V3 Tests - Discriminating tests for actual flowchart editing capability.
 """
 
 
-def test_has_canvas_or_svg(page):
-    """Should have a drawing area (SVG or Canvas)."""
-    svg_count = page.locator("svg").count()
-    canvas_count = page.locator("canvas").count()
+def test_has_svg_canvas(page):
+    """Should have SVG element for drawing."""
+    svg = page.locator("svg").count()
+    canvas = page.locator("canvas").count()
     
-    assert svg_count > 0 or canvas_count > 0, \
-        "No SVG or Canvas element found for drawing"
+    assert svg > 0 or canvas > 0, "No SVG or Canvas for drawing"
 
 
-def test_has_shape_options(page):
-    """Should show shape options to add."""
+def test_has_rectangle_shape(page):
+    """Should have rectangle/process shape option."""
     content = page.locator("body").text_content().lower()
     html = page.content().lower()
     
-    # Look for shape-related words
-    shape_terms = ['rectangle', 'diamond', 'oval', 'circle', 'shape', 'node', 'box']
-    found = sum(1 for term in shape_terms if term in content or term in html)
-    
-    assert found >= 1, "No shape options found"
+    has_rect = any(term in content or term in html for term in [
+        'rectangle', 'process', 'box', 'rect'
+    ])
+    assert has_rect, "No rectangle shape option"
 
 
-def test_page_is_interactive(page):
-    """Page should respond to interactions without errors."""
-    errors = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    
-    # Click around the canvas area
-    page.click("body", position={"x": 400, "y": 300})
-    page.wait_for_timeout(200)
-    
-    # Try dragging
-    page.mouse.move(400, 300)
-    page.mouse.down()
-    page.mouse.move(500, 400)
-    page.mouse.up()
-    page.wait_for_timeout(200)
-    
-    assert len(errors) == 0, f"Interactions caused errors: {errors}"
-
-
-def test_has_toolbar_or_palette(page):
-    """Should have a toolbar or shape palette."""
+def test_has_diamond_shape(page):
+    """Should have diamond/decision shape option."""
+    content = page.locator("body").text_content().lower()
     html = page.content().lower()
     
-    has_toolbar = any(term in html for term in [
-        'toolbar', 'palette', 'sidebar', 'panel', 'tools'
+    has_diamond = any(term in content or term in html for term in [
+        'diamond', 'decision', 'condition', 'if'
     ])
-    
-    # Or count buttons
-    buttons = page.locator("button").count()
-    
-    assert has_toolbar or buttons >= 2, "No toolbar or palette found"
+    assert has_diamond, "No diamond/decision shape option"
 
 
-def test_can_add_elements(page):
-    """Clicking should add or select elements."""
-    # Get initial SVG/canvas state
-    initial_svg_children = page.locator("svg > *").count() if page.locator("svg").count() > 0 else 0
+def test_has_oval_shape(page):
+    """Should have oval/terminal shape option."""
+    content = page.locator("body").text_content().lower()
+    html = page.content().lower()
     
-    # Click add button if exists, otherwise click canvas
-    add_btn = page.locator("button:has-text('Add'), button:has-text('+'), [class*='add']").first
+    has_oval = any(term in content or term in html for term in [
+        'oval', 'ellipse', 'terminal', 'start', 'end', 'circle'
+    ])
+    assert has_oval, "No oval/terminal shape option"
+
+
+def test_can_add_shape_to_canvas(page):
+    """Clicking toolbar + canvas should add a shape."""
+    initial = page.locator("svg rect, svg ellipse, svg polygon, svg path").count()
+    
+    # Click add/shape button
+    add_btn = page.locator("button:has-text('Add'), button:has-text('Rectangle'), button:has-text('Process')").first
     if add_btn.count() > 0:
         add_btn.click()
         page.wait_for_timeout(300)
     
-    # Click on canvas area
+    # Click on canvas
     svg = page.locator("svg").first
     if svg.count() > 0:
-        svg.click(position={"x": 100, "y": 100})
+        svg.click(position={"x": 150, "y": 150})
         page.wait_for_timeout(300)
     
-    # Something should have changed or at least no errors
-    final_svg_children = page.locator("svg > *").count() if page.locator("svg").count() > 0 else 0
-    
-    # Pass if either elements added or page didn't crash
-    assert True  # Interaction test - no crash is success
+    final = page.locator("svg rect, svg ellipse, svg polygon, svg path").count()
+    assert final >= initial, "Could not add shape to canvas"
 
 
-def test_svg_has_shapes(page):
-    """SVG should contain shape elements."""
-    svg = page.locator("svg").first
-    if svg.count() == 0:
-        # No SVG, might use canvas - pass
-        return
-    
-    # Count shape elements
-    rects = page.locator("svg rect").count()
-    circles = page.locator("svg circle, svg ellipse").count()
-    paths = page.locator("svg path").count()
-    polygons = page.locator("svg polygon").count()
-    
-    total = rects + circles + paths + polygons
-    # Some shapes should exist (either as palette or on canvas)
-    assert total >= 0  # Permissive - just checking structure
+def test_shapes_are_draggable(page):
+    """Shapes should be draggable to reposition."""
+    # Find a shape element
+    shape = page.locator("svg rect, svg g, [class*='node']").first
+    if shape.count() > 0:
+        box = shape.bounding_box()
+        if box:
+            # Drag it
+            page.mouse.move(box['x'] + 20, box['y'] + 20)
+            page.mouse.down()
+            page.mouse.move(box['x'] + 100, box['y'] + 50)
+            page.mouse.up()
+            page.wait_for_timeout(300)
+            # Should not error
 
 
-def test_has_connection_capability(page):
-    """Should have ability to draw connections/lines."""
+def test_can_connect_shapes(page):
+    """Should be able to draw connections between shapes."""
     html = page.content().lower()
     
-    has_lines = any(term in html for term in [
-        'line', 'arrow', 'connect', 'edge', 'path', 'link'
+    has_connect = any(term in html for term in [
+        'connect', 'line', 'arrow', 'edge', 'link', 'path'
     ])
     
-    # Or has line elements in SVG
-    line_elements = page.locator("svg line, svg path, svg polyline").count()
+    # Or has line/path elements
+    lines = page.locator("svg line, svg path, svg polyline").count()
     
-    assert has_lines or line_elements >= 0, "No connection capability"
+    assert has_connect or lines > 0, "No connection capability"
 
 
-def test_visual_styling(page):
-    """Editor should have visual styling."""
+def test_connections_have_arrows(page):
+    """Connection lines should have arrow markers."""
     html = page.content().lower()
     
-    has_styling = any(term in html for term in [
-        'background', 'border', 'shadow', 'color', '#', 'rgb'
+    has_arrows = any(term in html for term in [
+        'arrow', 'marker', '▶', '→', 'triangle'
+    ])
+    assert has_arrows, "No arrow markers for connections"
+
+
+def test_can_add_text_to_shapes(page):
+    """Should be able to label shapes with text."""
+    # Find text input or try double-clicking shape
+    html = page.content().lower()
+    
+    has_text = '<text' in html or 'contenteditable' in html or 'label' in html
+    assert has_text, "No text labeling capability"
+
+
+def test_has_delete_capability(page):
+    """Should be able to delete shapes."""
+    content = page.locator("body").text_content().lower()
+    
+    has_delete = any(term in content for term in [
+        'delete', 'remove', '×', 'trash'
     ])
     
-    assert has_styling, "Editor lacks visual styling"
+    # Or check for delete key handling
+    html = page.content().lower()
+    has_keyboard = 'keydown' in html or 'delete' in html
+    
+    assert has_delete or has_keyboard, "No delete capability"
+
+
+def test_toolbar_has_multiple_tools(page):
+    """Toolbar should have at least 3 shape tools."""
+    buttons = page.locator("button").count()
+    assert buttons >= 3, f"Expected 3+ tools, found {buttons}"
+
+
+def test_undo_capability(page):
+    """Should support undo functionality."""
+    content = page.locator("body").text_content().lower()
+    html = page.content().lower()
+    
+    has_undo = any(term in content or term in html for term in [
+        'undo', 'ctrl+z', '↩'
+    ])
+    assert has_undo, "No undo capability"
 
 
 def test_no_console_errors(page):

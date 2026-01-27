@@ -17,7 +17,7 @@ from ..judge.absolute import AbsoluteScore
 class DimensionResult:
     """Result for a single scoring dimension."""
     name: str
-    score: int  # 0-10
+    score: float  # 0-10 (float for granularity)
     weight: float  # Weight as decimal (e.g., 0.20 for 20%)
     source: str  # "auto", "judge", "static", or "combined"
     reason: str = ""

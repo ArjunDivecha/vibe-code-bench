@@ -26,9 +26,9 @@ class AutoScore:
     test_details: list[dict] = field(default_factory=list)
     
     @property
-    def test_score(self) -> int:
-        """Convert pass rate to 0-10 score."""
-        return round(self.test_pass_rate * 10)
+    def test_score(self) -> float:
+        """Convert pass rate to 0-10 score (float for granularity)."""
+        return self.test_pass_rate * 10
     
     @property
     def execution_score(self) -> int:

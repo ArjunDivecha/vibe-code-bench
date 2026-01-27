@@ -1,88 +1,164 @@
 """
 Functional tests for Calculator (case_03_calculator).
 
-V3 Tests - More flexible, behavior-focused.
+V3 Tests - Behavioral tests that verify actual calculations.
 """
 
 
-def test_has_number_buttons(page):
-    """Calculator should have number buttons 0-9."""
-    content = page.locator("body").text_content()
+def test_has_all_digit_buttons(page):
+    """Calculator should have buttons for 0-9."""
+    buttons = page.locator("button").all_text_contents()
+    text = " ".join(buttons)
     
-    # Count digits found
-    digits_found = sum(1 for d in "0123456789" if d in content)
-    assert digits_found >= 10, f"Expected all digits 0-9, found {digits_found}"
+    digits_found = sum(1 for d in "0123456789" if d in text)
+    assert digits_found >= 10, f"Missing digit buttons, found {digits_found}"
 
 
-def test_has_operator_buttons(page):
-    """Should have +, -, *, / operators."""
-    content = page.locator("body").text_content()
+def test_has_four_operators(page):
+    """Should have +, -, ×, ÷ operators."""
+    buttons = page.locator("button").all_text_contents()
+    text = "".join(buttons)
     
-    # Check for operators (various representations)
-    operators = ['+', '-', '×', '÷', '*', '/']
-    found = sum(1 for op in operators if op in content)
+    operators = [('+', '+'), ('-', '-'), ('*', '*×x'), ('/', '/÷')]
+    found = 0
+    for _, chars in operators:
+        if any(c in text for c in chars):
+            found += 1
     
     assert found >= 4, f"Expected 4 operators, found {found}"
 
 
-def test_has_equals_button(page):
-    """Should have equals button."""
-    content = page.locator("body").text_content()
+def test_has_decimal_point(page):
+    """Should have decimal point button."""
+    buttons = page.locator("button").all_text_contents()
+    text = "".join(buttons)
     
-    has_equals = '=' in content or 'Enter' in content
-    assert has_equals, "No equals button found"
+    assert '.' in text, "No decimal point button"
 
 
-def test_has_display_area(page):
-    """Should have a display area for results."""
-    # Look for display-like elements
-    display = page.locator("input, [class*='display'], [class*='screen'], [class*='result']")
-    
-    assert display.count() > 0, "No display area found"
-
-
-def test_basic_addition(page):
-    """7 + 3 should equal 10."""
-    # Click 7
+def test_addition_7_plus_3(page):
+    """7 + 3 = 10."""
     page.locator("button:has-text('7')").first.click()
-    # Click +
     page.locator("button:has-text('+')").first.click()
-    # Click 3
     page.locator("button:has-text('3')").first.click()
-    # Click =
     page.locator("button:has-text('=')").first.click()
-    
     page.wait_for_timeout(200)
     
     content = page.locator("body").text_content()
     assert "10" in content, f"7+3 should equal 10, got: {content[:100]}"
 
 
-def test_basic_multiplication(page):
-    """Clear and test 6 * 7 = 42."""
-    # Try to clear first
-    clear_btn = page.locator("button:has-text('C'), button:has-text('AC'), button:has-text('Clear')").first
-    if clear_btn.count() > 0:
-        clear_btn.click()
-        page.wait_for_timeout(100)
+def test_subtraction_15_minus_7(page):
+    """15 - 7 = 8."""
+    clear = page.locator("button:has-text('C'), button:has-text('AC')").first
+    if clear.count() > 0:
+        clear.click()
     
-    page.locator("button:has-text('6')").first.click()
-    mult_btn = page.locator("button:has-text('×'), button:has-text('*'), button:has-text('x')").first
-    if mult_btn.count() > 0:
-        mult_btn.click()
+    page.locator("button:has-text('1')").first.click()
+    page.locator("button:has-text('5')").first.click()
+    page.locator("button:has-text('-')").first.click()
     page.locator("button:has-text('7')").first.click()
     page.locator("button:has-text('=')").first.click()
-    
     page.wait_for_timeout(200)
     
     content = page.locator("body").text_content()
-    assert "42" in content, f"6*7 should equal 42, got: {content[:100]}"
+    assert "8" in content, f"15-7 should equal 8"
 
 
-def test_has_clear_button(page):
-    """Should have a clear button."""
-    clear_btn = page.locator("button:has-text('C'), button:has-text('AC'), button:has-text('Clear'), button:has-text('CE')")
-    assert clear_btn.count() > 0, "No clear button found"
+def test_multiplication_6_times_7(page):
+    """6 × 7 = 42."""
+    clear = page.locator("button:has-text('C'), button:has-text('AC')").first
+    if clear.count() > 0:
+        clear.click()
+    
+    page.locator("button:has-text('6')").first.click()
+    mult = page.locator("button:has-text('×'), button:has-text('*'), button:has-text('x')").first
+    if mult.count() > 0:
+        mult.click()
+    page.locator("button:has-text('7')").first.click()
+    page.locator("button:has-text('=')").first.click()
+    page.wait_for_timeout(200)
+    
+    content = page.locator("body").text_content()
+    assert "42" in content, f"6×7 should equal 42"
+
+
+def test_division_100_by_4(page):
+    """100 ÷ 4 = 25."""
+    clear = page.locator("button:has-text('C'), button:has-text('AC')").first
+    if clear.count() > 0:
+        clear.click()
+    
+    page.locator("button:has-text('1')").first.click()
+    page.locator("button:has-text('0')").first.click()
+    page.locator("button:has-text('0')").first.click()
+    div = page.locator("button:has-text('÷'), button:has-text('/')").first
+    if div.count() > 0:
+        div.click()
+    page.locator("button:has-text('4')").first.click()
+    page.locator("button:has-text('=')").first.click()
+    page.wait_for_timeout(200)
+    
+    content = page.locator("body").text_content()
+    assert "25" in content, f"100÷4 should equal 25"
+
+
+def test_clear_resets_display(page):
+    """Clear button should reset to 0."""
+    page.locator("button:has-text('5')").first.click()
+    page.locator("button:has-text('5')").first.click()
+    
+    clear = page.locator("button:has-text('C'), button:has-text('AC'), button:has-text('Clear')").first
+    if clear.count() > 0:
+        clear.click()
+        page.wait_for_timeout(100)
+        
+        content = page.locator("body").text_content()
+        assert "55" not in content, "Clear did not reset display"
+
+
+def test_chained_operations(page):
+    """2 + 3 × 4 should work (left-to-right or proper order)."""
+    clear = page.locator("button:has-text('C'), button:has-text('AC')").first
+    if clear.count() > 0:
+        clear.click()
+    
+    page.locator("button:has-text('2')").first.click()
+    page.locator("button:has-text('+')").first.click()
+    page.locator("button:has-text('3')").first.click()
+    page.locator("button:has-text('=')").first.click()
+    page.wait_for_timeout(100)
+    
+    mult = page.locator("button:has-text('×'), button:has-text('*')").first
+    if mult.count() > 0:
+        mult.click()
+    page.locator("button:has-text('4')").first.click()
+    page.locator("button:has-text('=')").first.click()
+    page.wait_for_timeout(200)
+    
+    content = page.locator("body").text_content()
+    # Should show 20 (5×4) for left-to-right, or 14 for proper PEMDAS
+    assert "20" in content or "14" in content, "Chained operations failed"
+
+
+def test_decimal_calculation(page):
+    """3.5 + 2.5 = 6."""
+    clear = page.locator("button:has-text('C'), button:has-text('AC')").first
+    if clear.count() > 0:
+        clear.click()
+    
+    page.locator("button:has-text('3')").first.click()
+    page.locator("button:has-text('.')").first.click()
+    page.locator("button:has-text('5')").first.click()
+    page.locator("button:has-text('+')").first.click()
+    page.locator("button:has-text('2')").first.click()
+    page.locator("button:has-text('.')").first.click()
+    page.locator("button:has-text('5')").first.click()
+    page.locator("button:has-text('=')").first.click()
+    page.wait_for_timeout(200)
+    
+    content = page.locator("body").text_content()
+    assert "6" in content, "3.5+2.5 should equal 6"
 
 
 def test_visual_styling(page):
@@ -90,9 +166,8 @@ def test_visual_styling(page):
     html = page.content().lower()
     
     has_styling = any(term in html for term in [
-        'background', 'border', 'grid', 'button', 'color:', '#', 'rgb'
+        'background', 'border', 'grid', 'color:', '#', 'rgb'
     ])
-    
     assert has_styling, "Calculator lacks visual styling"
 
 
