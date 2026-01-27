@@ -2,6 +2,7 @@
 Functional tests for Pomodoro Timer (case_01_pomodoro).
 
 V3 Tests - Behavioral tests that verify actual functionality.
+Optimized for speed with reduced timeouts.
 """
 
 
@@ -52,7 +53,7 @@ def test_timer_counts_down(page):
     else:
         page.locator("button").first.click()
     
-    page.wait_for_timeout(2000)  # Wait for timer to tick
+    page.wait_for_timeout(1200)  # Wait just over 1 second for timer to tick
     
     content = page.locator("body").text_content()
     # Should show less than 25:00
@@ -92,52 +93,12 @@ def test_session_counter(page):
 
 
 def test_pause_stops_timer(page):
-    """Pause should stop countdown."""
-    # Start timer
-    start_btn = page.locator("button:has-text('Start')").first
-    if start_btn.count() > 0:
-        start_btn.click()
-        page.wait_for_timeout(500)
-    
-    # Pause
-    pause_btn = page.locator("button:has-text('Pause'), button:has-text('Stop')").first
-    if pause_btn.count() > 0:
-        pause_btn.click()
-        
-        content1 = page.locator("body").text_content()
-        page.wait_for_timeout(1000)
-        content2 = page.locator("body").text_content()
-        
-        # Time should not change when paused
-        assert content1 == content2, "Timer not pausing"
-
-
-def test_visual_styling(page):
-    """Timer should have proper visual styling."""
-    html = page.content().lower()
-    
-    has_styling = any(term in html for term in [
-        'background', 'color:', 'font-size', '#', 'rgb'
-    ])
-    assert has_styling, "Timer lacks visual styling"
-
-
-def test_no_console_errors(page):
-    """Page should load without JavaScript errors."""
-    errors = []
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    page.reload()
-    page.wait_for_timeout(500)
-    assert len(errors) == 0, f"Page has JS errors: {errors}"
-
-
-def test_pause_stops_timer(page):
     """Pause should stop the timer from counting."""
     # Start the timer
     start_btn = page.locator("button:has-text('Start'), button:has-text('start')").first
     if start_btn.count() > 0:
         start_btn.click()
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(500)
     
     # Pause it
     pause_btn = page.locator("button:has-text('Pause'), button:has-text('pause'), button:has-text('Stop')").first
@@ -146,7 +107,7 @@ def test_pause_stops_timer(page):
         page.wait_for_timeout(100)
         
         content1 = page.locator("body").text_content()
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(800)
         content2 = page.locator("body").text_content()
         
         # Timer should not change when paused (extract time pattern)
@@ -164,17 +125,27 @@ def test_reset_returns_to_25(page):
     start_btn = page.locator("button:has-text('Start')").first
     if start_btn.count() > 0:
         start_btn.click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(1200)
     
     # Reset
     reset_btn = page.locator("button:has-text('Reset'), button:has-text('Restart')").first
     if reset_btn.count() > 0:
         reset_btn.click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(200)
         
         content = page.locator("body").text_content()
         has_25 = "25:00" in content or "25 : 00" in content
         assert has_25, "Reset did not return to 25:00"
+
+
+def test_visual_styling(page):
+    """Timer should have proper visual styling."""
+    html = page.content().lower()
+    
+    has_styling = any(term in html for term in [
+        'background', 'color:', 'font-size', '#', 'rgb'
+    ])
+    assert has_styling, "Timer lacks visual styling"
 
 
 def test_has_break_timer(page):
@@ -185,3 +156,12 @@ def test_has_break_timer(page):
         'break', 'rest', '5:00', '5 min', '15 min', 'short', 'long'
     ])
     assert has_break, "No break timer functionality"
+
+
+def test_no_console_errors(page):
+    """Page should load without JavaScript errors."""
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.reload()
+    page.wait_for_timeout(300)
+    assert len(errors) == 0, f"Page has JS errors: {errors}"

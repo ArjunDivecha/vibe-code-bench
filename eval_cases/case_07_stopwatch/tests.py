@@ -37,7 +37,7 @@ def test_stopwatch_starts_counting(page):
     start_btn = page.locator("button:has-text('Start'), button:has-text('Play')").first
     if start_btn.count() > 0:
         start_btn.click()
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(1100)  # Just over 1 second
         
         final = page.locator("body").text_content()
         # Time should have changed
@@ -72,13 +72,13 @@ def test_reset_clears_time(page):
     start_btn = page.locator("button:has-text('Start')").first
     if start_btn.count() > 0:
         start_btn.click()
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(600)
     
     # Click reset
     reset_btn = page.locator("button:has-text('Reset'), button:has-text('Clear')").first
     if reset_btn.count() > 0:
         reset_btn.click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(200)
         
         content = page.locator("body").text_content()
         # Should show 00:00 or similar
@@ -134,5 +134,5 @@ def test_no_console_errors(page):
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.reload()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(300)
     assert len(errors) == 0, f"Page has JS errors: {errors}"

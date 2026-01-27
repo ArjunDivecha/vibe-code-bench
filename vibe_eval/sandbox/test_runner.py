@@ -291,6 +291,22 @@ class FunctionalTestRunner:
         failed = 0
 
         file_url = f"file://{html_file.absolute()}"
+        
+        # Create a single context for all tests (faster than new browser per test)
+        context = None
+        try:
+            context = browser.new_context()
+            # Set default timeout for all operations
+            context.set_default_timeout(self.timeout * 1000)
+        except Exception as e:
+            return TestRunResult(
+                total_tests=len(test_functions),
+                passed=0,
+                failed=0,
+                skipped=len(test_functions),
+                pass_rate=0.0,
+                errors=[f"Failed to create browser context: {e}"],
+            )
 
         for name, func in test_functions:
             test_start = time.time()
@@ -298,11 +314,13 @@ class FunctionalTestRunner:
             
             try:
                 # Create fresh page for each test
-                page = browser.new_page()
-                page.goto(file_url, wait_until="networkidle", timeout=self.timeout * 1000)
+                page = context.new_page()
+                
+                # Use 'load' instead of 'networkidle' - much faster and more reliable
+                page.goto(file_url, wait_until="load", timeout=10000)
 
-                # Give page time to initialize JS
-                page.wait_for_timeout(500)
+                # Brief wait for JS initialization (reduced from 500ms)
+                page.wait_for_timeout(200)
 
                 # Run the test
                 func(page)
@@ -318,28 +336,25 @@ class FunctionalTestRunner:
 
             except AssertionError as e:
                 duration = (time.time() - test_start) * 1000
-                screenshot = None
-                if page:
-                    try:
-                        screenshot = page.screenshot()
-                    except Exception:
-                        pass
                 results.append(TestResult(
                     name=name,
                     passed=False,
                     duration_ms=duration,
                     error=str(e),
-                    screenshot=screenshot,
                 ))
                 failed += 1
 
             except Exception as e:
                 duration = (time.time() - test_start) * 1000
+                error_msg = str(e)
+                # Truncate long timeout messages
+                if len(error_msg) > 200:
+                    error_msg = error_msg[:200] + "..."
                 results.append(TestResult(
                     name=name,
                     passed=False,
                     duration_ms=duration,
-                    error=f"{type(e).__name__}: {str(e)}",
+                    error=f"{type(e).__name__}: {error_msg}",
                 ))
                 failed += 1
 
@@ -349,6 +364,13 @@ class FunctionalTestRunner:
                         page.close()
                     except Exception:
                         pass
+        
+        # Clean up context
+        if context:
+            try:
+                context.close()
+            except Exception:
+                pass
 
         total_time = time.time() - start_time
         total = len(test_functions)
