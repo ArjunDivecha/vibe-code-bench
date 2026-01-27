@@ -4,23 +4,14 @@
 
 Vibe Code Bench is a framework for testing how well AI models can take casual, human-style prompts ("Build me a Pomodoro timer") and produce **fully working, self-contained applications** without installing any external packages.
 
-## V2 Updates (2026-01-04)
+## V3 Updates (2026-01-27)
 
-- **Multi-Judge Arbitration** - Uses 3 judges by default (Claude Opus 4.5, GPT-4o, Gemini 3 Flash) via OpenRouter to reduce single-model bias
-- **Runtime Execution Validation** - Actually runs generated code with Playwright for HTML, subprocess for Python
-- **Dependency Enforcement** - Blocks pip/npm/etc. commands; validates imports against Python stdlib whitelist
-- **Rebalanced Scoring** - Executes weight increased to 25%, Code Quality to 15%, Elegance removed (too subjective)
-- **Execution Gate** - Non-running code (executes < 3) capped at 30 points maximum
-- **Cost Tracking** - Separate LLM Cost and Judge Cost in results
-- **Performance Optimizations** - File caching, Playwright browser reuse, head-to-head opt-in
-
-```bash
-# V2 CLI options
-python -m vibe_eval run -m gpt-4o -c all                  # Multi-judge (default)
-python -m vibe_eval run -m gpt-4o -c all --single-judge   # Single judge mode
-python -m vibe_eval run -m gpt-4o -c all --no-validation  # Skip execution validation
-python -m vibe_eval run -m gpt-4o -c all --head-to-head   # Enable O(n²) comparisons
-```
+- **Tiered Case Structure** - 30 cases across 3 tiers (Simple, Complex, Agentic)
+- **Functional Test Suites** - Automated Playwright-based tests for objective scoring
+- **Enhanced Agent Loop** - New tools: read_file, run_tests, lint_code, web_search
+- **Detailed Agent Metrics** - Track turns, tool calls, errors, backtracks, test iterations
+- **New Scoring Module** - Auto scorer (tests) + Static analyzer + Judge aggregator
+- **8 Scoring Dimensions** - Added test_pass_rate, edge_cases, efficiency, robustness
 
 ## Why Vibe Code Bench?
 
@@ -29,8 +20,10 @@ Traditional coding benchmarks test narrow skills (syntax, algorithms). **Vibe Co
 - **End-to-end app generation** from natural language
 - **Zero external dependencies** — stdlib only, no `pip install`
 - **Single-file outputs** — HTML apps with embedded CSS/JS
-- **Multi-judge arbitration** — 3 judges via OpenRouter reduce bias (V2)
-- **Runtime validation** — Actually executes generated code (V2)
+- **Multi-judge arbitration** — 3 judges via OpenRouter reduce bias
+- **Runtime validation** — Actually executes generated code
+- **Functional tests** — Objective pass/fail metrics (V3)
+- **Agentic evaluation** — Multi-step tasks with tool use (V3)
 
 ## Quick Start
 
@@ -40,10 +33,13 @@ pip install -e .
 
 # Set API keys
 cp .env.example .env
-# Edit .env with your keys
+# Edit .env with your keys (OPENROUTER_API_KEY required)
 
 # Run evaluation
-python -m vibe_eval run -m claude-sonnet-4.5,llama-3.1-8b -c all
+python -m vibe_eval run -m claude-sonnet-4.5,gpt-4o -c all
+
+# List all 30 cases
+python -m vibe_eval list-cases
 ```
 
 ## Supported Models
@@ -53,14 +49,15 @@ python -m vibe_eval run -m claude-sonnet-4.5,llama-3.1-8b -c all
 | **Anthropic** | `claude-opus-4.5`, `claude-sonnet-4.5`, `claude-sonnet-4`, `claude-haiku-4.5` |
 | **OpenAI** | `gpt-4o`, `gpt-4o-mini`, `o1`, `o3-mini` |
 | **Google** | `gemini-2.0-flash`, `gemini-2.5-pro` |
+| **Moonshot** | `kimi-k2.5` (via OpenRouter) |
 | **OpenRouter** | `llama-3.1-8b`, `llama-3.1-70b`, any OpenRouter model |
 | **Local** | `local` (LM Studio) |
 
-## Evaluation Cases
+## Evaluation Cases (30 Total)
 
-20 carefully designed cases across 4 tiers:
+### Tier 1: Simple Web Apps (Cases 1-15)
+Baseline tasks - all frontier models should score 85-95.
 
-### Tier 1: Modern Web Apps
 | Case | Description |
 |------|-------------|
 | Pomodoro Timer | Work/break timer with notifications |
@@ -79,7 +76,7 @@ python -m vibe_eval run -m claude-sonnet-4.5,llama-3.1-8b -c all
 | Unit Converter | Multi-category conversions |
 | Markdown Editor | Live preview editor |
 
-### Tier 2: Developer Tools
+### Tier 1b: Developer Tools (Cases 16-20)
 | Case | Description |
 |------|-------------|
 | Repo Stats Infographic | Python → HTML stats dashboard |
@@ -88,54 +85,108 @@ python -m vibe_eval run -m claude-sonnet-4.5,llama-3.1-8b -c all
 | Project Control Center | Glassmorphism dashboard UI |
 | Log Analytics Dashboard | Python server with live charts |
 
+### Tier 2: Complex Applications (Cases 21-25) - NEW
+Multi-feature apps requiring proper architecture - designed to discriminate between top models.
+
+| Case | Description | Discriminating Factors |
+|------|-------------|------------------------|
+| Spreadsheet | Basic spreadsheet with formulas | Formula parsing, cell references, A1 notation |
+| Flowchart Editor | Drag-drop diagram editor | SVG manipulation, connection lines, state |
+| Rich Text Editor | WYSIWYG text editor | contentEditable, formatting, undo/redo |
+| File Browser | Virtual file system UI | Tree structure, breadcrumbs, navigation |
+| Data Viz Dashboard | Interactive charts | SVG charts, filtering, responsive layout |
+
+### Tier 3: Agentic Tasks (Cases 31-35) - NEW
+Multi-step tasks requiring planning, tool use, and iteration.
+
+| Case | Description | Agentic Factors |
+|------|-------------|-----------------|
+| API Integration | Weather CLI with real API | urllib, geocoding, error handling |
+| Debug Session | Fix 5 bugs in broken app | Error analysis, targeted fixes |
+| Refactor | Split monolith into modules | Multi-file coordination, imports |
+| Test-Driven Dev | Implement to pass tests | Red-green-refactor loop |
+| Data Pipeline | Build ETL from spec | Multi-step data processing |
+
 **[See CASES.md](CASES.md)** for detailed requirements and scoring rubric.
 
-## Scoring Dimensions (V2)
+## Scoring System (V3)
 
-Each case is scored 0-100 across 5 dimensions:
+### Dimensions (8 total)
 
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| **Executes** | 25% | Does the code actually run? (V2: increased from 15%) |
-| **Features Complete** | 30% | Are all spec features implemented? |
-| **Output Quality** | 20% | Does output match expectations? |
-| **Direction Following** | 10% | Did it build exactly what was asked? |
-| **Code Quality** | 15% | Readable, well-organized code? (V2: increased from 10%) |
+| Dimension | Weight | Source | Description |
+|-----------|--------|--------|-------------|
+| **Executes** | 15% | Validator | Code runs without errors |
+| **Test Pass Rate** | 20% | Auto | Functional tests passing |
+| **Features Complete** | 20% | Judge | All spec features implemented |
+| **Edge Cases** | 10% | Combined | Handles errors, validation |
+| **Code Quality** | 10% | Static+Judge | Readable, well-organized |
+| **Efficiency** | 5% | Metrics | Minimal turns, smart tool use |
+| **Direction Following** | 10% | Judge | Built exactly what was asked |
+| **Robustness** | 10% | Tests | Works across scenarios |
 
-**V2 Changes:** Elegance dimension removed (too subjective). Execution gate: if Executes < 3, total score capped at 30.
+### Execution Gate
+If `executes < 3` OR `test_pass_rate < 2`, total score is capped at 30.
+
+### Scoring Sources
+- **Auto Scorer**: Runs functional tests, calculates pass rate
+- **Static Analyzer**: Code complexity, docstrings, error handling
+- **Multi-Judge**: LLM evaluation (Claude Opus, GPT-4o, Gemini Flash)
+- **Aggregator**: Combines all sources with dimension weights
 
 ## CLI Commands
 
 ```bash
-# List available cases
+# List all 30 cases
 python -m vibe_eval list-cases
 
 # Run specific cases
-python -m vibe_eval run -m claude-sonnet-4.5 -c case_01_pomodoro,case_02_quiz
+python -m vibe_eval run -m claude-sonnet-4.5 -c case_01_pomodoro,case_21_spreadsheet
 
 # Run all cases with custom timeout
-python -m vibe_eval run -m llama-3.1-8b -c all -t 15
+python -m vibe_eval run -m claude-opus-4.5,gpt-4o -c all -t 15
 
-# View results dashboard
+# V3 options
+python -m vibe_eval run -m gpt-4o -c all                  # Multi-judge + tests (default)
+python -m vibe_eval run -m gpt-4o -c all --single-judge   # Single judge mode
+python -m vibe_eval run -m gpt-4o -c all --no-validation  # Skip execution validation
+
+# View results
 python -m vibe_eval dashboard results/TIMESTAMP_results.json
-
-# Show leaderboard from previous run
 python -m vibe_eval show results/TIMESTAMP_results.json
 ```
 
-## Generating Reports
+## Agent Tools (V3)
 
-We include scripts to merge and average results across multiple runs:
+The agent loop now supports expanded tools:
 
-```bash
-# Merge split result files from a parallel run
-python merge_run.py runs/run1 -o runs/run1_full.json
+| Tool | Description |
+|------|-------------|
+| `write_file` | Create or edit files |
+| `read_file` | Read existing files |
+| `list_files` | List directory contents |
+| `run_command` | Execute shell commands |
+| `run_tests` | Execute test suite |
+| `lint_code` | Check code for errors |
+| `web_search` | Search documentation (simulated) |
+| `done` | Signal completion |
 
-# Average multiple runs
-python average_results.py runs/run1_full.json runs/run2_full.json -o final.json
+## Agent Metrics (V3)
 
-# Generate Markdown report
-python generate_report.py final.json -o REPORT.md
+Detailed tracking for agentic evaluation:
+
+```python
+@dataclass
+class AgentMetrics:
+    turns: int
+    tool_calls: list[dict]
+    errors_encountered: int
+    errors_recovered: int
+    backtrack_count: int      # Revisions to previous work
+    planning_turns: int       # Turns spent planning
+    test_iterations: int      # Times tests were run
+    files_written: int
+    files_read: int
+    commands_run: int
 ```
 
 ## Configuration
@@ -143,17 +194,48 @@ python generate_report.py final.json -o REPORT.md
 ### Environment Variables
 
 ```bash
-# V2: All judges use OpenRouter - only OPENROUTER_API_KEY required for judging
-OPENROUTER_API_KEY=sk-or-...       # REQUIRED for judges + OpenRouter models
+# REQUIRED: For judges + OpenRouter models
+OPENROUTER_API_KEY=sk-or-...
 
-# Optional: For direct API access to models (bypasses OpenRouter)
-ANTHROPIC_API_KEY=sk-ant-...       # For Claude models (direct)
-OPENAI_API_KEY=sk-...              # For GPT models (direct)
-GOOGLE_API_KEY=...                 # For Gemini models (direct)
-LMSTUDIO_BASE_URL=http://localhost:1234/v1  # For local models
+# Optional: Direct API access (bypasses OpenRouter)
+ANTHROPIC_API_KEY=sk-ant-...       # For Claude models
+OPENAI_API_KEY=sk-...              # For GPT models
+GOOGLE_API_KEY=...                 # For Gemini models
+LMSTUDIO_BASE_URL=http://localhost:1234/v1  # Local models
 ```
 
-**Note:** V2 routes all judge calls through OpenRouter for unified billing. Set `OPENROUTER_API_KEY` to use multi-judge arbitration.
+## Project Structure (V3)
+
+```
+vibe_eval/
+├── agent_loop.py          # Enhanced with tools + metrics
+├── tools/                  # Tool implementations
+│   ├── file_tools.py      # read_file, list_files
+│   ├── test_tools.py      # run_tests, lint_code
+│   └── search_tools.py    # web_search
+├── scoring/                # V3 scoring system
+│   ├── auto_scorer.py     # Functional test scoring
+│   ├── static_scorer.py   # Code quality metrics
+│   └── aggregator.py      # Combines all scores
+├── sandbox/
+│   ├── executor.py        # Code execution
+│   ├── validator.py       # Execution validation
+│   └── test_runner.py     # Functional test runner
+├── judge/
+│   ├── absolute.py        # Single judge
+│   └── multi_judge.py     # Multi-judge arbitration
+├── models/                 # Model adapters
+├── runner.py              # Main orchestration
+└── cli.py                 # CLI interface
+
+eval_cases/
+├── case_01_pomodoro/
+│   ├── spec.md            # Task specification
+│   └── tests.py           # Functional tests
+├── case_21_spreadsheet/   # Tier 2 complex
+├── case_31_api_integration/  # Tier 3 agentic
+└── ...
+```
 
 ## Adding Custom Cases
 
@@ -161,45 +243,47 @@ Create a new folder in `eval_cases/`:
 
 ```
 eval_cases/
-└── case_21_myapp/
-    └── spec.md          # Natural language task description
+└── case_XX_myapp/
+    ├── spec.md          # Natural language task description
+    └── tests.py         # Functional tests (optional but recommended)
 ```
 
-The `spec.md` should be a casual, human-style prompt like:
+Example `tests.py`:
 
-```markdown
-# Build me a Recipe Book
+```python
+def test_has_start_button(page):
+    """Should have a visible start button."""
+    btn = page.locator("button:has-text('Start')")
+    assert btn.count() > 0, "No start button found"
 
-I want a simple recipe organizer:
-- Add recipes with ingredients and steps
-- Search by name or ingredient
-- Star my favorites
-- Dark mode toggle
-
-Single HTML file, save to localStorage.
+def test_timer_counts_down(page):
+    """Clicking start should begin countdown."""
+    page.locator("button:has-text('Start')").click()
+    page.wait_for_timeout(1500)
+    content = page.locator("body").text_content()
+    assert "24:5" in content, "Timer not counting down"
 ```
 
-## Benchmark Results (V1)
-Full report: **[BENCHMARK_REPORT.md](BENCHMARK_REPORT.md)**
+## Generating Reports
 
-| Rank | Model | Score (0-100) |
-|------|-------|-------------------|
-| 1 | `gpt-5.1-codex` | **87.4** |
-| 2 | `claude-opus-4.5`* | **85.8** |
-| 3 | `glm-4.7` | **85.3** |
-| 4 | `claude-sonnet-4.5` | 84.4 |
-| 5 | `gemini-3-flash` | 81.9 |
-| ... | | |
-| 12 | `llama-3.1-8b` | 25.3 |
+```bash
+# Merge split result files
+python merge_run.py runs/run1 -o runs/run1_full.json
 
-*(Opus score impacted by content filtering on legal case)*
+# Average multiple runs
+python average_results.py runs/run1.json runs/run2.json -o final.json
+
+# Generate Markdown report
+python generate_report.py final.json -o REPORT.md
+```
 
 ## Contributing
 
 Contributions welcome! Areas of interest:
-- New evaluation cases
+- New evaluation cases with tests
 - Additional model adapters
-- Improved judging criteria
+- Improved functional tests
+- Agentic task designs
 - UI for viewing generated apps
 
 ## License
