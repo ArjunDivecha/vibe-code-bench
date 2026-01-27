@@ -1,6 +1,12 @@
 # Evaluation Cases
 
-This document describes all 20 evaluation cases in the Vibe Eval benchmark. Each case tests an LLM's ability to build a complete, working application from a natural language prompt.
+This document describes all evaluation cases in the Vibe Code Bench benchmark. Each case tests an LLM's ability to build a complete, working application from a natural language prompt.
+
+**V3 Updates (2026-01-27):**
+- Added 5 Tier 2 complex cases (21-25)
+- Added 5 Tier 3 agentic cases (31-35)
+- Functional test suites for automated scoring
+- Enhanced agent tools and metrics
 
 **Constraints for all cases:**
 - No package installations (`pip`, `npm`, etc.)
@@ -9,7 +15,9 @@ This document describes all 20 evaluation cases in the Vibe Eval benchmark. Each
 
 ---
 
-## Tier 1: Modern Web Applications (Cases 1-15)
+## Tier 1: Simple Web Applications (Cases 1-15)
+
+Expected score: 85-95 for frontier models. These establish a baseline.
 
 ### Case 01: Pomodoro Timer
 
@@ -358,22 +366,180 @@ This document describes all 20 evaluation cases in the Vibe Eval benchmark. Each
 
 ---
 
-## Scoring Rubric (V2)
+## Tier 2: Complex Applications (Cases 21-25) - NEW in V3
+
+These cases require proper architecture and are designed to discriminate between top-tier models.
+
+### Case 21: Spreadsheet
+
+**Goal:** Build a basic spreadsheet with formula support.
+
+**Requirements:**
+- 10+ columns (A-J), 20+ rows grid
+- Cell selection and editing
+- Formula support: `=5+3`, `=A1+B1`, `=SUM(A1:A5)`
+- Formula bar showing actual formula
+- Cell references that recalculate
+
+**Output:** Single HTML file
+
+---
+
+### Case 22: Flowchart Editor
+
+**Goal:** Build a visual flowchart/diagram editor.
+
+**Requirements:**
+- Canvas workspace with shape palette
+- Shapes: Rectangle, Diamond, Oval, Parallelogram
+- Drag-drop shapes onto canvas
+- Connect shapes with arrow lines
+- Double-click to edit text labels
+
+**Output:** Single HTML file (SVG or Canvas)
+
+---
+
+### Case 23: Rich Text Editor
+
+**Goal:** Build a WYSIWYG text editor.
+
+**Requirements:**
+- Formatting: Bold, Italic, Underline, Headings
+- Lists (bullet and numbered)
+- Undo/Redo support
+- Keyboard shortcuts (Ctrl+B, Ctrl+I)
+
+**Output:** Single HTML file (contenteditable)
+
+---
+
+### Case 24: File Browser
+
+**Goal:** Build a virtual file browser interface.
+
+**Requirements:**
+- Folder tree sidebar
+- File listing with icons
+- Breadcrumb navigation
+- Mock file system with nested folders
+
+**Output:** Single HTML file
+
+---
+
+### Case 25: Data Visualization Dashboard
+
+**Goal:** Build an interactive chart dashboard.
+
+**Requirements:**
+- Bar chart, Line chart, Pie chart (SVG, no libraries)
+- Hover tooltips
+- Legend with click-to-filter
+- Date range or category filters
+
+**Output:** Single HTML file
+
+---
+
+## Tier 3: Agentic Tasks (Cases 31-35) - NEW in V3
+
+These cases test multi-step workflows, tool use, error recovery, and iteration.
+
+### Case 31: API Integration
+
+**Goal:** Build a CLI tool that integrates with the Open-Meteo weather API.
+
+**Requirements:**
+- Fetch weather data using urllib (no requests)
+- Geocoding to convert city names
+- CLI with `current` and `forecast` commands
+- Proper error handling
+
+**Output:** Python script (stdlib only)
+
+---
+
+### Case 32: Debug Session
+
+**Goal:** Fix a broken Todo app with 5 bugs.
+
+**Requirements:**
+- Identify and fix all bugs
+- Document fixes in FIXES.md
+- All functionality working after fixes
+
+**Output:** Fixed HTML file + FIXES.md
+
+---
+
+### Case 33: Refactor
+
+**Goal:** Split a monolithic Python script into a proper package.
+
+**Requirements:**
+- Create `inventory/` package with modules
+- Separate: models, storage, manager, reports, cli
+- No functionality changes
+- Clean imports, no circular dependencies
+
+**Output:** Python package structure
+
+---
+
+### Case 34: Test-Driven Development
+
+**Goal:** Implement code to make all provided tests pass.
+
+**Requirements:**
+- Create `calculator.py` from `test_calculator.py`
+- All 10 tests must pass
+- Method chaining, error handling
+
+**Output:** Python file passing tests
+
+---
+
+### Case 35: Data Pipeline
+
+**Goal:** Build a multi-step data processing pipeline.
+
+**Requirements:**
+- Read CSV, validate, transform, aggregate
+- Output: valid_employees.json, invalid_records.json, department_summary.json
+- Proper error validation
+
+**Output:** Python script + output files
+
+---
+
+## Scoring Rubric (V3)
+
+### V2 Scoring (Default)
 
 Each case is scored 0-100 across 5 dimensions:
 
 | Dimension | Weight | Description |
 |-----------|--------|-------------|
-| Executes | 25% | Does the code run without errors? (Increased in V2) |
+| Executes | 25% | Does the code run without errors? |
 | Features Complete | 30% | Are all specified features implemented? |
 | Output Quality | 20% | Does output match expectations? |
 | Direction Following | 10% | Did it build exactly what was asked? |
-| Code Quality | 15% | Is code readable and well-organized? (Increased in V2) |
+| Code Quality | 15% | Is code readable and well-organized? |
 
-**V2 Changes:**
-- Removed "Elegance" dimension (too subjective)
-- Increased "Executes" weight (25% from 15%) - broken code should fail harder
-- Increased "Code Quality" weight (15% from 10%) - production code matters
-- Added execution gate: if Executes < 3, total score capped at 30
+### V3 Scoring (With Functional Tests)
+
+| Dimension | Weight | Source | Description |
+|-----------|--------|--------|-------------|
+| Executes | 15% | Auto | Code runs without errors |
+| Test Pass Rate | 20% | Auto | Functional tests passing |
+| Features Complete | 20% | Judge | All spec features implemented |
+| Edge Cases | 10% | Combined | Handles errors, validation |
+| Code Quality | 10% | Static+Judge | Readable, well-organized |
+| Efficiency | 5% | Metrics | Minimal turns, smart tool use |
+| Direction Following | 10% | Judge | Built what was asked |
+| Robustness | 10% | Tests | Works across scenarios |
+
+**Execution gate:** If `executes < 3` OR `test_pass_rate < 2`, total score capped at 30.
 
 **Judge:** Multi-judge arbitration (Claude Opus 4.5, GPT-4o, Gemini 3 Flash) by default
