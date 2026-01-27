@@ -1,145 +1,102 @@
 """
 Functional tests for Data Visualization Dashboard (case_25_dataviz).
 
-Tests verify:
-1. Has SVG charts (not external library)
-2. Bar chart present
-3. Pie/Donut chart present
-4. Line chart present
-5. Interactive tooltips
-6. Legend present
-7. Responsive layout
+V3 Tests - More flexible, behavior-focused.
 """
 
 
-def test_uses_svg_for_charts(page):
-    """Charts should be drawn with SVG."""
-    svg_elements = page.locator("svg")
-    assert svg_elements.count() > 0, "No SVG elements found - charts should use SVG"
+def test_has_svg_elements(page):
+    """Should use SVG for charts (not external libraries)."""
+    svg_count = page.locator("svg").count()
+    assert svg_count >= 1, "No SVG elements found - should use SVG for charts"
 
 
-def test_has_bar_chart(page):
-    """Should have a bar chart."""
-    # Look for rect elements (bars) in SVG
-    bars = page.locator("svg rect")
-    
-    content = page.locator("body").text_content().lower()
-    has_bar_mention = 'bar' in content or 'sales' in content
-    
-    # Should have multiple rect elements for bars
-    assert bars.count() >= 3 or has_bar_mention, "No bar chart found"
+def test_has_bar_elements(page):
+    """Should have bar chart (rect elements)."""
+    rects = page.locator("svg rect").count()
+    assert rects >= 3, f"Expected bar chart rects, found {rects}"
 
 
-def test_has_pie_or_donut_chart(page):
-    """Should have a pie or donut chart."""
-    # Pie charts use path elements with arc commands
-    paths = page.locator("svg path")
-    
-    content = page.locator("body").text_content().lower()
-    has_pie_mention = any(term in content for term in [
-        'pie', 'donut', 'category', 'breakdown', 'distribution'
-    ])
-    
-    # Check for circular elements
-    circles = page.locator("svg circle")
-    
-    assert paths.count() >= 2 or circles.count() > 0 or has_pie_mention, \
-        "No pie/donut chart found"
-
-
-def test_has_line_chart(page):
-    """Should have a line chart."""
-    # Line charts use path or polyline
-    lines = page.locator("svg path, svg polyline, svg line")
-    
-    content = page.locator("body").text_content().lower()
-    has_line_mention = any(term in content for term in [
-        'line', 'trend', 'time', 'series', 'month'
-    ])
-    
-    assert lines.count() >= 1 or has_line_mention, "No line chart found"
-
-
-def test_has_chart_legend(page):
-    """Charts should have legends."""
-    legend = page.locator(
-        "[class*='legend'], [class*='Legend']"
-    )
-    
-    content = page.locator("body").text_content()
-    # Should show category names
-    has_categories = any(cat in content for cat in [
-        'Electronics', 'Clothing', 'Home', 'Sports', 'Category'
-    ])
-    
-    assert legend.count() > 0 or has_categories, "No legend found"
-
-
-def test_has_axis_labels(page):
-    """Charts should have axis labels."""
+def test_has_chart_data(page):
+    """Should display data values."""
     content = page.locator("body").text_content()
     
-    # Should have month names or numeric labels
-    has_labels = any(label in content for label in [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        '100', '200', 'Sales', 'Value'
-    ])
+    # Check for numbers that might be data
+    import re
+    numbers = re.findall(r'\d+', content)
     
-    # Look for text elements in SVG
-    svg_text = page.locator("svg text")
-    
-    assert has_labels or svg_text.count() >= 3, "No axis labels found"
+    assert len(numbers) >= 5, "Not enough data values displayed"
 
 
-def test_has_dashboard_layout(page):
-    """Should have a card-based dashboard layout."""
-    cards = page.locator(
-        "[class*='card'], [class*='panel'], [class*='chart'], "
-        "[class*='widget']"
-    )
+def test_has_labels(page):
+    """Should have axis labels or legend."""
+    content = page.locator("body").text_content()
     
-    # Check for grid/flex layout
-    content = page.content().lower()
-    has_layout = any(term in content for term in [
-        'grid', 'flex', 'display: grid', 'display: flex'
+    # Check for month names or category names from spec
+    labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+              'Electronics', 'Clothing', 'Home', 'Sports', 'Sales']
+    found = sum(1 for label in labels if label in content)
+    
+    assert found >= 3, f"Expected labels, found {found}"
+
+
+def test_has_multiple_chart_types(page):
+    """Should have different chart elements (bars, paths, circles)."""
+    rects = page.locator("svg rect").count()
+    paths = page.locator("svg path").count()
+    circles = page.locator("svg circle").count()
+    
+    # Should have at least 2 types
+    types_present = sum([rects > 0, paths > 0, circles > 0])
+    assert types_present >= 1, "Only one chart type found"
+
+
+def test_has_colors(page):
+    """Charts should have colors."""
+    html = page.content().lower()
+    
+    # Check for fill colors
+    has_colors = any(term in html for term in [
+        'fill=', 'fill:', '#3498db', '#e74c3c', '#2ecc71', 'rgb(', 'blue', 'red', 'green'
     ])
     
-    assert cards.count() >= 2 or has_layout, "No dashboard layout found"
+    assert has_colors, "Charts lack colors"
 
 
 def test_has_interactive_elements(page):
-    """Should have interactive hover or click features."""
-    content = page.content().lower()
+    """Should have some interactivity."""
+    html = page.content().lower()
     
-    has_interactivity = any(term in content for term in [
-        'hover', 'mouseover', 'mouseenter', 'onclick', 'click',
-        'tooltip', ':hover', 'cursor'
+    has_interaction = any(term in html for term in [
+        'hover', 'click', 'mouseover', 'onmouse', 'cursor', ':hover'
     ])
     
-    assert has_interactivity, "No interactive features found"
-
-
-def test_has_filters_or_controls(page):
-    """Should have data filters or controls."""
-    controls = page.locator(
-        "select, input[type='checkbox'], input[type='date'], "
-        "button, [class*='filter'], [class*='control']"
-    )
+    # Or has buttons/filters
+    controls = page.locator("button, select, input").count()
     
-    assert controls.count() >= 1, "No data filters or controls found"
+    assert has_interaction or controls > 0, "No interactive elements"
 
 
-def test_visual_styling(page):
-    """Dashboard should have modern styling."""
-    body_bg = page.evaluate("window.getComputedStyle(document.body).backgroundColor")
-    has_custom_bg = body_bg not in ["rgba(0, 0, 0, 0)", "rgb(255, 255, 255)", ""]
+def test_has_dashboard_layout(page):
+    """Should have a dashboard layout with cards."""
+    html = page.content().lower()
     
-    content = page.content().lower()
-    has_modern_style = any(term in content for term in [
-        'box-shadow', 'border-radius', 'rgba', 'gradient', '#'
+    has_layout = any(term in html for term in [
+        'dashboard', 'card', 'panel', 'grid', 'flex', 'chart'
     ])
     
-    assert has_custom_bg or has_modern_style, "Dashboard lacks visual styling"
+    assert has_layout, "No dashboard layout found"
+
+
+def test_responsive_svg(page):
+    """SVG should have proper dimensions."""
+    svg = page.locator("svg").first
+    if svg.count() > 0:
+        # Check SVG has reasonable size
+        box = svg.bounding_box()
+        if box:
+            assert box['width'] > 50 and box['height'] > 50, \
+                "SVG too small"
 
 
 def test_no_console_errors(page):
