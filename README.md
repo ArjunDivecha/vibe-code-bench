@@ -4,6 +4,26 @@
 
 Vibe Code Bench tests whether AI coding assistants can take casual requests like "Build me a Pomodoro timer" and produce fully functional, self-contained applications that actually work.
 
+## Latest Results
+
+**Evaluation Date:** January 28, 2026  
+**Models Tested:** 10 models across 30 cases
+
+| Rank | Model | Average Score | Avg Time (s) | Avg Tokens | Total Cost |
+|------|-------|---------------|--------------|------------|------------|
+| 1 | `gpt-5.2` | **81.8** | 103.9 | 8,769 | $3.43 |
+| 2 | `claude-opus-4.5` | **81.1** | 75.5 | 7,996 | $5.55 |
+| 3 | `claude-sonnet-4.5` | **78.1** | 68.5 | 7,040 | $2.89 |
+| 4 | `gemini-3-flash-preview` | **77.4** | 19.9 | 4,194 | $0.32 |
+| 5 | `minimax-m2.1` | **77.4** | 124.1 | 35,309 | $0.51 |
+| 6 | `glm-4.7` | **77.0** | 145.0 | 7,687 | $0.24 |
+| 7 | `kimi-k2.5` | **76.6** | 159.3 | 8,764 | $0.59 |
+| 8 | `qwen3-coder` | **72.6** | 58.4 | 6,320 | $0.16 |
+| 9 | `gpt-5.2-codex` | **71.5** | 44.8 | 3,918 | $1.00 |
+| 10 | `trinity-large-preview:free` | **60.8** | 71.1 | 9,632 | $0.00 |
+
+*See [BENCHMARK_REPORT_10MODELS.md](BENCHMARK_REPORT_10MODELS.md) for detailed case-by-case breakdown.*
+
 ## What It Does
 
 When you run an evaluation, Vibe Code Bench:
