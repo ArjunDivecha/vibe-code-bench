@@ -11,17 +11,17 @@ Vibe Code Bench tests whether AI coding assistants can take casual requests like
 
 | Rank | Model | Average Score | Avg Time (s) | Avg Tokens | Total Cost |
 |------|-------|---------------|--------------|------------|------------|
-| 1 | `gpt-5.2` | **81.8** | 103.9 | 8,769 | $3.43 |
-| 2 | `claude-opus-4.5` | **81.1** | 75.5 | 7,996 | $5.55 |
+| 1 | `claude-opus-4.5` | **83.9** | 75.5 | 7,996 | $5.55 |
+| 2 | `gpt-5.2` | **81.8** | 103.9 | 8,769 | $3.43 |
 | 3 | `gemini-3-pro-preview` | **79.8** | 80.9 | 9,403 | $3.96 |
-| 4 | `claude-sonnet-4.5` | **78.1** | 68.5 | 7,040 | $2.89 |
-| 5 | `gpt-5.2-codex` | **77.5** | 45.0 | 3,973 | $1.01 |
-| 6 | `gemini-3-flash-preview` | **77.4** | 19.9 | 4,194 | $0.32 |
-| 7 | `minimax-m2.1` | **77.4** | 124.1 | 35,309 | $0.51 |
-| 8 | `glm-4.7` | **77.0** | 145.0 | 7,687 | $0.24 |
-| 9 | `kimi-k2.5` | **76.6** | 159.3 | 8,764 | $0.59 |
+| 4 | `glm-4.7` | **79.7** | 145.0 | 7,687 | $0.24 |
+| 5 | `kimi-k2.5` | **79.2** | 159.3 | 8,764 | $0.59 |
+| 6 | `claude-sonnet-4.5` | **78.1** | 68.5 | 7,040 | $2.89 |
+| 7 | `gpt-5.2-codex` | **77.5** | 45.0 | 3,973 | $1.01 |
+| 8 | `gemini-3-flash-preview` | **77.4** | 19.9 | 4,194 | $0.32 |
+| 9 | `minimax-m2.1` | **77.4** | 124.1 | 35,309 | $0.51 |
 | 10 | `qwen3-coder` | **72.6** | 58.4 | 6,320 | $0.16 |
-| 11 | `trinity-large-preview:free` | **60.8** | 71.1 | 9,632 | $0.00 |
+| 11 | `trinity-large-preview:free` | **62.8** | 71.1 | 9,632 | $0.00 |
 
 *See [BENCHMARK_REPORT_11MODELS.md](BENCHMARK_REPORT_11MODELS.md) for detailed case-by-case breakdown.*
 
