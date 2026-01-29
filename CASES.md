@@ -8,6 +8,24 @@ This document describes all evaluation cases in the Vibe Code Bench benchmark. E
 - Functional test suites for automated scoring
 - Enhanced agent tools and metrics
 
+**Fast Suite (High-Signal Subset):**
+This optional mode runs a smaller set of cases and a reduced test allowlist
+to speed up evaluation while preserving differentiation.
+
+Fast suite cases:
+- case_03_calculator
+- case_04_notes
+- case_07_stopwatch
+- case_08_typing
+- case_11_palette
+- case_15_markdown
+- case_21_spreadsheet
+- case_22_flowchart
+- case_23_richtext
+- case_25_dataviz
+- case_31_api_integration
+- case_33_refactor
+
 **Constraints for all cases:**
 - No package installations (`pip`, `npm`, etc.)
 - Python stdlib only, or vanilla HTML/CSS/JS

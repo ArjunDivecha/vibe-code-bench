@@ -132,6 +132,7 @@ class EvalRun:
     cases: list[str]
     case_results: dict[str, CaseResult]  # case_name -> result
     timeout_minutes: int
+    suite_mode: str = "full"
     
     def compute_leaderboard(self) -> Leaderboard:
         """Compute win counts and rankings."""

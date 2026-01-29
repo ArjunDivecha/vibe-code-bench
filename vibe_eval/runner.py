@@ -130,6 +130,7 @@ class EvalRunner:
         run_comparisons: bool = False,
         run_functional_tests: bool = True,  # V3: Enable functional tests
         use_v3_scoring: bool = False,  # V3: Use new scoring system
+        suite_mode: str = "full",
     ):
         """
         Initialize eval runner.
@@ -156,7 +157,8 @@ class EvalRunner:
         self.validate_execution = validate_execution
         self.run_comparisons = run_comparisons
         self.run_functional_tests = run_functional_tests
-        self.use_v3_scoring = use_v3_scoring
+        self.suite_mode = suite_mode
+        self.use_v3_scoring = use_v3_scoring or self.suite_mode == "fast"
 
         # Initialize judges
         self.multi_judge_enabled = multi_judge
@@ -171,13 +173,25 @@ class EvalRunner:
         self.comparative_judge = ComparativeJudge(judge_model=judge_model) if run_comparisons else None
 
         # Execution validator
-        self.validator = ExecutionValidator(timeout=30) if validate_execution else None
+        validation_timeout = 15 if self.suite_mode == "fast" else 30
+        self.validator = (
+            ExecutionValidator(timeout=validation_timeout, fast_fail=self.suite_mode == "fast")
+            if validate_execution
+            else None
+        )
 
         # V3: Functional test runner
         self.test_runner = None
         if run_functional_tests:
             from .sandbox.test_runner import FunctionalTestRunner
-            self.test_runner = FunctionalTestRunner(timeout=30)
+            test_timeout = 15 if self.suite_mode == "fast" else 30
+            self.test_runner = FunctionalTestRunner(timeout=test_timeout)
+
+        # Fast suite allowlist lookup (if enabled)
+        self._fast_suite_allowlist = None
+        if self.suite_mode == "fast":
+            from .fast_suite import get_fast_suite_allowlist
+            self._fast_suite_allowlist = get_fast_suite_allowlist
 
         self.console = Console()
     
@@ -195,7 +209,8 @@ class EvalRunner:
         self.console.print(f"Models: {', '.join(self.models)}")
         self.console.print(f"Cases: {len(self.cases)}")
         self.console.print(f"Timeout: {self.timeout_minutes} min/case/model")
-        self.console.print(f"Functional tests: {'enabled' if self.run_functional_tests else 'disabled'}\n")
+        self.console.print(f"Functional tests: {'enabled' if self.run_functional_tests else 'disabled'}")
+        self.console.print(f"Suite: {self.suite_mode}\n")
         
         for case in self.cases:
             tier_label = f"[T{case.tier}]" if case.tier > 1 else ""
@@ -263,7 +278,14 @@ class EvalRunner:
                 
                 for model_id, workspace in workspaces.items():
                     try:
-                        test_result = self.test_runner.run_tests(workspace, test_file)
+                        allowlist = None
+                        if self._fast_suite_allowlist:
+                            allowlist = self._fast_suite_allowlist(case.name)
+                        test_result = self.test_runner.run_tests(
+                            workspace,
+                            test_file,
+                            allowed_tests=allowlist
+                        )
                         test_results[model_id] = test_result
                     except Exception as e:
                         self.console.print(f"\n    [yellow]{model_id}: test error - {e}[/yellow]", end="")
@@ -331,7 +353,8 @@ class EvalRunner:
             models=self.models,
             cases=[c.name for c in self.cases],
             case_results=case_results,
-            timeout_minutes=self.timeout_minutes
+            timeout_minutes=self.timeout_minutes,
+            suite_mode=self.suite_mode,
         )
 
         # Save results
@@ -462,6 +485,10 @@ class EvalRunner:
             agent_metrics_dict = None
             if model_id in agent_results and agent_results[model_id].metrics:
                 agent_metrics_dict = agent_results[model_id].metrics.to_dict()
+            if model_id in metrics:
+                if agent_metrics_dict is None:
+                    agent_metrics_dict = {}
+                agent_metrics_dict["time_seconds"] = metrics[model_id].time_seconds
             
             # Aggregate
             final_score = aggregator.aggregate(
@@ -519,6 +546,7 @@ class EvalRunner:
             "models": run.models,
             "cases": run.cases,
             "timeout_minutes": run.timeout_minutes,
+            "suite": run.suite_mode,
             "case_results": {
                 name: {
                     "absolute_scores": {
@@ -573,6 +601,10 @@ class EvalRunner:
             },
             "absolute_averages": run.get_absolute_averages()
         }
+
+        if run.suite_mode == "fast":
+            from .fast_suite import FAST_SUITE_TESTS
+            data["fast_suite_tests"] = FAST_SUITE_TESTS
         
         filepath.write_text(json.dumps(data, indent=2))
         self.console.print(f"\n[dim]Results saved to {filepath}[/dim]")

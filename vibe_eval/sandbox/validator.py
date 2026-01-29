@@ -130,14 +130,16 @@ class ExecutionValidator:
     _playwright = None
     _browser = None
 
-    def __init__(self, timeout: int = 30):
+    def __init__(self, timeout: int = 30, fast_fail: bool = False):
         """
         Initialize validator.
 
         Args:
             timeout: Maximum seconds to run each validation
+            fast_fail: If True, return early on obvious failures to save time
         """
         self.timeout = timeout
+        self.fast_fail = fast_fail
 
     @classmethod
     def _get_browser(cls):
@@ -273,6 +275,15 @@ class ExecutionValidator:
         illegal = self.extract_illegal_imports(filepath)
         if illegal:
             errors.append(f"Illegal imports detected: {', '.join(illegal)}")
+            if self.fast_fail:
+                return ExecutionReport(
+                    executed=False,
+                    exit_code=1,
+                    errors=errors,
+                    execution_time=0.0,
+                    illegal_imports=illegal,
+                    file_type="python",
+                )
 
         # Step 3: Try to run the script
         start_time = time.time()
@@ -372,10 +383,20 @@ class ExecutionValidator:
 
             # Load the file
             file_url = f"file://{filepath.absolute()}"
-            page.goto(file_url, wait_until="networkidle", timeout=self.timeout * 1000)
+            wait_until = "domcontentloaded" if self.fast_fail else "networkidle"
+            page.goto(file_url, wait_until=wait_until, timeout=self.timeout * 1000)
 
-            # Take screenshot
-            screenshot = page.screenshot()
+            # Optional quick empty-page check
+            if self.fast_fail:
+                body_text_len = page.evaluate(
+                    "document.body ? document.body.innerText.trim().length : 0"
+                )
+                if body_text_len == 0:
+                    errors.append("Blank page: no visible text content")
+
+            # Take screenshot (skip for fast-fail to save time)
+            if not self.fast_fail:
+                screenshot = page.screenshot()
 
             # V2: Close page but NOT browser (reuse browser)
             page.close()
@@ -384,6 +405,16 @@ class ExecutionValidator:
 
             if console_errors:
                 errors.extend(console_errors)
+
+            if self.fast_fail and errors:
+                return ExecutionReport(
+                    executed=False,
+                    exit_code=1,
+                    execution_time=elapsed,
+                    errors=errors,
+                    screenshot=screenshot,
+                    file_type="html",
+                )
 
             return ExecutionReport(
                 executed=(len(errors) == 0),

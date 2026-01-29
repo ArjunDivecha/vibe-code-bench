@@ -34,14 +34,15 @@ class FinalScore:
     Final aggregated score combining all scoring sources.
     
     V3 Scoring Dimensions:
-    - executes (15%): Code runs without errors
-    - test_pass_rate (20%): Functional tests passing
-    - features_complete (20%): All spec features implemented
+    - executes (20%): Code runs without errors
+    - test_pass_rate (35%): Functional tests passing
+    - features_complete (15%): All spec features implemented
     - edge_cases (10%): Handles errors, validation
-    - code_quality (10%): Readable, well-organized
-    - efficiency (5%): Minimal turns, smart tool use
-    - direction_following (10%): Built what was asked
-    - robustness (10%): Works across scenarios
+    - code_quality (4%): Readable, well-organized
+    - efficiency (4%): Minimal turns, smart tool use
+    - direction_following (4%): Built what was asked
+    - robustness (4%): Works across scenarios
+    - speed_efficiency (4%): Faster runtime gets higher score
     """
     
     # Individual dimension results
@@ -57,14 +58,15 @@ class FinalScore:
     
     # V3 Weights (must sum to 1.0)
     WEIGHTS = {
-        "executes": 0.15,
-        "test_pass_rate": 0.20,
-        "features_complete": 0.20,
+        "executes": 0.20,
+        "test_pass_rate": 0.35,
+        "features_complete": 0.15,
         "edge_cases": 0.10,
-        "code_quality": 0.10,
-        "efficiency": 0.05,
-        "direction_following": 0.10,
-        "robustness": 0.10,
+        "code_quality": 0.04,
+        "efficiency": 0.04,
+        "direction_following": 0.04,
+        "robustness": 0.04,
+        "speed_efficiency": 0.04,
     }
     
     # Execution gate thresholds
@@ -242,7 +244,7 @@ class ScoreAggregator:
             reason=f"Based on {agent_metrics.get('turns', '?')} turns" if agent_metrics else "No metrics"
         )
         
-        # 7. Direction following (10%) - from judge
+        # 7. Direction following (4%) - from judge
         direction_score = 5  # Default
         if judge_score:
             direction_score = judge_score.direction_following.score
@@ -254,7 +256,7 @@ class ScoreAggregator:
             reason=judge_score.direction_following.reason if judge_score else "No judge score"
         )
         
-        # 8. Robustness (10%) - from tests (edge cases, error handling)
+        # 8. Robustness (4%) - from tests (edge cases, error handling)
         robustness_score = 5  # Default
         if auto_score:
             # Higher test pass rate = more robust
@@ -270,6 +272,27 @@ class ScoreAggregator:
             reason="Based on test coverage and error handling"
         )
         
+        # 9. Speed efficiency (4%) - based on runtime
+        speed_score = 7  # Default
+        if agent_metrics and "time_seconds" in agent_metrics:
+            runtime = agent_metrics["time_seconds"]
+            if runtime <= 30:
+                speed_score = 10
+            elif runtime <= 60:
+                speed_score = 8
+            elif runtime <= 120:
+                speed_score = 6
+            else:
+                speed_score = 4
+
+        final.dimensions["speed_efficiency"] = DimensionResult(
+            name="speed_efficiency",
+            score=speed_score,
+            weight=FinalScore.WEIGHTS["speed_efficiency"],
+            source="metrics",
+            reason=f"Based on runtime {agent_metrics.get('time_seconds', '?')}s" if agent_metrics else "No runtime data",
+        )
+
         # Apply execution gate
         if executes_score < FinalScore.EXECUTION_GATE_THRESHOLD:
             final.execution_gated = True

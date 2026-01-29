@@ -33,7 +33,8 @@ class OpenRouterModel(BaseModel):
         
         self.client = openai.OpenAI(
             api_key=api_key,
-            base_url="https://openrouter.ai/api/v1"
+            base_url="https://openrouter.ai/api/v1",
+            timeout=300.0,  # 5 minute timeout per API call
         )
         self.model_id = model_id
         self.max_tokens = max_tokens
@@ -68,21 +69,42 @@ class OpenRouterModel(BaseModel):
                 }
             }
         
-        response = self.client.chat.completions.create(**kwargs)
+        # Retry logic for transient failures
+        max_retries = 3
+        last_error = None
         
-        # Handle usage data
-        usage = None
-        if response.usage:
-            usage = {
-                "input_tokens": response.usage.prompt_tokens or 0,
-                "output_tokens": response.usage.completion_tokens or 0,
-            }
+        for attempt in range(max_retries):
+            try:
+                response = self.client.chat.completions.create(**kwargs)
+                
+                # Handle usage data
+                usage = None
+                if response.usage:
+                    usage = {
+                        "input_tokens": response.usage.prompt_tokens or 0,
+                        "output_tokens": response.usage.completion_tokens or 0,
+                    }
+                
+                return ModelResponse(
+                    content=response.choices[0].message.content,
+                    model=self.model_id,
+                    usage=usage
+                )
+            except openai.APITimeoutError as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                continue
+            except openai.APIConnectionError as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(2 ** attempt)
+                continue
         
-        return ModelResponse(
-            content=response.choices[0].message.content,
-            model=self.model_id,
-            usage=usage
-        )
+        # If all retries failed, raise the last error
+        raise last_error
     
     @property
     def name(self) -> str:

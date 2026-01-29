@@ -1,4 +1,45 @@
-"""CLI entry point for Vibe Eval."""
+"""
+=============================================================================
+SCRIPT NAME: cli.py
+=============================================================================
+
+INPUT FILES:
+- .env file containing OPENROUTER_API_KEY environment variable
+- Results JSON files for show/dashboard commands
+
+OUTPUT FILES:
+- New eval cases added to eval_cases/ with spec.md and optional criteria
+
+VERSION: 3.0
+LAST UPDATED: 2026-01-28
+
+DESCRIPTION:
+CLI entry point for Vibe Eval V3. Provides commands for:
+- run: Execute evaluations across models and cases
+- show: Display results from a previous run
+- diagnose: Generate variance and runtime diagnostics reports
+- add-case: Add a new eval case
+- list-cases: List available eval cases
+- dashboard: Show detailed metrics dashboard
+- list-models: List supported models available via OpenRouter
+
+V3 FEATURES:
+- Fast suite mode for high-signal subset evaluation
+- Multi-judge arbitration via OpenRouter (default)
+- Execution validation and functional tests
+- Tiered cases (Tier 1=simple, 2=complex, 3=agentic)
+
+DEPENDENCIES:
+- click
+- rich
+- python-dotenv
+
+USAGE:
+python -m vibe_eval run -m anthropic/claude-opus-4.5 -c all
+python -m vibe_eval diagnose --results-dir results --output-dir reports
+python -m vibe_eval list-cases
+=============================================================================
+"""
 
 import os
 import json
@@ -79,7 +120,13 @@ def cli():
     default=False,
     help='Enable head-to-head comparisons (O(n²), off by default)'
 )
-def run(models, cases, timeout, cases_dir, output, judge, single_judge, no_validation, head_to_head):
+@click.option(
+    '--suite',
+    type=click.Choice(['full', 'fast']),
+    default='full',
+    help='Evaluation suite: full (default) or fast (high-signal subset)'
+)
+def run(models, cases, timeout, cases_dir, output, judge, single_judge, no_validation, head_to_head, suite):
     """Run evaluation across models and cases."""
     from .runner import EvalRunner
     from .reporting.leaderboard import print_leaderboard
@@ -91,6 +138,9 @@ def run(models, cases, timeout, cases_dir, output, judge, single_judge, no_valid
     case_filter = None
     if cases.lower() != 'all':
         case_filter = [c.strip() for c in cases.split(',')]
+    elif suite == "fast":
+        from .fast_suite import get_fast_suite_cases
+        case_filter = get_fast_suite_cases()
     
     # Check API keys
     _check_api_keys(model_list)
@@ -108,6 +158,7 @@ def run(models, cases, timeout, cases_dir, output, judge, single_judge, no_valid
         multi_judge=not single_judge,
         validate_execution=not no_validation,
         run_comparisons=head_to_head,  # V2: Off by default
+        suite_mode=suite,
     )
     
     results = runner.run()
@@ -166,10 +217,34 @@ def show(results_file):
         models=data["models"],
         cases=data["cases"],
         case_results=case_results,
-        timeout_minutes=data.get("timeout_minutes", 20)
+        timeout_minutes=data.get("timeout_minutes", 20),
+        suite_mode=data.get("suite", "full"),
     )
     
     print_leaderboard(run, console)
+
+
+@cli.command()
+@click.option(
+    '--results-dir',
+    default='results',
+    type=click.Path(exists=True),
+    help='Directory containing result JSON files'
+)
+@click.option(
+    '--output-dir',
+    default='reports',
+    type=click.Path(),
+    help='Directory to write diagnostics reports'
+)
+def diagnose(results_dir, output_dir):
+    """Generate variance and runtime diagnostics reports."""
+    from .reporting.differentiation import generate_reports
+
+    results_path = Path(results_dir)
+    output_path = Path(output_dir)
+    generate_reports(results_path, output_path)
+    console.print(f"[green]✓ Wrote diagnostics to {output_path}[/green]")
 
 
 @cli.command('add-case')

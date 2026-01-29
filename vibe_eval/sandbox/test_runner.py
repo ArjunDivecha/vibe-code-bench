@@ -148,6 +148,7 @@ class FunctionalTestRunner:
         self,
         workspace: Path,
         test_file: Path,
+        allowed_tests: Optional[set[str]] = None,
     ) -> TestRunResult:
         """
         Run all tests from a test file against workspace code.
@@ -197,8 +198,8 @@ class FunctionalTestRunner:
                 errors=["No HTML or Python files found in workspace"],
             )
 
-        # Load test functions
-        test_functions = self._load_test_functions(test_file)
+        # Load test functions (optionally filtered)
+        test_functions = self._load_test_functions(test_file, allowed_tests)
 
         if not test_functions:
             return TestRunResult(
@@ -235,7 +236,11 @@ class FunctionalTestRunner:
         root_files = [f for f in files if f.parent == workspace]
         return root_files[0] if root_files else (files[0] if files else None)
 
-    def _load_test_functions(self, test_file: Path) -> list[tuple[str, Callable]]:
+    def _load_test_functions(
+        self,
+        test_file: Path,
+        allowed_tests: Optional[set[str]] = None
+    ) -> list[tuple[str, Callable]]:
         """
         Load test functions from a test file.
 
@@ -257,7 +262,8 @@ class FunctionalTestRunner:
                 if name.startswith("test_"):
                     func = getattr(module, name)
                     if callable(func):
-                        tests.append((name, func))
+                        if allowed_tests is None or name in allowed_tests:
+                            tests.append((name, func))
 
             return sorted(tests, key=lambda x: x[0])
 

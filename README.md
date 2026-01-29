@@ -133,6 +133,28 @@ If `executes < 3` OR `test_pass_rate < 2`, total score is capped at 30.
 - **Multi-Judge**: LLM evaluation (Claude Opus, GPT-4o, Gemini Flash)
 - **Aggregator**: Combines all sources with dimension weights
 
+Fast suite uses V3 weights with higher test emphasis and a small speed
+efficiency component to reward faster runtimes.
+
+### Fast Suite Mode
+The fast suite uses a high-signal subset of cases and a smaller test allowlist
+per case. It also uses shorter timeouts and fast-fail validation to reduce
+runtime while preserving differentiation.
+
+Fast suite cases:
+- case_03_calculator
+- case_04_notes
+- case_07_stopwatch
+- case_08_typing
+- case_11_palette
+- case_15_markdown
+- case_21_spreadsheet
+- case_22_flowchart
+- case_23_richtext
+- case_25_dataviz
+- case_31_api_integration
+- case_33_refactor
+
 ## CLI Commands
 
 ```bash
@@ -149,10 +171,17 @@ python -m vibe_eval run -m claude-opus-4.5,gpt-4o -c all -t 15
 python -m vibe_eval run -m gpt-4o -c all                  # Multi-judge + tests (default)
 python -m vibe_eval run -m gpt-4o -c all --single-judge   # Single judge mode
 python -m vibe_eval run -m gpt-4o -c all --no-validation  # Skip execution validation
+python -m vibe_eval run -m gpt-4o -c all --suite fast     # Fast suite (high-signal subset)
 
 # View results
 python -m vibe_eval dashboard results/TIMESTAMP_results.json
 python -m vibe_eval show results/TIMESTAMP_results.json
+
+# Generate differentiation diagnostics
+python -m vibe_eval diagnose --results-dir results --output-dir reports
+
+# Generate benchmark report with differentiation summary
+python generate_report.py results/TIMESTAMP_results.json -o BENCHMARK_REPORT.md
 ```
 
 ## Agent Tools (V3)
