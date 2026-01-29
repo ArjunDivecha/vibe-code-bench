@@ -34,5 +34,18 @@
 - For UI/dashboard changes or HTML outputs, include a screenshot or sample render in the PR description.
 
 ## Configuration & Secrets
-- Copy `.env.example` to `.env` and set API keys (e.g., `OPENROUTER_API_KEY`).
+- Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY`.
+- **Only OpenRouter API key is required** - all models and judges route through OpenRouter.
 - Never commit real secrets or generated result artifacts.
+
+## Result Persistence & Fault Tolerance
+- **CRITICAL: Always write results incrementally as they are generated, not only at the end.**
+- Long-running processes (evaluations, batch jobs, data processing) must save progress after each unit of work completes.
+- Benefits: progress recovery after crashes, real-time monitoring, fault tolerance.
+- Implementation patterns:
+  - Append results to JSON/checkpoint files after each case/item completes
+  - Maintain partial state files that can be resumed
+  - Leaderboards/metrics can be computed from partial results (mark as "partial" if incomplete)
+  - Individual artifacts (code files, outputs) should be written immediately when created
+- Avoid: accumulating all results in memory and writing only at completion.
+- Exception: Only acceptable if the entire operation completes in < 30 seconds and failure is rare.

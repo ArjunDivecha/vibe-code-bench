@@ -59,8 +59,30 @@ def generate_markdown(json_path: str, md_path: str) -> None:
     models = _collect_models(case_results)
     cases = sorted(case_results.keys())
 
+    # Model pricing per 1M tokens (input, output) - OpenRouter rates
+    MODEL_PRICING = {
+        "openai/gpt-5.2": (1.75, 14.0),
+        "openai/gpt-5.2-codex": (1.25, 10.0),
+        "anthropic/claude-opus-4.5": (5.0, 25.0),
+        "anthropic/claude-sonnet-4.5": (3.0, 15.0),
+        "google/gemini-3-flash-preview": (0.50, 3.0),
+        "moonshotai/kimi-k2.5": (0.60, 2.5),  # Approximate based on Kimi K2 Thinking
+        "z-ai/glm-4.7": (0.30, 1.2),  # Approximate based on similar models
+        "qwen/qwen3-coder": (0.30, 1.2),  # Approximate
+        "minimax/minimax-m2.1": (0.30, 1.2),  # Approximate based on MiniMax M2
+        "arcee-ai/trinity-large-preview:free": (0.0, 0.0),  # Free model
+    }
+
+    def calculate_model_cost(model_id: str, input_tokens: int, output_tokens: int) -> float:
+        """Calculate cost for model execution."""
+        pricing = MODEL_PRICING.get(model_id, (3.0, 15.0))  # Default fallback
+        input_rate, output_rate = pricing
+        cost = (input_tokens / 1_000_000) * input_rate
+        cost += (output_tokens / 1_000_000) * output_rate
+        return round(cost, 6)
+
     # Calculate global averages
-    model_stats = {m: {"scores": [], "times": [], "tokens": [], "judge_cost": []} for m in models}
+    model_stats = {m: {"scores": [], "times": [], "tokens": [], "input_tokens": [], "output_tokens": [], "cost": []} for m in models}
 
     for case in cases:
         res = case_results[case]
@@ -73,18 +95,26 @@ def generate_markdown(json_path: str, md_path: str) -> None:
             model_stats[m]["times"].append(metrics.get("time_seconds", 0))
             in_tok = metrics.get("input_tokens", 0)
             out_tok = metrics.get("output_tokens", 0)
+            model_stats[m]["input_tokens"].append(in_tok)
+            model_stats[m]["output_tokens"].append(out_tok)
             model_stats[m]["tokens"].append(in_tok + out_tok)
-            model_stats[m]["judge_cost"].append(metrics.get("judge_cost", 0))
+            # Calculate cost for this case
+            case_cost = calculate_model_cost(m, in_tok, out_tok)
+            model_stats[m]["cost"].append(case_cost)
 
     leaderboard = []
     for m in models:
+        total_input = sum(model_stats[m]["input_tokens"])
+        total_output = sum(model_stats[m]["output_tokens"])
+        total_cost = calculate_model_cost(m, total_input, total_output)
+        
         leaderboard.append(
             {
                 "model": m,
                 "score": mean(model_stats[m]["scores"]) if model_stats[m]["scores"] else 0,
                 "time": mean(model_stats[m]["times"]) if model_stats[m]["times"] else 0,
                 "tokens": mean(model_stats[m]["tokens"]) if model_stats[m]["tokens"] else 0,
-                "judge_cost": mean(model_stats[m]["judge_cost"]) if model_stats[m]["judge_cost"] else 0,
+                "total_cost": total_cost,
             }
         )
 
@@ -111,13 +141,13 @@ def generate_markdown(json_path: str, md_path: str) -> None:
     lines.append("")
 
     lines.append("## Leaderboard")
-    lines.append("| Rank | Model | Average Score (0-100) | Avg Time (s) | Avg Tokens | Avg Judge Cost |")
-    lines.append("|------|-------|-----------------------|--------------|------------|----------------|")
+    lines.append("| Rank | Model | Average Score (0-100) | Avg Time (s) | Avg Tokens | Total Cost |")
+    lines.append("|------|-------|-----------------------|--------------|------------|------------|")
 
     for idx, row in enumerate(leaderboard, 1):
         lines.append(
             f"| {idx} | `{row['model']}` | **{row['score']:.1f}** | "
-            f"{row['time']:.1f} | {int(row['tokens'])} | ${row['judge_cost']:.4f} |"
+            f"{row['time']:.1f} | {int(row['tokens'])} | ${row['total_cost']:.2f} |"
         )
 
     lines.append("")

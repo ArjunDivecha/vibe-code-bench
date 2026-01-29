@@ -2,12 +2,6 @@
 
 This document describes all evaluation cases in the Vibe Code Bench benchmark. Each case tests an LLM's ability to build a complete, working application from a natural language prompt.
 
-**V3 Updates (2026-01-27):**
-- Added 5 Tier 2 complex cases (21-25)
-- Added 5 Tier 3 agentic cases (31-35)
-- Functional test suites for automated scoring
-- Enhanced agent tools and metrics
-
 **Fast Suite (High-Signal Subset):**
 This optional mode runs a smaller set of cases and a reduced test allowlist
 to speed up evaluation while preserving differentiation.
@@ -384,7 +378,7 @@ Expected score: 85-95 for frontier models. These establish a baseline.
 
 ---
 
-## Tier 2: Complex Applications (Cases 21-25) - NEW in V3
+## Tier 2: Complex Applications (Cases 21-25)
 
 These cases require proper architecture and are designed to discriminate between top-tier models.
 
@@ -460,7 +454,7 @@ These cases require proper architecture and are designed to discriminate between
 
 ---
 
-## Tier 3: Agentic Tasks (Cases 31-35) - NEW in V3
+## Tier 3: Agentic Tasks (Cases 31-35)
 
 These cases test multi-step workflows, tool use, error recovery, and iteration.
 
@@ -531,9 +525,7 @@ These cases test multi-step workflows, tool use, error recovery, and iteration.
 
 ---
 
-## Scoring Rubric (V3)
-
-### V2 Scoring (Default)
+## Scoring Rubric
 
 Each case is scored 0-100 across 5 dimensions:
 
@@ -545,19 +537,6 @@ Each case is scored 0-100 across 5 dimensions:
 | Direction Following | 10% | Did it build exactly what was asked? |
 | Code Quality | 15% | Is code readable and well-organized? |
 
-### V3 Scoring (With Functional Tests)
+**Execution gate:** If `executes < 3`, total score is capped at 30 points.
 
-| Dimension | Weight | Source | Description |
-|-----------|--------|--------|-------------|
-| Executes | 15% | Auto | Code runs without errors |
-| Test Pass Rate | 20% | Auto | Functional tests passing |
-| Features Complete | 20% | Judge | All spec features implemented |
-| Edge Cases | 10% | Combined | Handles errors, validation |
-| Code Quality | 10% | Static+Judge | Readable, well-organized |
-| Efficiency | 5% | Metrics | Minimal turns, smart tool use |
-| Direction Following | 10% | Judge | Built what was asked |
-| Robustness | 10% | Tests | Works across scenarios |
-
-**Execution gate:** If `executes < 3` OR `test_pass_rate < 2`, total score capped at 30.
-
-**Judge:** Multi-judge arbitration (Claude Opus 4.5, GPT-4o, Gemini 3 Flash) by default
+**Judging:** Multi-judge arbitration by default (Claude Opus 4.5, GPT-4o, Gemini 3 Flash Preview via OpenRouter). All judges use the same OpenRouter API key.

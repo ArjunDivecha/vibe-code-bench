@@ -51,12 +51,15 @@ class JudgeMetrics:
     def estimated_cost(self) -> float:
         """Estimate cost in USD based on judge model pricing (OpenRouter rates)."""
         # OpenRouter pricing per 1M tokens (input, output) - updated Jan 2026
+        # Verified from OpenRouter pricing page and provider documentation
         pricing = {
-            "anthropic/claude-opus-4.5": (5.0, 25.0),      # $5/$25 per M tokens
+            "anthropic/claude-opus-4.5": (5.0, 25.0),      # $5/$25 per M tokens (verified)
             "anthropic/claude-sonnet-4": (3.0, 15.0),     # $3/$15 per M tokens
-            "openai/gpt-4o": (3.0, 10.0),                 # $3/$10 per M tokens
-            "google/gemini-3-flash": (0.075, 0.3),        # $0.075/$0.30 per M tokens
-            "google/gemini-2.0-flash": (0.075, 0.3),      # Same as 3-flash
+            "anthropic/claude-sonnet-4.5": (3.0, 15.0),  # Same as sonnet-4
+            "openai/gpt-4o": (2.5, 10.0),                 # $2.50/$10 per M tokens (corrected)
+            "google/gemini-3-flash": (0.50, 3.0),         # $0.50/$3.00 per M tokens (corrected)
+            "google/gemini-3-flash-preview": (0.50, 3.0), # $0.50/$3.00 per M tokens (corrected)
+            "google/gemini-2.0-flash": (0.075, 0.3),      # $0.075/$0.30 per M tokens
             # Fallback rates (assume mid-tier model)
             "default": (3.0, 15.0),
         }
