@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+> **New here?** See the [README.md](README.md) for an overview of what this repository does, how evaluations work, and key modules.
+
 ## Project Structure & Module Organization
 - `vibe_eval/` is the core library (CLI, runner, sandbox, scoring, judges, tools, model adapters).
 - `eval_cases/` contains benchmark cases, each in `case_XX_slug/` with `spec.md` and optional `tests.py`.

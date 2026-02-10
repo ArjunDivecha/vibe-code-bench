@@ -20,7 +20,19 @@ Fast suite cases:
 - case_31_api_integration
 - case_33_refactor
 
-**Constraints for all cases:**
+**About the Constraints:**
+
+All cases enforce these constraints to ensure fair, reproducible benchmarking:
+
+- **No package installations (`pip`, `npm`, etc.)** – Guarantees that outputs run consistently across environments without dependency issues. Models must use Python stdlib or vanilla HTML/CSS/JS.
+- **Self-contained outputs** – Code should run without external dependencies other than web browsers. This ensures evaluations focus on model capability, not dependency management.
+- **Single-file outputs preferred** – Simplifies validation and reduces complexity. Multi-file solutions are allowed when justified by the task.
+
+These constraints align with the evaluation pipeline described in the [README.md](README.md#how-an-evaluation-run-works), which validates that generated code executes under controlled conditions before scoring.
+
+---
+
+**Constraints for all cases (summary):**
 - No package installations (`pip`, `npm`, etc.)
 - Python stdlib only, or vanilla HTML/CSS/JS
 - Single-file outputs preferred
