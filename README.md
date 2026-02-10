@@ -4,6 +4,97 @@
 
 Vibe Code Bench tests whether AI coding assistants can take casual requests like "Build me a Pomodoro timer" and produce fully functional, self-contained applications that actually work.
 
+## Repository Overview
+
+Vibe Code Bench is a benchmark harness for evaluating Large Language Models (LLMs) on "vibe coding" tasks—building complete applications from natural language specifications. It runs **multi-turn agentic coding sessions** where models use tools (file operations, test execution, code reading) to iteratively build solutions, then validates, tests, judges, and reports on the results.
+
+The framework is designed for:
+- **Benchmarking** LLM coding capabilities across diverse application types
+- **Comparing** multiple models on the same tasks with objective scoring
+- **Analyzing** agent behavior (tool use, iteration patterns, error recovery)
+- **Reproducible evaluation** with standardized constraints and judging
+
+All models route through [OpenRouter](https://openrouter.ai/) using a single API key, enabling fair comparisons across providers (Anthropic, OpenAI, Google, etc.).
+
+## How an Evaluation Run Works
+
+An evaluation executes the following pipeline for each model × case combination:
+
+```mermaid
+graph LR
+    A[eval_cases/spec.md] --> B[AgentLoop]
+    B --> C[workspace/]
+    C --> D[Validator]
+    C --> E[TestRunner]
+    D --> F[Judges]
+    E --> F
+    F --> G[results/*.json]
+    G --> H[Reports & Leaderboard]
+```
+
+1. **Case Selection** – Load task specifications from `eval_cases/*/spec.md` (natural language descriptions). Optional `tests.py` files define functional tests.
+
+2. **Agent Loop Execution** – Run a multi-turn coding session (`vibe_eval/agent_loop.py`) where the model:
+   - Receives the task specification as context
+   - Uses tools: `write_file`, `read_file`, `run_command`, `run_tests`, etc.
+   - Writes code into a per-run workspace directory
+   - Can iterate, fix errors, and refine the solution
+
+3. **Sandbox Execution** – Execute generated commands in a sandboxed environment with dependency enforcement (`vibe_eval/sandbox/executor.py`). Package installs are blocked to ensure self-contained outputs.
+
+4. **Execution Validation** – Verify that generated code runs without errors (`vibe_eval/sandbox/validator.py`). This includes checking for syntax errors, runtime exceptions, and proper exit codes.
+
+5. **Functional Testing** – Run test suites (`vibe_eval/sandbox/test_runner.py`) when `tests.py` files exist. For web apps, Playwright is used to validate UI behavior when available.
+
+6. **Scoring via Judges** – Evaluate outputs using LLM judges:
+   - **Single-judge mode**: One model scores each dimension (executes, features, quality, etc.)
+   - **Multi-judge arbitration (default)**: Multiple judges score independently, then aggregate results for reduced bias
+   - Judge logic: `vibe_eval/judge/*` (absolute scoring, comparative, multi-judge)
+
+7. **Report Generation** – Compile results into JSON (`results/TIMESTAMP_results.json`) and generate markdown reports/leaderboards (`vibe_eval/reporting/*`, `generate_report.py`)
+
+## Key Modules
+
+| Module | Purpose |
+|--------|---------|
+| `vibe_eval/cli.py` | CLI commands (`run`, `show`, `diagnose`, `list-cases`, `dashboard`, `list-models`) |
+| `vibe_eval/runner.py` | Main orchestration: models × cases × judging coordination |
+| `vibe_eval/agent_loop.py` | Multi-turn tool-using coding session loop with metrics tracking |
+| `vibe_eval/models/openrouter.py` | Model adapter for OpenRouter (all models route through this) |
+| `vibe_eval/sandbox/executor.py` | Sandboxed command execution with dependency enforcement |
+| `vibe_eval/sandbox/validator.py` | Execution validation (syntax, runtime errors, exit codes) |
+| `vibe_eval/sandbox/test_runner.py` | Functional test execution (Playwright for web apps when available) |
+| `vibe_eval/judge/absolute.py` | LLM judges scoring execution, features, quality, etc. |
+| `vibe_eval/judge/multi_judge.py` | Multi-judge arbitration for reduced bias |
+| `vibe_eval/scoring/aggregator.py` | Score aggregation (auto, static, judge-based) |
+| `vibe_eval/reporting/leaderboard.py` | Leaderboard generation and reporting |
+| `eval_cases/` | Benchmark tasks: each case has `spec.md` and optional `tests.py` |
+
+## Try It Without Reading the Code
+
+Get started in 3 commands (no code inspection required):
+
+```bash
+# 1. Set your OpenRouter API key (only key you need - all models route through OpenRouter)
+echo "OPENROUTER_API_KEY=your-key-here" > .env
+
+# 2. List available evaluation cases
+python -m vibe_eval list-cases
+
+# 3. Run one model on one case (example: claude-sonnet-4.5 on the Pomodoro timer)
+python -m vibe_eval run -m claude-sonnet-4.5 -c case_01_pomodoro
+
+# 4. View the results
+python -m vibe_eval show results/*_results.json
+```
+
+For a full benchmark on multiple models:
+```bash
+python -m vibe_eval run -m "claude-opus-4.5,gpt-4o,gemini-2.5-pro" -c all
+```
+
+That's it! The framework handles agent loops, sandbox execution, validation, testing, judging, and reporting automatically.
+
 ## Latest Results
 
 **Evaluation Date:** January 29, 2026  
@@ -24,16 +115,6 @@ Vibe Code Bench tests whether AI coding assistants can take casual requests like
 | 11 | `trinity-large-preview:free` | **62.8** | 71.1 | 9,632 | $0.00 |
 
 *See [BENCHMARK_REPORT_11MODELS.md](BENCHMARK_REPORT_11MODELS.md) for detailed case-by-case breakdown.*
-
-## What It Does
-
-When you run an evaluation, Vibe Code Bench:
-
-1. **Gives each model a task** (e.g., "Build a calculator app")
-2. **Lets the model write code** using tools like file creation, running tests, and reading files
-3. **Tests the result** by executing the code and running functional tests
-4. **Scores the output** on multiple dimensions (execution, features, code quality, etc.)
-5. **Generates a report** comparing all models
 
 ## Quick Start
 

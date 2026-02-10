@@ -61,11 +61,13 @@ console = Console()
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
-    """Vibe Eval - Personal LLM Coding Evaluation Suite
-    
-    Compare AI coding assistants through multi-turn "vibe coding" sessions.
+    """Vibe Code Bench - Benchmark Harness for Evaluating LLM Coding Tasks
+
+    Evaluates how well AI models build complete, working applications from natural language
+    specifications through multi-turn agentic sessions with tool use, validation, testing, and judging.
+
+    See the README.md for detailed overview and usage examples.
     """
-    pass
 
 
 @cli.command()
